@@ -7,7 +7,8 @@ import (
 	"net"
 )
 
-// Code credit to: https://www.youtube.com/watch?v=qJQrrscB1-4
+// Credit for this specific TCP server implementation goes to
+// https://www.youtube.com/watch?v=qJQrrscB1-4
 
 // Keep track of the number of open TCP connections
 var openTcpClients int = 0
@@ -20,18 +21,18 @@ type Message struct {
 
 // TCP server, with a message channel and quit channel
 type TcpServer struct {
-	listenAddr string
-	listener   net.Listener
-	quitCh     chan struct{}
-	msgCh      chan Message
+	listenAddr  string
+	listener    net.Listener
+	quitChannel chan struct{}
+	readChannel chan Message
 }
 
 // Create a new TCP server, buffering up to 10 messages
 func NewTcpServer(listenAddr string) *TcpServer {
 	return &TcpServer{
-		listenAddr: listenAddr,
-		quitCh:     make(chan struct{}),
-		msgCh:      make(chan Message, 10),
+		listenAddr:  listenAddr,
+		quitChannel: make(chan struct{}),
+		readChannel: make(chan Message, 10),
 	}
 }
 
@@ -52,10 +53,10 @@ func (s *TcpServer) tcpStart() error {
 	go s.tcpAcceptLoop()
 
 	// Block on the quit channel as long as we haven't quit yet
-	<-s.quitCh
+	<-s.quitChannel
 
-	// Close the message channel once we have quit
-	close(s.msgCh)
+	// Close the read channel once we have quit
+	close(s.readChannel)
 
 	// No errors
 	return nil
@@ -78,6 +79,7 @@ func (s *TcpServer) tcpAcceptLoop() {
 	}
 }
 
+// Continue reading messages from a connection
 func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 
 	// Close the connection when necessary
@@ -111,7 +113,7 @@ func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 		}
 
 		// Send a message to the channel for logging
-		s.msgCh <- Message{
+		s.readChannel <- Message{
 			from:    conn.RemoteAddr().String(),
 			payload: buf[:n],
 		}
@@ -130,7 +132,7 @@ func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 
 // Print out messages that are received
 func (s *TcpServer) Printer() {
-	for msg := range s.msgCh {
+	for msg := range s.readChannel {
 		fmt.Printf("\033[2m\033[32m| TCP from %s: %s`\033[0m\n", msg.from, string(msg.payload))
 	}
 }

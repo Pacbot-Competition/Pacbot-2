@@ -1,21 +1,26 @@
 <script>
-  const socket = new WebSocket('ws://localhost:3002');
-  let good = false;
 
-  socket.addEventListener('open', (event) => {
-    good = true;
+  import config from '../../config.json';
+
+  var socket = new WebSocket(`ws://${config.ServerIP}:${config.WebSocketPort}`);
+  let message = 'Offline';
+
+  socket.addEventListener('open', (_) => {
+    message = 'Online!';
     console.log('WebSocket connection established');
     socket.send('Hello, server!');
   });
 
   socket.addEventListener('message', (event) => {
     console.log(`Received: ${event.data}`);
+    message = event.data;
   });
 
-  socket.addEventListener('close', (event) => {
+  socket.addEventListener('close', (_) => {
     console.log('WebSocket connection closed');
-    good = false;
+    message = 'Offline';
   });
+
 </script>
 
-<h1> {good ? "Good!" : "Offline"} </h1>
+<h1> {message} </h1>
