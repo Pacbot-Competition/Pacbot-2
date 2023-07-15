@@ -1,5 +1,5 @@
 {
-  "ServerIP": "192.168.1.31",
+  "ServerIP": "localhost",
   "TcpPort": 3001,
   "WebSocketPort": 3002
 }
