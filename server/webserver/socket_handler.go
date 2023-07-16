@@ -8,8 +8,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Protect global websocket values from race conditions with a
-// mutex - it will lock the resources until they are successfully written to
+/*
+Protects important websocket variables values from race conditions with a
+mutex - it will lock the resources until they are successfully written to
+*/
 var muWS sync.Mutex
 
 /*
@@ -43,19 +45,19 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	// Register the websocket session
 	ws.register()
 
-	// Close the connection at the end of the function, or if
-	// something goes wrong.
+	/*
+	  Close the connection at the end of the function, or if
+	  something goes wrong.
+	*/
 	defer func() {
 		ws.unregister()
 	}()
-
-	// go ws.sendLoop()
 
 	// Goroutine: handles reads for the websocket session
 	go ws.readLoop()
 
 	// Goroutine: handles writes for the websocket session
-	go ws.writeLoop()
+	go ws.sendLoop()
 
 	// Wait until the quit channel has items before stopping the program
 	<-ws.quitCh

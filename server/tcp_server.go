@@ -14,8 +14,10 @@ import (
 // Keep track of the number of open TCP connections
 var openTcpClients int = 0
 
-// Protect the above two value from race conditions with a
-// mutex --> it will lock the resource until it is written to
+/*
+Protect important TCP variables from race conditions with a mutex
+- it will lock the resource until it is written to
+*/
 var muTcp sync.Mutex
 
 // Keep track of who sent the message, and the content

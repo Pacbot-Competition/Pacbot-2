@@ -32,9 +32,6 @@ func getIP(conn *websocket.Conn) string {
 	return addr[:sepIdx]
 }
 
-// Keep track of active websocket sessions in a set (empty-valued map)
-var openWebSocketSessions = make(map[*webSession](struct{}))
-
 // Web session object, for keeping track of individual websocket sessions
 type webSession struct {
 	quitCh chan struct{}
@@ -67,17 +64,21 @@ func (ws *webSession) register() {
 	// Connect this quit channel to the IP address
 	ipQuitMap[ip] = ws.quitCh
 
-	// Add this to the open web sessions set
+	// Lock the mutex so we can keep track of the number of open clients
 	muWS.Lock()
 	{
-		openWebSocketSessions[ws] = struct{}{}
-		fmt.Printf("\033[34m[%d -> %d] browser connected\033[0m\n", len(openWebSocketSessions)-1, len(openWebSocketSessions))
+		openWebSessions[ws] = struct{}{}
+		fmt.Printf("\033[34m[%d -> %d] browser connected\033[0m\n", len(openWebSessions)-1, len(openWebSessions))
 	}
 	muWS.Unlock()
 }
 
 // Unregister this web session in the active connections
 func (ws *webSession) unregister() {
+
+	// Lock the mutex so that other channels will not send messages until this is complete
+	muWS.Lock()
+	defer muWS.Unlock()
 
 	// Close the connection and data channels
 	ws.closed = true
@@ -86,12 +87,8 @@ func (ws *webSession) unregister() {
 	close(ws.sendCh)
 
 	// Lock the mutex so we can keep track of the number of open clients
-	muWS.Lock()
-	{
-		delete(openWebSocketSessions, ws)
-		fmt.Printf("\033[33m[%d -> %d] browser disconnected\033[0m\n", len(openWebSocketSessions)+1, len(openWebSocketSessions))
-	}
-	muWS.Unlock()
+	delete(openWebSessions, ws)
+	fmt.Printf("\033[33m[%d -> %d] browser disconnected\033[0m\n", len(openWebSessions)+1, len(openWebSessions))
 }
 
 // Run a read-loop go-routine to keep track of the incoming messages for a session
@@ -107,10 +104,10 @@ func (ws *webSession) readLoop() {
 		if err != nil {
 
 			// Types of errors which we intentially catch and return from
-			closeErr := websocket.IsCloseError(err, websocket.CloseGoingAway)
+			clientCloseErr := websocket.IsCloseError(err, websocket.CloseGoingAway)
 			serverCloseErr := (err == websocket.ErrCloseSent)
 			_, netErr := err.(*net.OpError)
-			if closeErr || serverCloseErr || netErr {
+			if clientCloseErr || serverCloseErr || netErr {
 				return
 			}
 
@@ -131,27 +128,24 @@ func (ws *webSession) readLoop() {
 }
 
 // Sending websocket data (binary)
-func (ws *webSession) writeLoop() {
+func (ws *webSession) sendLoop() {
 
 	// If we ever stop sending messages (due to some error), kill the connection
 	defer func() { ws.quitCh <- struct{}{} }()
 
-	// Message to send
-	msg := []byte("msg")
-
 	for {
 
 		// Block until the next message is ready
-		<-ws.sendCh
+		msg := <-ws.sendCh
 
 		// Try writing the message
 		if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 
 			// Types of errors which we intentially catch and return from
-			closeErr := websocket.IsCloseError(err, websocket.CloseGoingAway)
+			clientCloseErr := websocket.IsCloseError(err, websocket.CloseGoingAway)
 			serverCloseErr := (err == websocket.ErrCloseSent)
 			_, netErr := err.(*net.OpError)
-			if closeErr || serverCloseErr || netErr {
+			if clientCloseErr || serverCloseErr || netErr {
 				return
 			}
 

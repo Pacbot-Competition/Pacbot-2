@@ -12,13 +12,12 @@
   });
 
   socket.addEventListener('message', (event) => {
-    console.log(`Received: ${event.data}`);
+    // console.log(`Received: ${event.data}`);
     message = event.data;
   });
 
   socket.addEventListener('close', (_) => {
     console.log('WebSocket connection closed');
-    message = 'Offline';
   });
 
 </script>
