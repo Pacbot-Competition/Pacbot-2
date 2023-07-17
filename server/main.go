@@ -28,9 +28,7 @@ func main() {
 	go server.Printer()
 
 	// High-resolution ticker (for keeping the frame rate roughly constant)
-	hrt := NewHighResTicker(60)
-	tt := time.NewTicker(time.Microsecond * 1000000 / 60)
-	defer tt.Stop()
+	hrt := NewHighResTicker(100)
 
 	/*
 		Demo for high-resolution ticker - at 60fps, it updates the web broker's
@@ -41,13 +39,12 @@ func main() {
 	L:
 		for idx := 0; idx < 5000; idx++ {
 			select {
-			case wb.BroadcastCh <- []byte(fmt.Sprintf("%d ~ %d", idx/60, idx%60)):
-			default:
+			case wb.BroadcastCh <- []byte(fmt.Sprintf("%d ~ %d", idx/100, idx%100)):
+			case <-wb.QuitCh:
 				break L
 			}
 
-			//<-hrt.ReadyCh (can use this if ticker latency is too high)
-			<-tt.C
+			<-hrt.ReadyCh
 		}
 		fmt.Println("fast:", hrt.Lifetime())
 	}(wb)
@@ -58,9 +55,10 @@ func main() {
 	*/
 	go func(wb *webserver.WebBroker) {
 		start := hrtime.Now()
-		time.Sleep(60 * time.Second)
-		wb.QuitCh <- struct{}{}
+		time.Sleep(10 * time.Second)
+		wb.Quit()
 		fmt.Println("slow:", hrtime.Since(start))
+		wb.Quit()
 	}(wb)
 
 	// Log TCP errors

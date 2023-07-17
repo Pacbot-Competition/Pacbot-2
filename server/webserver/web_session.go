@@ -46,7 +46,7 @@ func newWebSession(conn *websocket.Conn) *webSession {
 	return &webSession{
 		quitCh: make(chan struct{}, 2),
 		readCh: make(chan []byte, 10),
-		sendCh: make(chan []byte, 10),
+		sendCh: make(chan []byte, 1),
 		closed: false,
 		conn:   conn,
 	}
@@ -54,6 +54,12 @@ func newWebSession(conn *websocket.Conn) *webSession {
 
 // Register this web session in the active connections
 func (ws *webSession) register() {
+
+	// If we're not allowing new connections, kick the connection
+	if !newConnectionsAllowed {
+		ws.quitCh <- struct{}{}
+		return
+	}
 
 	// If we've seen this IP address before, kick the old one and start a new one
 	ip := getIP(ws.conn)
@@ -65,20 +71,16 @@ func (ws *webSession) register() {
 	ipQuitMap[ip] = ws.quitCh
 
 	// Lock the mutex so we can keep track of the number of open clients
-	muWS.Lock()
+	muOWS.Lock()
 	{
 		openWebSessions[ws] = struct{}{}
 		fmt.Printf("\033[34m[%d -> %d] browser connected\033[0m\n", len(openWebSessions)-1, len(openWebSessions))
 	}
-	muWS.Unlock()
+	muOWS.Unlock()
 }
 
 // Unregister this web session in the active connections
 func (ws *webSession) unregister() {
-
-	// Lock the mutex so that other channels will not send messages until this is complete
-	muWS.Lock()
-	defer muWS.Unlock()
 
 	// Close the connection and data channels
 	ws.closed = true
@@ -86,9 +88,19 @@ func (ws *webSession) unregister() {
 	close(ws.readCh)
 	close(ws.sendCh)
 
-	// Lock the mutex so we can keep track of the number of open clients
-	delete(openWebSessions, ws)
-	fmt.Printf("\033[33m[%d -> %d] browser disconnected\033[0m\n", len(openWebSessions)+1, len(openWebSessions))
+	// Lock the mutex so that other channels will not read the open web sessions map until this is complete
+	muOWS.Lock()
+	{
+		// Print information regarding the disconnect
+		if newConnectionsAllowed || (len(openWebSessions) > 0) {
+			fmt.Printf("\033[33m[%d -> %d] browser disconnected\033[0m\n", len(openWebSessions), len(openWebSessions)-1)
+		} else {
+			fmt.Printf("\033[33m[X -> X] browser(s) blocked\033[0m\n")
+		}
+
+		delete(openWebSessions, ws)
+	}
+	muOWS.Unlock()
 }
 
 // Run a read-loop go-routine to keep track of the incoming messages for a session

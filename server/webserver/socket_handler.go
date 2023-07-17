@@ -8,11 +8,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Keep track of active websocket sessions in a set (empty-valued map)
+var openWebSessions = make(map[*webSession](struct{}))
+
 /*
-Protects important websocket variables values from race conditions with a
+Protects the "openWebSessions" map from race conditions with a
 mutex - it will lock the resources until they are successfully written to
 */
-var muWS sync.Mutex
+var muOWS sync.Mutex
 
 /*
 Websockets are the way that the server will communicate with

@@ -8,7 +8,7 @@ import (
 
 /*
 A high-resolution ticker, which I designed as an alternative to time.Ticker
-in case it is inaccurate on Windows
+in case it ends up being inaccurate on Windows machines
 */
 type HighResTicker struct {
 	QuitCh         chan struct{}
@@ -24,7 +24,7 @@ func NewHighResTicker(ticksPerSecond int32) *HighResTicker {
 	return &HighResTicker{
 		QuitCh:         make(chan struct{}, 1),
 		ReadyCh:        make(chan struct{}, 10),
-		UsBetweenTicks: time.Duration(1000000 / ticksPerSecond),
+		UsBetweenTicks: 1000000 * time.Microsecond / time.Duration(ticksPerSecond),
 		TotalTicks:     0,
 		StartTime:      hrtime.Now(),
 		LastTick:       hrtime.Now(),
@@ -47,7 +47,7 @@ mainLoop:
 		default:
 		}
 
-		if hrtime.Since(hrt.LastTick) > hrt.UsBetweenTicks*time.Microsecond {
+		if hrtime.Since(hrt.LastTick) > hrt.UsBetweenTicks {
 			hrt.ReadyCh <- struct{}{}
 			hrt.TotalTicks++
 			hrt.LastTick = hrtime.Now()
