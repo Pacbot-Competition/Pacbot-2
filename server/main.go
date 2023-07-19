@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"pacbot_server/game"
 	"pacbot_server/webserver"
 	"time"
 
@@ -39,8 +40,8 @@ func main() {
 		go hrt.Start()
 		for idx := 0; idx < 5000; idx++ {
 			select {
-			case wb.BroadcastCh <- serializePellets(pellets):
-				pellets[0] += 1
+			case wb.BroadcastCh <- game.SerializePellets(game.Pellets):
+				//pellets[0] += 1
 			case <-wb.QuitCh:
 				fmt.Println("fast:", hrt.Lifetime())
 				return
