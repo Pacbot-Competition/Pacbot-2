@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"pacbot_server/clock"
 	"pacbot_server/game"
+	"pacbot_server/tcpserver"
 	"pacbot_server/webserver"
 	"time"
 
@@ -25,11 +27,11 @@ func main() {
 	go http.ListenAndServe(fmt.Sprintf(":%d", conf.WebSocketPort), nil)
 
 	// TCP stuff (tcp_server.go)
-	server := NewTcpServer(fmt.Sprintf(":%d", conf.TcpPort))
+	server := tcpserver.NewTcpServer(fmt.Sprintf(":%d", conf.TcpPort))
 	go server.Printer()
 
 	// High-resolution ticker (for keeping the frame rate roughly constant)
-	hrt := NewHighResTicker(24)
+	hrt := clock.NewHighResTicker(24)
 
 	/*
 		Demo for high-resolution ticker - at the specified FPS, it updates the web
@@ -63,5 +65,5 @@ func main() {
 	}(wb)
 
 	// Log TCP errors
-	log.Fatal(server.tcpStart())
+	log.Fatal(server.TcpStart())
 }

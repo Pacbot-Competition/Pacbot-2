@@ -1,4 +1,4 @@
-package main
+package tcpserver
 
 import (
 	"bytes"
@@ -44,7 +44,7 @@ func NewTcpServer(listenAddr string) *TcpServer {
 }
 
 // Initialize the TCP server and handle connections andd messages
-func (s *TcpServer) tcpStart() error {
+func (s *TcpServer) TcpStart() error {
 
 	// Start the TCP connection
 	listener, err := net.Listen("tcp", s.listenAddr)
