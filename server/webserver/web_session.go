@@ -151,7 +151,7 @@ func (ws *webSession) sendLoop() {
 		msg := <-ws.sendCh
 
 		// Try writing the message
-		if err := ws.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+		if err := ws.conn.WriteMessage(websocket.BinaryMessage, msg); err != nil {
 
 			// Types of errors which we intentially catch and return from
 			clientCloseErr := websocket.IsCloseError(err, websocket.CloseGoingAway)

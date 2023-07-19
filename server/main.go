@@ -28,7 +28,7 @@ func main() {
 	go server.Printer()
 
 	// High-resolution ticker (for keeping the frame rate roughly constant)
-	hrt := NewHighResTicker(100)
+	hrt := NewHighResTicker(24)
 
 	/*
 		Demo for high-resolution ticker - at the specified FPS, it updates the web
@@ -39,7 +39,8 @@ func main() {
 		go hrt.Start()
 		for idx := 0; idx < 5000; idx++ {
 			select {
-			case wb.BroadcastCh <- []byte(fmt.Sprintf("%d ~ %d", idx/100, idx%100)):
+			case wb.BroadcastCh <- serializePellets(pellets):
+				pellets[0] += 1
 			case <-wb.QuitCh:
 				fmt.Println("fast:", hrt.Lifetime())
 				return
