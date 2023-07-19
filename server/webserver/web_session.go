@@ -46,7 +46,7 @@ func newWebSession(conn *websocket.Conn) *webSession {
 	return &webSession{
 		quitCh: make(chan struct{}, 2),
 		readCh: make(chan []byte, 10),
-		sendCh: make(chan []byte, 1),
+		sendCh: make(chan []byte, 10),
 		closed: false,
 		conn:   conn,
 	}

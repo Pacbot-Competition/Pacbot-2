@@ -39,11 +39,10 @@ func (hrt *HighResTicker) Start() {
 	hrt.StartTime = hrtime.Now()
 	hrt.LastTick = hrtime.Now()
 
-mainLoop:
 	for {
 		select {
 		case <-hrt.QuitCh:
-			break mainLoop
+			return
 		default:
 		}
 

@@ -31,22 +31,21 @@ func main() {
 	hrt := NewHighResTicker(100)
 
 	/*
-		Demo for high-resolution ticker - at 60fps, it updates the web broker's
-		send channel with the time (in seconds) and frames elapsed for that second
+		Demo for high-resolution ticker - at the specified FPS, it updates the web
+		broker's send channel with the time (in seconds) and frames elapsed for
+		that second - suffers less lag compared to timer.Ticker() on Windows
 	*/
 	go func(wb *webserver.WebBroker) {
 		go hrt.Start()
-	L:
 		for idx := 0; idx < 5000; idx++ {
 			select {
 			case wb.BroadcastCh <- []byte(fmt.Sprintf("%d ~ %d", idx/100, idx%100)):
 			case <-wb.QuitCh:
-				break L
+				fmt.Println("fast:", hrt.Lifetime())
+				return
 			}
-
 			<-hrt.ReadyCh
 		}
-		fmt.Println("fast:", hrt.Lifetime())
 	}(wb)
 
 	/*

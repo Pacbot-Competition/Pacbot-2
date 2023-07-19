@@ -7,7 +7,7 @@ import (
 )
 
 // Keep track of number of active web brokers (should only be one)
-var numActiveWebBrokerLoops = 0
+var activeWebBrokerLoops = 0
 
 // Keep track of whether new connections are allowed
 var newConnectionsAllowed = true
@@ -42,7 +42,7 @@ func (wb *WebBroker) quit() {
 	{
 		muAWB.Lock()
 		{
-			numActiveWebBrokerLoops--
+			activeWebBrokerLoops--
 		}
 		muAWB.Unlock()
 		for ws := range openWebSessions {
@@ -66,15 +66,15 @@ func (wb *WebBroker) RunLoop() {
 		wb.quit()
 	}()
 
-	var _numActiveWebBrokerLoops int
+	var _activeWebBrokerLoops int
 	muAWB.Lock()
 	{
-		numActiveWebBrokerLoops++
-		_numActiveWebBrokerLoops = numActiveWebBrokerLoops
+		activeWebBrokerLoops++
+		_activeWebBrokerLoops = activeWebBrokerLoops
 	}
 	muAWB.Unlock()
 
-	if _numActiveWebBrokerLoops > 1 {
+	if _activeWebBrokerLoops > 1 {
 		fmt.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more than one web broker loop. Quitting...\033[0m")
 		return
 	}
