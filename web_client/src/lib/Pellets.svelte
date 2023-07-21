@@ -11,13 +11,29 @@
   }
 
   .grid-element {
+    border: none;
     display: flex;
     background-color: rgba(0,0,0,0);
-    /*box-shadow: inset 0px 0px 1px 1px #f00;*/
     padding: 0;
     margin: 0;
+    box-shadow: inset 0px 0px 1px 1px rgba(255,255,255,0.05);
     justify-content: center;
     align-items: center;
+  }
+
+  .grid-element:hover {
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 0, 0.4);
+    border-radius: 40%;
+    box-shadow: none;
+  }
+
+  .grid-element:focus-visible {
+    outline: none;
+  }
+
+  .hidden:hover {
+    cursor: auto;
   }
 
   .pellet {
@@ -26,12 +42,12 @@
     color: black;
   }
 
-  .hidden {
+  .grid-element .hidden {
     opacity: 0;
     cursor: auto;
   }
 
-  .hidden:hover {
+  .grid-element .hidden:hover {
     border: none;
     cursor: auto;
   }
@@ -52,19 +68,19 @@
 
 <script>
 
-  import { afterUpdate } from "svelte";
-  export var grid;
+  export let gridSize;
+  export let grid;
 
   let innerWidth = 0
   let innerHeight = 0
-
-  $: grid_size = (innerHeight * 28 < innerWidth * 31) ? (innerHeight / 31) : (innerWidth / 28)
 
   const hello = (i, j) => {
     console.log("hello from " + i + " , " + j)
   }
 
-  var pelletMods = [' hidden', '', ' super']
+  const pelletMods = [' hidden', '', ' super']
+
+  $: pellet_size = ~~(gridSize/6 + 0.5)  
 
 </script>
 
@@ -74,8 +90,8 @@
   {#each {length:31} as _, i}
     <div class="row">
       {#each {length:28} as _, j}
-        <button on:click={() => hello(i, j)} class={"grid-element" + pelletMods[grid[i][j]]} style:width="{grid_size}px" style:height="{grid_size}px">
-          <span class={"pellet" + pelletMods[grid[i][j]]} style:padding="{grid_size/12}px"/>
+        <button on:click={() => hello(i, j)} class={"grid-element" + pelletMods[grid[i][j]]} style:width="{gridSize}px" style:height="{gridSize}px">
+          <span class={"pellet" + pelletMods[grid[i][j]]} style:width="{pellet_size}px" style:height="{pellet_size}px"/>
         </button>
       {/each}
     </div>

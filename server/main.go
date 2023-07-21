@@ -43,7 +43,7 @@ func main() {
 		for idx := 0; idx < 5000; idx++ {
 			select {
 			case wb.BroadcastCh <- game.SerializePellets(game.Pellets):
-				//pellets[0] += 1
+				game.Pellets[0] += 1 // Test reactivity of Svelte frontend
 			case <-wb.QuitCh:
 				fmt.Println("fast:", hrt.Lifetime())
 				return

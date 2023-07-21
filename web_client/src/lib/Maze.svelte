@@ -3,10 +3,12 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: min(100vw, calc(100vh * 28/31));
-    height: min(calc(100vw * 31/28), 100vh);
     user-select: none;
   }
 </style>
 
-<img class="maze" src="/maze.png" alt='Pacman Maze' draggable="false"/>
+<script>
+  export let gridSize;
+</script>
+
+<img class="maze" src="maze.png" alt='Pacman Maze' style:width="{28*gridSize}px" style:height="{31*gridSize}px" draggable="false"/>

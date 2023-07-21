@@ -21,5 +21,5 @@ pkg/*
 *.suo
 *.ntvs*
 *.njsproj
-*.slnhttps://www.bing.com/ck/a?!&&p=014e78cbe76ee640JmltdHM9MTY4OTcyNDgwMCZpZ3VpZD0xYmY0M2VmOS1mZjUwLTZhODItMmZiZC0yYzAxZmVkYTZiMTYmaW5zaWQ9NTE5OQ&ptn=3&hsh=3&fclid=1bf43ef9-ff50-6a82-2fbd-2c01feda6b16&psq=what+is+the+svelte+pkg+directory&u=a1aHR0cHM6Ly9zdGFja292ZXJmbG93LmNvbS9xdWVzdGlvbnMvNzI0ODM4NDgvaG93LWNhbi1pLWdldC1hbGwtZmlsZXMtaW4tYS1kaXJlY3Rvcnktd2l0aC1zdmVsdGU&ntb=1
+*.sln
 *.sw?
