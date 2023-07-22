@@ -1,6 +1,6 @@
 // These require statements need Node v18+ --> for older versions of Node,
 // replace "A = require('B');" with "import A from 'B';"
-config = require('../config.json');
+config = require('../../config.json');
 net = require('net');
 
 // Variables

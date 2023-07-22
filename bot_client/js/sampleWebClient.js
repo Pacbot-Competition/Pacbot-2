@@ -1,4 +1,4 @@
-config = require('../config.json');
+config = require('../../config.json');
 const WebSocket = require('ws');
 
 var socket = new WebSocket(`ws://${config.ServerIP}:${config.WebSocketPort}`);
