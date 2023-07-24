@@ -15,28 +15,45 @@
   import Pellets from './lib/Pellets.svelte';
   import Pacman from './lib/Pacman.svelte';
   import Ghosts from './lib/Ghosts.svelte';
+  import MpsCounter from './lib/MpsCounter.svelte';
 
   var socket = new WebSocket(`ws://${config.ServerIP}:${config.WebSocketPort}`);
   socket.binaryType = 'arraybuffer';
-  let message = 'Offline';
 
-  let grid = [];
+  let pelletGrid = [];
 
   for (let row = 0; row < 31; row++) {
-    grid[row] = [];
+    pelletGrid[row] = [];
     for (let col = 0; col < 28; col++) {
-      grid[row][col] = 0;
+      pelletGrid[row][col] = 0;
     }
   }
 
+  const MPS_BUFFER_SIZE = 60;
+  let mpsBuffer = new Array(MPS_BUFFER_SIZE);
+  let mpsIdxLeft = 0;
+  let mpsIdxRight = 1;
+  let mpsAvg = 0;
+  mpsBuffer[0] = Date.now();
+
   socket.addEventListener('open', (_) => {
-    message = 'Online!';
     console.log('WebSocket connection established');
     socket.send('Hello, server!');
   });
 
   socket.addEventListener('message', (event) => {
     if (event.data instanceof ArrayBuffer) {
+
+      // log the time
+      let ts = Date.now();
+      mpsBuffer[mpsIdxRight] = ts;
+      mpsAvg++;
+      mpsIdxRight = (mpsIdxRight + 1) % MPS_BUFFER_SIZE;
+      while (ts - mpsBuffer[mpsIdxLeft] > 1000 && mpsIdxLeft != mpsIdxRight) {
+        mpsIdxLeft = (mpsIdxLeft + 1) % MPS_BUFFER_SIZE;
+        mpsAvg--;
+      }
+
       // binary frame
       let view = new DataView(event.data);
       
@@ -45,12 +62,12 @@
           let binRow = view.getUint32(4*row, false);
           for (let col = 0; col < 28; col++) {
             let superPellet = ((row === 3) || (row === 23)) && ((col === 1) || (col === 26));
-            grid[row][col] = ((binRow >> col) & 1) ? (superPellet ? 2 : 1) : 0;
+            pelletGrid[row][col] = ((binRow >> col) & 1) ? (superPellet ? 2 : 1) : 0;
           }
         }
       }
 
-      grid = grid;
+      pelletGrid = pelletGrid;
     }
   });
 
@@ -84,8 +101,9 @@
 <svelte:window bind:innerWidth bind:innerHeight />
 
 <div class='maze-space'>
-  <Maze {gridSize}/>
-  <Pellets {grid} {gridSize}/>
-  <Pacman {gridSize} {pacmanRow} {pacmanCol}/>
-  <Ghosts {gridSize} {redRow} {redCol} {pinkRow} {pinkCol} {blueRow} {blueCol} {orangeRow} {orangeCol}/>
+  <Maze {gridSize} />
+  <Pellets {pelletGrid} {gridSize} />
+  <Pacman {gridSize} {pacmanRow} {pacmanCol} />
+  <Ghosts {gridSize} {redRow} {redCol} {pinkRow} {pinkCol} {blueRow} {blueCol} {orangeRow} {orangeCol} />
+  <MpsCounter {gridSize} {mpsAvg} />
 </div>

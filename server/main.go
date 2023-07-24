@@ -46,6 +46,7 @@ func main() {
 				game.Pellets[0] += 1 // Test reactivity of Svelte frontend
 			case <-wb.QuitCh:
 				fmt.Println("fast:", hrt.Lifetime())
+				fmt.Println("msg cnt:", idx)
 				return
 			}
 			<-hrt.ReadyCh

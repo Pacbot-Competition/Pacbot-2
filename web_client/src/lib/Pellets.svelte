@@ -69,7 +69,7 @@
 <script>
 
   export let gridSize;
-  export let grid;
+  export let pelletGrid;
 
   let innerWidth = 0
   let innerHeight = 0
@@ -90,8 +90,8 @@
   {#each {length:31} as _, i}
     <div class="row">
       {#each {length:28} as _, j}
-        <button on:click={() => hello(i, j)} class={"grid-element" + pelletMods[grid[i][j]]} style:width="{gridSize}px" style:height="{gridSize}px">
-          <span class={"pellet" + pelletMods[grid[i][j]]} style:width="{pellet_size}px" style:height="{pellet_size}px"/>
+        <button on:click={() => hello(i, j)} class={"grid-element" + pelletMods[pelletGrid[i][j]]} style:width="{gridSize}px" style:height="{gridSize}px">
+          <span class={"pellet" + pelletMods[pelletGrid[i][j]]} style:width="{pellet_size}px" style:height="{pellet_size}px"/>
         </button>
       {/each}
     </div>
