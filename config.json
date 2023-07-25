@@ -5,6 +5,7 @@
   "OneBrowserPerIP": true,
   
   "TrustedBrowserIPs": [
+    "[::1]",
     "localhost"
   ]
 }

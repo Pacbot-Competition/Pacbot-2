@@ -7,10 +7,11 @@ import (
 )
 
 type Configuration struct {
-	ServerIP        string
-	TcpPort         int
-	WebSocketPort   int
-	OneBrowserPerIP bool
+	ServerIP          string
+	TcpPort           int
+	WebSocketPort     int
+	OneBrowserPerIP   bool
+	TrustedBrowserIPs []string
 }
 
 // Read from the config.json file in the base directory

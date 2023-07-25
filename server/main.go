@@ -17,11 +17,15 @@ func main() {
 
 	// Get the configuration info (config.go)
 	conf := GetConfig()
-	OneBrowserPerIP := conf.OneBrowserPerIP
+
+	// Make channels for communication between web broker and game engine
+	webBroadcastCh := make(chan []byte, 10)
+	webResponseCh := make(chan []byte, 10)
 
 	// Websocket stuff (webserver)
-	webserver.ConfigOneBrowserPerIP(OneBrowserPerIP)
-	wb := webserver.NewWebBroker()
+	webserver.ConfigOneBrowserPerIP(conf.OneBrowserPerIP)
+	webserver.ConfigTrustedBrowserIPs(conf.TrustedBrowserIPs)
+	wb := webserver.NewWebBroker(webBroadcastCh, webResponseCh)
 	go wb.RunLoop()
 	http.HandleFunc("/", webserver.WebSocketHandler)
 	go http.ListenAndServe(fmt.Sprintf(":%d", conf.WebSocketPort), nil)
@@ -42,9 +46,11 @@ func main() {
 		go hrt.Start()
 		for idx := 0; idx < 5000; idx++ {
 			select {
-			case wb.BroadcastCh <- game.SerializePellets(game.Pellets):
+			case webBroadcastCh <- game.SerializePellets(game.Pellets):
 				game.Pellets[0] += 1 // Test reactivity of Svelte frontend
-			case <-wb.QuitCh:
+			default:
+			}
+			if wb.HasQuit() {
 				fmt.Println("fast:", hrt.Lifetime())
 				fmt.Println("msg cnt:", idx)
 				return

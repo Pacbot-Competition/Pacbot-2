@@ -11,9 +11,19 @@ import (
 // One browser per IP restriction
 var oneBrowserPerIP bool = false
 
+// Keep track of trusted browser IPs in a set (empty-valued map)
+var trustedBrowserIPs = make(map[string](struct{}))
+
 // Set the one browser per IP restriction based on a configuration
-func ConfigOneBrowserPerIP(OneBrowserPerIP bool) {
-	oneBrowserPerIP = OneBrowserPerIP
+func ConfigOneBrowserPerIP(_oneBrowserPerIP bool) {
+	oneBrowserPerIP = _oneBrowserPerIP
+}
+
+// Set the one browser per IP restriction based on a configuration
+func ConfigTrustedBrowserIPs(_trustedBrowserIPs []string) {
+	for _, ip := range _trustedBrowserIPs {
+		trustedBrowserIPs[ip] = struct{}{}
+	}
 }
 
 /*
@@ -34,21 +44,21 @@ func getIP(conn *websocket.Conn) string {
 
 // Web session object, for keeping track of individual websocket sessions
 type webSession struct {
-	quitCh chan struct{}
-	readCh chan []byte
-	sendCh chan []byte
-	closed bool
-	conn   *websocket.Conn
+	quitCh  chan struct{}
+	readCh  chan []byte
+	sendCh  chan []byte
+	trusted bool
+	conn    *websocket.Conn
 }
 
 // Create a new web session object
 func newWebSession(conn *websocket.Conn) *webSession {
 	return &webSession{
-		quitCh: make(chan struct{}, 2),
-		readCh: make(chan []byte, 10),
-		sendCh: make(chan []byte, 10),
-		closed: false,
-		conn:   conn,
+		quitCh:  make(chan struct{}, 2),
+		readCh:  make(chan []byte, 10),
+		sendCh:  make(chan []byte, 10),
+		trusted: true,
+		conn:    conn,
 	}
 }
 
@@ -67,6 +77,12 @@ func (ws *webSession) register() {
 		oldQuitCh <- struct{}{}
 	}
 
+	// Determine if we trust this new connection, by checking against configured trusted connections
+	_, trusted := trustedBrowserIPs[ip]
+	if !trusted {
+		ws.trusted = false
+	}
+
 	// Connect this quit channel to the IP address
 	ipQuitMap[ip] = ws.quitCh
 
@@ -74,7 +90,11 @@ func (ws *webSession) register() {
 	muOWS.Lock()
 	{
 		openWebSessions[ws] = struct{}{}
-		fmt.Printf("\033[34m[%d -> %d] browser connected\033[0m\n", len(openWebSessions)-1, len(openWebSessions))
+		if trusted {
+			fmt.Printf("\033[34m[%d -> %d] trusted browser connected\033[0m\n", len(openWebSessions)-1, len(openWebSessions))
+		} else {
+			fmt.Printf("\033[34m[%d -> %d] browser connected\033[0m\n", len(openWebSessions)-1, len(openWebSessions))
+		}
 	}
 	muOWS.Unlock()
 }
@@ -83,7 +103,7 @@ func (ws *webSession) register() {
 func (ws *webSession) unregister() {
 
 	// Close the connection and data channels
-	ws.closed = true
+	ws.trusted = false // Prevent this session from reading anymore
 	ws.conn.Close()
 	close(ws.readCh)
 	close(ws.sendCh)
@@ -129,12 +149,12 @@ func (ws *webSession) readLoop() {
 		}
 
 		// Save the message received into the read channel
-		if !ws.closed {
+		if ws.trusted {
 			ws.readCh <- msg
-		}
 
-		// Print the message we received
-		fmt.Printf("\033[2m\033[36m| Browser: %s`\033[0m\n", string(<-ws.readCh))
+			// Print the message we received
+			fmt.Printf("\033[2m\033[36m| Browser: %s`\033[0m\n", string(<-ws.readCh))
+		}
 	}
 
 }

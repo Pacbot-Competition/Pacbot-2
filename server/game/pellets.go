@@ -1,6 +1,7 @@
 package game
 
-// Encoded in little endian form (column 0 would be at bit 0)
+// Encoded in little endian form (backwards; column 0 would be at bit 0)
+// (Tip: Ctrl+F '1' to see the initial pellet locations)
 var Pellets [31]uint32 = [...]uint32{
 	//                middle
 	// col:             vv    8 6 4 2 0
@@ -37,7 +38,8 @@ var Pellets [31]uint32 = [...]uint32{
 	0b0000_0000000000000000000000000000, // row 30
 }
 
-// Encoded in little endian form (column 0 would be at bit 0)
+// Encoded in little endian form (backwards; column 0 would be at bit 0)
+// (Tip: Ctrl+F '0' to see the valid Pacman locations)
 var Walls [31]uint32 = [...]uint32{
 	//                middle
 	// col:             vv    8 6 4 2 0

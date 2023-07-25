@@ -20,17 +20,19 @@ A web-broker object, to act as an intermediary between web sessions
 and messages from the game engine
 */
 type WebBroker struct {
-	QuitCh      chan struct{}
-	BroadcastCh chan []byte
-	ResponseCh  chan []byte
+	quitCh      chan struct{}
+	broadcastCh <-chan []byte
+	responseCh  chan<- []byte
+	hasQuit     bool
 }
 
-// Create a new web broker
-func NewWebBroker() *WebBroker {
+// Create a new web broker, casting input channels to be uni-directional
+func NewWebBroker(_broadcastCh <-chan []byte, _responseCh chan<- []byte) *WebBroker {
 	return &WebBroker{
-		QuitCh:      make(chan struct{}),
-		BroadcastCh: make(chan []byte, 10),
-		ResponseCh:  make(chan []byte, 10),
+		quitCh:      make(chan struct{}),
+		broadcastCh: _broadcastCh,
+		responseCh:  _responseCh,
+		hasQuit:     false,
 	}
 }
 
@@ -55,7 +57,13 @@ func (wb *WebBroker) quit() {
 
 // Quit function exported to other packages
 func (wb *WebBroker) Quit() {
-	wb.QuitCh <- struct{}{}
+	wb.quitCh <- struct{}{}
+	wb.hasQuit = true
+}
+
+// Has Quit function exported to other packages
+func (wb *WebBroker) HasQuit() bool {
+	return wb.hasQuit
 }
 
 // Start the web-broker - should be launched as a go-routine
@@ -66,6 +74,8 @@ func (wb *WebBroker) RunLoop() {
 		wb.quit()
 	}()
 
+	// Update the number of active web broker groups
+	// (Lock the mutex to prevent races in case of a multiple broker issue)
 	var _activeWebBrokerLoops int
 	muAWB.Lock()
 	{
@@ -74,6 +84,7 @@ func (wb *WebBroker) RunLoop() {
 	}
 	muAWB.Unlock()
 
+	// If there was already a web broker, kill this one and throw an error
 	if _activeWebBrokerLoops > 1 {
 		fmt.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more than one web broker loop. Quitting...\033[0m")
 		return
@@ -83,7 +94,7 @@ func (wb *WebBroker) RunLoop() {
 		select {
 
 		// If we get a message, broadcast it to all web sessions
-		case msg := <-wb.BroadcastCh:
+		case msg := <-wb.broadcastCh:
 			muOWS.Lock()
 			{
 				for ws := range openWebSessions {
@@ -105,12 +116,13 @@ func (wb *WebBroker) RunLoop() {
 			muOWS.Unlock()
 
 		// If we get a quit signal, quit this broker
-		case <-wb.QuitCh:
+		case <-wb.quitCh:
 			return
 
+		// If the web broker broadcast channel hits full capacity, send a warning to the terminal
 		default:
-			if len(wb.BroadcastCh) == cap(wb.BroadcastCh) {
-				fmt.Println("\033[35mWarning: Web broker broadcast channel full\033[0m")
+			if len(wb.broadcastCh) == cap(wb.broadcastCh) {
+				fmt.Println("\033[35mWARN: Web broker broadcast channel full\033[0m")
 			}
 		}
 	}
