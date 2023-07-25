@@ -2,6 +2,9 @@
 
 <style>
 
+  h2 {
+    margin: 0;
+  }
   .mps-counter {
     position: absolute;
     background-color: rgba(0,0,0,0.3);

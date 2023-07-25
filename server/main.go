@@ -18,23 +18,25 @@ func main() {
 	// Get the configuration info (config.go)
 	conf := GetConfig()
 
-	// Make channels for communication between web broker and game engine
-	webBroadcastCh := make(chan []byte, 10)
-	webResponseCh := make(chan []byte, 10)
-
-	// Websocket stuff (webserver)
+	// Use this configuration info to set up server subunits
 	webserver.ConfigOneBrowserPerIP(conf.OneBrowserPerIP)
 	webserver.ConfigTrustedBrowserIPs(conf.TrustedBrowserIPs)
+
+	// Make channels for communication between web broker and game engine
+	webBroadcastCh := make(chan []byte, 100)
+	webResponseCh := make(chan []byte, 10)
+
+	// Websocket setup (package webserver)
 	wb := webserver.NewWebBroker(webBroadcastCh, webResponseCh)
-	go wb.RunLoop()
+	go wb.RunLoop() // Run the web broker loop asynchronously
 	http.HandleFunc("/", webserver.WebSocketHandler)
 	go http.ListenAndServe(fmt.Sprintf(":%d", conf.WebSocketPort), nil)
 
-	// TCP stuff (tcp_server.go)
+	// TCP setup (package tcpserver)
 	server := tcpserver.NewTcpServer(fmt.Sprintf(":%d", conf.TcpPort))
 	go server.Printer()
 
-	// High-resolution ticker (for keeping the frame rate roughly constant)
+	// High-resolution ticker (package clock)
 	hrt := clock.NewHighResTicker(24)
 
 	/*
@@ -48,6 +50,8 @@ func main() {
 			select {
 			case webBroadcastCh <- game.SerializePellets(game.Pellets):
 				game.Pellets[0] += 1 // Test reactivity of Svelte frontend
+			case msg := <-webResponseCh:
+				fmt.Printf("\033[2m\033[36m| Browser: %s`\033[0m\n", string(msg))
 			default:
 			}
 			if wb.HasQuit() {

@@ -26,6 +26,9 @@ func ConfigTrustedBrowserIPs(_trustedBrowserIPs []string) {
 	}
 }
 
+// Store the responses from trusted browsers in a (send-only) channel
+var responseCh chan<- []byte
+
 /*
 Map to keep track of websocket client IPs; if only
 one browser connection is allowed per IP, kick the oldest
@@ -44,21 +47,19 @@ func getIP(conn *websocket.Conn) string {
 
 // Web session object, for keeping track of individual websocket sessions
 type webSession struct {
-	quitCh  chan struct{}
-	readCh  chan []byte
-	sendCh  chan []byte
-	trusted bool
-	conn    *websocket.Conn
+	quitCh chan struct{}
+	sendCh chan []byte
+	readEn bool // read enabled
+	conn   *websocket.Conn
 }
 
 // Create a new web session object
 func newWebSession(conn *websocket.Conn) *webSession {
 	return &webSession{
-		quitCh:  make(chan struct{}, 2),
-		readCh:  make(chan []byte, 10),
-		sendCh:  make(chan []byte, 10),
-		trusted: true,
-		conn:    conn,
+		quitCh: make(chan struct{}, 2),
+		sendCh: make(chan []byte, 10),
+		readEn: true,
+		conn:   conn,
 	}
 }
 
@@ -80,7 +81,7 @@ func (ws *webSession) register() {
 	// Determine if we trust this new connection, by checking against configured trusted connections
 	_, trusted := trustedBrowserIPs[ip]
 	if !trusted {
-		ws.trusted = false
+		ws.readEn = false
 	}
 
 	// Connect this quit channel to the IP address
@@ -103,9 +104,8 @@ func (ws *webSession) register() {
 func (ws *webSession) unregister() {
 
 	// Close the connection and data channels
-	ws.trusted = false // Prevent this session from reading anymore
+	ws.readEn = false // Prevent this session from reading anymore
 	ws.conn.Close()
-	close(ws.readCh)
 	close(ws.sendCh)
 
 	// Lock the mutex so that other channels will not read the open web sessions map until this is complete
@@ -149,11 +149,8 @@ func (ws *webSession) readLoop() {
 		}
 
 		// Save the message received into the read channel
-		if ws.trusted {
-			ws.readCh <- msg
-
-			// Print the message we received
-			fmt.Printf("\033[2m\033[36m| Browser: %s`\033[0m\n", string(<-ws.readCh))
+		if ws.readEn {
+			responseCh <- msg
 		}
 	}
 

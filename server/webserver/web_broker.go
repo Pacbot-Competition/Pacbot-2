@@ -17,7 +17,8 @@ var muAWB sync.Mutex
 
 /*
 A web-broker object, to act as an intermediary between web sessions
-and messages from the game engine
+and messages from the game engine - its responsibility is to forward byte
+messages from the game engine to the browser and vice versa
 */
 type WebBroker struct {
 	quitCh      chan struct{}
@@ -89,6 +90,8 @@ func (wb *WebBroker) RunLoop() {
 		fmt.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more than one web broker loop. Quitting...\033[0m")
 		return
 	}
+
+	responseCh = wb.responseCh
 
 	for {
 		select {
