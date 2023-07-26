@@ -15,6 +15,8 @@
   }
 
   .maze-space {
+
+    /* Positioning */
     position: absolute;
     top: 5vh;
     left: 5vw;

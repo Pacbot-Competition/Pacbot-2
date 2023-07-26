@@ -47,6 +47,11 @@ func main() {
 	go func(wb *webserver.WebBroker) {
 		go hrt.Start()
 		for idx := 0; idx < 5000; idx++ {
+			if idx == 200 {
+				hrt.Pause()
+				time.Sleep(10 * time.Second)
+				hrt.Play()
+			}
 			select {
 			case webBroadcastCh <- game.SerializePellets(game.Pellets):
 				game.Pellets[0] += 1 // Test reactivity of Svelte frontend
@@ -69,7 +74,7 @@ func main() {
 	*/
 	go func(wb *webserver.WebBroker) {
 		start := hrtime.Now()
-		time.Sleep(10 * time.Second)
+		time.Sleep(100 * time.Second)
 		wb.Quit()
 		fmt.Println("slow:", hrtime.Since(start))
 		wb.Quit()

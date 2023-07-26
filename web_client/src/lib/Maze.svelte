@@ -1,9 +1,17 @@
 <style>
   .maze {
+
+    /* Positioning */
     position: absolute;
     top: 0;
     left: 0;
+
+    /* Interaction */
     user-select: none;
+
+    /* Grid-size related CSS */
+    width:  calc(28 * var(--grid-size));
+    height: calc(31 * var(--grid-size));
   }
 </style>
 
@@ -11,4 +19,8 @@
   export let gridSize;
 </script>
 
-<img class="maze" src="maze.png" alt='Pacman Maze' style:width="{28*gridSize}px" style:height="{31*gridSize}px" draggable="false"/>
+<img class="maze" 
+     src="maze.png" 
+     alt='Pacman Maze' 
+     style:--grid-size="{gridSize}px" 
+     draggable="false"/>

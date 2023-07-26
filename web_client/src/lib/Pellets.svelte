@@ -1,16 +1,12 @@
 <style>
 
-  .top-left {
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-
   .row {
     display: flex;
   }
 
   .grid-element {
+
+    /* Formatting */
     border: none;
     display: flex;
     background-color: rgba(0,0,0,0);
@@ -19,6 +15,10 @@
     box-shadow: inset 0px 0px 1px 1px rgba(255,255,255,0.05);
     justify-content: center;
     align-items: center;
+
+    /* Grid-size related CSS */
+    width:  var(--grid-size);
+    height: var(--grid-size);
   }
 
   .grid-element:hover {
@@ -90,7 +90,7 @@
   {#each {length:31} as _, i}
     <div class="row">
       {#each {length:28} as _, j}
-        <button on:click={() => hello(i, j)} class={"grid-element" + pelletMods[pelletGrid[i][j]]} style:width="{gridSize}px" style:height="{gridSize}px">
+        <button on:click={() => hello(i, j)} class={"grid-element" + pelletMods[pelletGrid[i][j]]} style:--grid-size="{gridSize}px">
           <span class={"pellet" + pelletMods[pelletGrid[i][j]]} style:width="{pellet_size}px" style:height="{pellet_size}px"/>
         </button>
       {/each}

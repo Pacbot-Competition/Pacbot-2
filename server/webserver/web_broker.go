@@ -18,7 +18,7 @@ var muAWB sync.Mutex
 /*
 A web-broker object, to act as an intermediary between web sessions
 and messages from the game engine - its responsibility is to forward byte
-messages from the game engine to the browser and vice versa
+messages from the game engine to the browsers and vice versa
 */
 type WebBroker struct {
 	quitCh      chan struct{}
@@ -91,6 +91,7 @@ func (wb *WebBroker) RunLoop() {
 		return
 	}
 
+	// Copy (by reference) the response channel of the package to match the broker's
 	responseCh = wb.responseCh
 
 	for {
