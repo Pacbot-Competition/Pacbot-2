@@ -32,6 +32,7 @@
   import Pacman from './lib/Pacman.svelte';
   import Ghosts from './lib/Ghosts.svelte';
   import MpsCounter from './lib/MpsCounter.svelte';
+  import Ticker from './lib/Ticker.svelte';
 
   var socket = new WebSocket(`ws://${config.ServerIP}:${config.WebSocketPort}`);
   socket.binaryType = 'arraybuffer';
@@ -52,6 +53,8 @@
   let mpsAvg = 0;
   mpsBuffer[0] = Date.now();
 
+  let currTicks = 0;
+
   socket.addEventListener('open', (_) => {
     console.log('WebSocket connection established');
     socket.send('Hello, server!');
@@ -60,19 +63,21 @@
   socket.addEventListener('message', (event) => {
     if (event.data instanceof ArrayBuffer) {
 
+      ++currTicks;
+
       // log the time
       let ts = Date.now();
       mpsBuffer[mpsIdxRight] = ts;
       mpsAvg++;
       mpsIdxRight = (mpsIdxRight + 1) % MPS_BUFFER_SIZE;
-      while (ts - mpsBuffer[mpsIdxLeft] > 1000 && mpsIdxLeft != mpsIdxRight) {
+      while (ts - mpsBuffer[mpsIdxLeft] > 1020 && mpsIdxLeft != mpsIdxRight) {
         mpsIdxLeft = (mpsIdxLeft + 1) % MPS_BUFFER_SIZE;
         mpsAvg--;
       }
 
       // binary frame
       let view = new DataView(event.data);
-      
+
       if (view) {
         for (let row = 0; row < 31; row++) {
           let binRow = view.getUint32(4*row, false);
@@ -122,4 +127,5 @@
   <Pacman {gridSize} {pacmanRow} {pacmanCol} />
   <Ghosts {gridSize} {redRow} {redCol} {pinkRow} {pinkCol} {blueRow} {blueCol} {orangeRow} {orangeCol} />
   <MpsCounter {gridSize} {mpsAvg} />
+  <Ticker {gridSize} {currTicks}/>
 </div>
