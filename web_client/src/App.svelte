@@ -79,7 +79,7 @@
   // When the ticker is clicked, send a message
   let paused = false;
   $: {if (socketOpen) {
-    console.log(paused); socket.send(paused);
+    socket.send(paused ? 'p' : 'P');
   }}
 
   // Message events
@@ -109,7 +109,7 @@
         let byteIdx = 0;
 
         // Get the game mode
-        console.log(view.getUint8(byteIdx, false));
+        // console.log(view.getUint8(byteIdx, false));
         //byteIdx++;
 
         // Parse pellet data

@@ -11,6 +11,7 @@ type Configuration struct {
 	TcpPort           int
 	WebSocketPort     int
 	OneBrowserPerIP   bool
+	GameFPS           int32
 	TrustedBrowserIPs []string
 }
 

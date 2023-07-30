@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"pacbot_server/clock"
 	"pacbot_server/game"
 	"pacbot_server/tcpserver"
 	"pacbot_server/webserver"
@@ -37,40 +36,8 @@ func main() {
 	go server.Printer()
 
 	// Game engine setup (package game)
-	ge := game.NewGameEngine(webBroadcastCh, webResponseCh)
+	ge := game.NewGameEngine(webBroadcastCh, webResponseCh, conf.GameFPS)
 	go ge.RunLoop() // Run the game engine loop asynchronously
-
-	// High-resolution ticker (package clock)
-	hrt := clock.NewHighResTicker(24)
-
-	/*
-		Demo for high-resolution ticker - at the specified FPS, it updates the web
-		broker's send channel with the time (in seconds) and frames elapsed for
-		that second - suffers less lag compared to timer.Ticker() on Windows
-	*/
-	go func(wb *webserver.WebBroker) {
-		go hrt.Start()
-		for idx := 0; idx < 5000; idx++ {
-			if idx == 200 {
-				hrt.Pause()
-				time.Sleep(10 * time.Second)
-				hrt.Play()
-			}
-			select {
-			case webBroadcastCh <- game.SerializePellets(game.Pellets):
-				game.Pellets[0] += 1 // Test reactivity of Svelte frontend
-			case msg := <-webResponseCh:
-				fmt.Printf("\033[2m\033[36m| Browser: %s`\033[0m\n", string(msg))
-			default:
-			}
-			if wb.HasQuit() {
-				fmt.Println("fast:", hrt.Lifetime())
-				fmt.Println("msg cnt:", idx)
-				return
-			}
-			<-hrt.ReadyCh
-		}
-	}(wb)
 
 	/*
 		Demo for time-keeping abilities: after 60s, all websockets will be killed through
@@ -78,7 +45,7 @@ func main() {
 	*/
 	go func(wb *webserver.WebBroker) {
 		start := hrtime.Now()
-		time.Sleep(100 * time.Second)
+		time.Sleep(10 * time.Second)
 		wb.Quit()
 		fmt.Println("slow:", hrtime.Since(start))
 		wb.Quit()

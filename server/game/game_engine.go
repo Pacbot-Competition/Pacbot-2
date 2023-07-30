@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
 // Keep track of number of active game engines (should only be one)
@@ -21,15 +22,17 @@ type GameEngine struct {
 	outputCh chan<- []byte
 	inputCh  <-chan []byte
 	hasQuit  bool
+	ticker   HighResTicker // serves as the game clock
 }
 
 // Create a new game engine, casting input and output channels to be uni-directional
-func NewGameEngine(_broadcastCh chan<- []byte, _responseCh <-chan []byte) *GameEngine {
+func NewGameEngine(_outputCh chan<- []byte, _inpuCh <-chan []byte, clockRate int32) *GameEngine {
 	return &GameEngine{
 		quitCh:   make(chan struct{}),
-		outputCh: _broadcastCh,
-		inputCh:  _responseCh,
+		outputCh: _outputCh,
+		inputCh:  _inpuCh,
 		hasQuit:  false,
+		ticker:   *NewHighResTicker(clockRate),
 	}
 }
 
@@ -68,12 +71,32 @@ func (ge *GameEngine) RunLoop() {
 		return
 	}
 
+	// Start the game clock (called as a new go-routine)
+	go ge.ticker.Start()
+
 	for {
+
+		/* STEP 1: Serialize and send the current game state */
+
+		// Check if the write will be blocked
+		b := len(ge.outputCh) == cap(ge.outputCh)
+		start := time.Now()
+		ge.outputCh <- SerializePellets(Pellets)
+
+		// If the write was blocked for too long (> 1ms), send a warning to the terminal
+		if b {
+			wait := time.Since(start)
+			if wait > time.Millisecond {
+				fmt.Printf("\033[35mWARN: The game engine output channel was full (%s)\033[0m\n", wait)
+			}
+		}
+
+		/* STEP 2: Read the input channel and update the game state accordingly */
 		select {
 
 		// If we get a message from the web broker, handle it
 		case msg := <-ge.inputCh:
-			fmt.Printf("\033[2m\033[36m| Browser: %s`\033[0m\n", string(msg))
+			fmt.Printf("\033[2m\033[36m| Response: %s`\033[0m\n", string(msg))
 
 		// If we get a quit signal, quit this broker
 		case <-ge.quitCh:
@@ -85,5 +108,11 @@ func (ge *GameEngine) RunLoop() {
 				fmt.Println("\033[35mWARN: Game engine input channel full\033[0m")
 			}
 		}
+
+		/* STEP 3: Update the game state for the next tick */
+		Pellets[0] += 1 // Test reactivity of Svelte frontend
+
+		/* STEP 4: Wait for the ticker to complete the current frame */
+		<-ge.ticker.ReadyCh
 	}
 }

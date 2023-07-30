@@ -1,7 +1,6 @@
-package clock
+package game
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -55,7 +54,7 @@ func (hrt *HighResTicker) Play() {
 	hrt.muHRT.Unlock()
 }
 
-// Start the ticker loop
+// Start the ticker loop (should be called as a go-routine)
 func (hrt *HighResTicker) Start() {
 
 	defer close(hrt.ReadyCh)
@@ -65,17 +64,6 @@ func (hrt *HighResTicker) Start() {
 
 	for {
 
-		if hrt.paused {
-
-			fmt.Printf("Ticker paused\n")
-
-			for hrt.paused {
-				time.Sleep(100 * time.Millisecond)
-			}
-
-			fmt.Printf("Ticker unpaused\n")
-		}
-
 		select {
 		case <-hrt.quitCh:
 			return
@@ -84,7 +72,13 @@ func (hrt *HighResTicker) Start() {
 
 		if hrtime.Since(hrt.lastTick) > hrt.usBetweenTicks {
 			hrt.ReadyCh <- struct{}{}
-			hrt.TotalTicks++
+			hrt.muHRT.Lock()
+			{
+				if !hrt.paused {
+					hrt.TotalTicks++
+				}
+			}
+			hrt.muHRT.Unlock()
 			hrt.lastTick = hrtime.Now()
 		}
 	}

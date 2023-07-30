@@ -90,6 +90,7 @@ func (ws *webSession) register() {
 	// Lock the mutex so we can keep track of the number of open clients
 	muOWS.Lock()
 	{
+		// Add this web session to the web sessions set
 		openWebSessions[ws] = struct{}{}
 		if trusted {
 			fmt.Printf("\033[34m[%d -> %d] trusted browser connected\033[0m\n", len(openWebSessions)-1, len(openWebSessions))
@@ -118,6 +119,7 @@ func (ws *webSession) unregister() {
 			fmt.Printf("\033[33m[X -> X] browser(s) blocked\033[0m\n")
 		}
 
+		// Remove this websession from the open web sessions set
 		delete(openWebSessions, ws)
 	}
 	muOWS.Unlock()
@@ -129,6 +131,7 @@ func (ws *webSession) readLoop() {
 	// If we ever stop receiving messages (due to some error), kill the connection
 	defer func() { ws.quitCh <- struct{}{} }()
 
+	// "While" loop, keep reading until the connection closes
 	for {
 
 		// Read a message (discard the type since we don't need it)
@@ -162,6 +165,7 @@ func (ws *webSession) sendLoop() {
 	// If we ever stop sending messages (due to some error), kill the connection
 	defer func() { ws.quitCh <- struct{}{} }()
 
+	// "While" loop, keep sending until the connection closes
 	for {
 
 		// Block until the next message is ready

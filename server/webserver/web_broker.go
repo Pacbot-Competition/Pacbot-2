@@ -27,7 +27,7 @@ type WebBroker struct {
 	hasQuit     bool
 }
 
-// Create a new web broker, casting input channels to be uni-directional
+// Create a new web broker, casting input and output channels to be uni-directional
 func NewWebBroker(_broadcastCh <-chan []byte, _responseCh chan<- []byte) *WebBroker {
 	return &WebBroker{
 		quitCh:      make(chan struct{}),
@@ -39,20 +39,28 @@ func NewWebBroker(_broadcastCh <-chan []byte, _responseCh chan<- []byte) *WebBro
 
 // Quit by closing all web sessions, in case the loop ends
 func (wb *WebBroker) quit() {
-	fmt.Println("\033[35m\033[1mLOG:  Web broker exit: killing all websocket connections\n      No new connections allowed\033[0m")
+
+	// Log that all websocket connections are closed upon broker exit, then close them individually
+	fmt.Println("\033[35m\033[1mLOG:  Web broker exit: killing all websocket connections")
+	fmt.Println("      No new connections allowed\033[0m")
 	newConnectionsAllowed = false // Doesn't need a mutex since we can't ever make it true again
 	muOWS.Lock()
 	{
+		// Decrement the number of active web broker loops
 		muAWB.Lock()
 		{
 			activeWebBrokerLoops--
 		}
 		muAWB.Unlock()
+
+		// Individually quit each of the open web sessions
 		for ws := range openWebSessions {
 			ws.quitCh <- struct{}{}
 		}
 	}
 	muOWS.Unlock()
+
+	// Log that the web broker has quit (if this message doesn't get sent, we are blocked by some mutex)
 	fmt.Println("\033[35mLOG:  Web broker successfully quit\033[0m")
 }
 
@@ -94,6 +102,7 @@ func (wb *WebBroker) RunLoop() {
 	// Copy (by reference) the response channel of the package to match the broker's
 	responseCh = wb.responseCh
 
+	// "While" loop, keep running until we quit the web broker
 	for {
 		select {
 
