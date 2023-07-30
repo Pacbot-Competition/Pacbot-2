@@ -71,6 +71,7 @@
   .rc .iris { background-color: red; }
 
   /* Ghost mouth - only shown when frightened */
+
   .mouth { visibility: none; }
 
   .fr .mouth {

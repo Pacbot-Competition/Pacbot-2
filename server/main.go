@@ -36,6 +36,10 @@ func main() {
 	server := tcpserver.NewTcpServer(fmt.Sprintf(":%d", conf.TcpPort))
 	go server.Printer()
 
+	// Game engine setup (package game)
+	ge := game.NewGameEngine(webBroadcastCh, webResponseCh)
+	go ge.RunLoop() // Run the game engine loop asynchronously
+
 	// High-resolution ticker (package clock)
 	hrt := clock.NewHighResTicker(24)
 
