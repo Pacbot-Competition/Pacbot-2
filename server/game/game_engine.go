@@ -76,14 +76,18 @@ func (ge *GameEngine) RunLoop() {
 	// Start the game clock (called as a new go-routine)
 	go ge.ticker.Start()
 
+	// Output buffer to store the serialized output
+	outputBuf := make([]byte, 256)
+
 	for {
 
-		/* STEP 1: Serialize and send the current game state */
-		outputBuf := make([]byte, 256)
+		/* STEP 1: Serialize the current game state to the output buffer */
 		idx := 0
 		idx = ge.state.serPellets(outputBuf, idx)
 
-		// Check if the write will be blocked
+		/* STEP 2: Write the serialized game state to the output channel */
+
+		// Check if the write will be blocked, and try to write the serialized state
 		b := len(ge.webOutputCh) == cap(ge.webOutputCh)
 		start := time.Now()
 		ge.webOutputCh <- outputBuf[:idx]
@@ -96,7 +100,7 @@ func (ge *GameEngine) RunLoop() {
 			}
 		}
 
-		/* STEP 2: Read the input channel and update the game state accordingly */
+		/* STEP 3: Read the input channel and update the game state accordingly */
 		select {
 
 		// If we get a message from the web broker, handle it
@@ -107,17 +111,20 @@ func (ge *GameEngine) RunLoop() {
 		case <-ge.quitCh:
 			return
 
-		// If the web broker response channel hits full capacity, send a warning to the terminal
+		/*
+			If the web input channel hits full capacity, send a warning to the terminal
+			What this means: either the browsers are sending too much input, or the game loop can't keep up
+		*/
 		default:
 			if len(ge.webInputCh) == cap(ge.webInputCh) {
 				fmt.Println("\033[35mWARN: Game engine input channel full\033[0m")
 			}
 		}
 
-		/* STEP 3: Update the game state for the next tick */
+		/* STEP 4: Update the game state for the next tick */
 		ge.state.pellets[0] += 1 // Test reactivity of Svelte frontend
 
-		/* STEP 4: Wait for the ticker to complete the current frame */
+		/* STEP 5: Wait for the ticker to complete the current frame */
 		<-ge.ticker.ReadyCh
 	}
 }

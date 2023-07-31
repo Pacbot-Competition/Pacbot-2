@@ -1,10 +1,10 @@
 package game
 
 // The number of rows in the pellets and walls states
-const mazeRows int = 31
+const mazeRows int8 = 31
 
 // The number of columns in the pellets and walls states
-const mazeCols int = 28
+const mazeCols int8 = 28
 
 // The number of update ticks that the game starts with
 const initUpdateTicks uint8 = 12
@@ -49,7 +49,7 @@ var initPellets [mazeRows]uint32 = [...]uint32{
 
 // Encoded in little endian form (backwards; column 0 would be at bit 0)
 // (Tip: Ctrl+F '0' to see the valid Pacman locations)
-var walls [31]uint32 = [...]uint32{
+var initWalls [31]uint32 = [...]uint32{
 	//                middle
 	// col:             vv    8 6 4 2 0
 	0b0000_1111111111111111111111111111, // row 0

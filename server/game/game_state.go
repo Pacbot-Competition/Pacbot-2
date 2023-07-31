@@ -20,6 +20,6 @@ func newGameState() *gameState {
 		gameMode:    0,
 	}
 	copy(gs.pellets[:], initPellets[:])
-	copy(gs.walls[:], walls[:])
+	copy(gs.walls[:], initWalls[:])
 	return &gs
 }

@@ -83,8 +83,10 @@ func (wb *WebBroker) RunLoop() {
 		wb.quit()
 	}()
 
-	// Update the number of active web broker groups
-	// (Lock the mutex to prevent races in case of a multiple broker issue)
+	/*
+		Update the number of active web broker groups
+		(Lock the mutex to prevent races in case of a multiple broker issue)
+	*/
 	var _activeWebBrokerLoops int
 	muAWB.Lock()
 	{
@@ -112,12 +114,15 @@ func (wb *WebBroker) RunLoop() {
 			{
 				for ws := range openWebSessions {
 
-					// Check if the write will be blocked
+					// Check if the write will be blocked due to a full send channel
 					b := len(ws.sendCh) == cap(ws.sendCh)
 					start := time.Now()
 					ws.sendCh <- msg
 
-					// If the write was blocked for too long (> 1ms), send a warning to the terminal
+					/*
+						If the write was blocked for too long (> 1ms), send a warning to the terminal
+						What this means: a web session channel was full, blocking this write
+					*/
 					if b {
 						wait := time.Since(start)
 						if wait > time.Millisecond {
@@ -132,7 +137,10 @@ func (wb *WebBroker) RunLoop() {
 		case <-wb.quitCh:
 			return
 
-		// If the web broker broadcast channel hits full capacity, send a warning to the terminal
+		/*
+			If the web broker broadcast channel hits full capacity, send a warning to the terminal
+			What this means: either the game engine is sending too much input, or the web broker loop can't keep up
+		*/
 		default:
 			if len(wb.broadcastCh) == cap(wb.broadcastCh) {
 				fmt.Println("\033[35mWARN: Web broker broadcast channel full\033[0m")

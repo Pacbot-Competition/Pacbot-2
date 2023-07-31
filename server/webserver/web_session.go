@@ -138,7 +138,7 @@ func (ws *webSession) readLoop() {
 		_, msg, err := ws.conn.ReadMessage()
 		if err != nil {
 
-			// Types of errors which we intentially catch and return from
+			// Types of errors which we intentionally catch and return from
 			clientCloseErr := websocket.IsCloseError(err, websocket.CloseGoingAway)
 			serverCloseErr := (err == websocket.ErrCloseSent)
 			_, netErr := err.(*net.OpError)
@@ -174,7 +174,7 @@ func (ws *webSession) sendLoop() {
 		// Try writing the message
 		if err := ws.conn.WriteMessage(websocket.BinaryMessage, msg); err != nil {
 
-			// Types of errors which we intentially catch and return from
+			// Types of errors which we intentionally catch and return from
 			clientCloseErr := websocket.IsCloseError(err, websocket.CloseGoingAway)
 			serverCloseErr := (err == websocket.ErrCloseSent)
 			_, netErr := err.(*net.OpError)
