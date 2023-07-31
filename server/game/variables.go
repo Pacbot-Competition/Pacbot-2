@@ -6,9 +6,12 @@ const mazeRows int = 31
 // The number of columns in the pellets and walls states
 const mazeCols int = 28
 
+// The number of update ticks that the game starts with
+const initUpdateTicks uint8 = 12
+
 // Encoded in little endian form (backwards; column 0 would be at bit 0)
 // (Tip: Ctrl+F '1' to see the initial pellet locations)
-var startingPellets [mazeRows]uint32 = [...]uint32{
+var initPellets [mazeRows]uint32 = [...]uint32{
 	//                middle
 	// col:             vv    8 6 4 2 0
 	0b0000_0000000000000000000000000000, // row 0

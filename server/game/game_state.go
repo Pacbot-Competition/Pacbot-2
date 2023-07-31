@@ -1,5 +1,9 @@
 package game
 
+/*
+A game state object, to hold the internal game state and provide
+helper methods that can be accessed by the game engine
+*/
 type gameState struct {
 	currTicks   uint16
 	updateTicks uint8
@@ -8,23 +12,14 @@ type gameState struct {
 	walls       [mazeRows]uint32
 }
 
+// Create a new game state with default values
 func newGameState() *gameState {
 	gs := gameState{
 		currTicks:   0,
-		updateTicks: 0,
+		updateTicks: initUpdateTicks,
 		gameMode:    0,
 	}
-	copy(gs.pellets[:], startingPellets[:])
+	copy(gs.pellets[:], initPellets[:])
 	copy(gs.walls[:], walls[:])
 	return &gs
-}
-
-// Serializes in big-endian form (most significant byte first)
-func (gs *gameState) serPellets(outputBuf []byte, startIdx int) int {
-	for row := 0; row < mazeRows; row++ {
-		for byte_num := 0; byte_num < 4; byte_num++ {
-			outputBuf[(row*4+byte_num)+startIdx] = byte((gs.pellets[row] >> (8 * (3 - byte_num))) & 0xff)
-		}
-	}
-	return startIdx + (4 * mazeRows)
 }
