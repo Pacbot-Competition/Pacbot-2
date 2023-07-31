@@ -5,16 +5,22 @@ package game
 				(most significant byte, MSB, first)
 */
 
-// Get the byte at a particular index (0 = least significant byte, 1 = second least, etc.)
+/*
+Get the byte at a particular index (0 = least significant byte,
+1 = second least, etc.)
+*/
 func getByte[T uint8 | uint16 | uint32](num T, byteIdx int) byte {
 
-	// Uses bitwise operation magic (not really, look up how the >> and & operators work if you're interested)
+	/*
+		Uses bitwise operation magic (not really, look up how the >> and &
+		operators work if you're interested)
+	*/
 	return byte((num >> (8 * byteIdx)) & 0xff)
 }
 
 // Serialize an individual byte (this should be simple, just getByte call)
 func serUint8(num uint8, outputBuf []byte, startIdx int) int {
-	outputBuf[startIdx] = getByte(num, startIdx)
+	outputBuf[startIdx] = getByte(num, 0)
 	return startIdx + 1
 }
 

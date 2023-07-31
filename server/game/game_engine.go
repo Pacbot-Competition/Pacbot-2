@@ -83,6 +83,8 @@ func (ge *GameEngine) RunLoop() {
 
 		/* STEP 1: Serialize the current game state to the output buffer */
 		idx := 0
+		idx = ge.state.serCurrTicks(outputBuf, idx)
+		idx = ge.state.serUpdateTicks(outputBuf, idx)
 		idx = ge.state.serPellets(outputBuf, idx)
 
 		/* STEP 2: Write the serialized game state to the output channel */
@@ -123,6 +125,9 @@ func (ge *GameEngine) RunLoop() {
 
 		/* STEP 4: Update the game state for the next tick */
 		ge.state.pellets[0] += 1 // Test reactivity of Svelte frontend
+
+		// Increment the number of ticks
+		ge.state.currTicks++
 
 		/* STEP 5: Wait for the ticker to complete the current frame */
 		<-ge.ticker.ReadyCh

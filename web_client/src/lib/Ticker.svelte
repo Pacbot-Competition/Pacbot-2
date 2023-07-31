@@ -62,7 +62,7 @@
 
   // Math to calculate the degree measures and flags for the ticker object
   export let currTicks;
-  let updateTicks = 12;
+  export let updateTicks;
   $: degrees = 360 * (currTicks % updateTicks) / updateTicks;
   $: cosine = Math.cos(Math.PI / 180 * degrees);
   $: sine = Math.sin(Math.PI / 180 * degrees);

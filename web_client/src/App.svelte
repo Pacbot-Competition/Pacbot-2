@@ -66,8 +66,11 @@
   let mpsAvg = 0;
   mpsBuffer[0] = Date.now();
 
-  // Keep track of the number of ticks elapsed (from the game engine)
+  // Keep track of the number of ticks elapsed (from the server)
   let currTicks = 0;
+
+  // Keep track of the ticks per update (from the server)
+  let updateTicks = 12;
 
   // Handling a new connection
   socket.addEventListener('open', (_) => {
@@ -85,9 +88,6 @@
   // Message events
   socket.addEventListener('message', (event) => {
     if (event.data instanceof ArrayBuffer) {
-
-      // Increment the internal count of game engine ticks
-      ++currTicks;
 
       // Log the time
       const ts = Date.now();
@@ -108,18 +108,22 @@
         // Keep track of the byte index we are reading
         let byteIdx = 0;
 
-        // Get the game mode
-        // console.log(view.getUint8(byteIdx, false));
-        //byteIdx++;
+        // Get the current ticks from the server
+        currTicks = view.getUint16(byteIdx, false);
+        byteIdx += 2;
+
+        // Get the update ticks from the server
+        updateTicks = view.getUint8(byteIdx, false);
+        byteIdx += 1;
 
         // Parse pellet data
         for (let row = 0; row < 31; row++) {
           const binRow = view.getUint32(byteIdx, false);
-          byteIdx += 4;
           for (let col = 0; col < 28; col++) {
             let superPellet = ((row === 3) || (row === 23)) && ((col === 1) || (col === 26));
             pelletGrid[row][col] = ((binRow >> col) & 1) ? (superPellet ? 2 : 1) : 0;
           }
+          byteIdx += 4;
         }
 
         // Trigger an update for the pellets
@@ -164,5 +168,5 @@
   <Pacman {gridSize} {pacmanRow} {pacmanCol} />
   <Ghosts {gridSize} {redRow} {redCol} {pinkRow} {pinkCol} {blueRow} {blueCol} {orangeRow} {orangeCol} />
   <MpsCounter {gridSize} {mpsAvg} />
-  <Ticker {gridSize} {currTicks} bind:paused/>
+  <Ticker {gridSize} {currTicks} {updateTicks} bind:paused/>
 </div>
