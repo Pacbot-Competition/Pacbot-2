@@ -18,21 +18,23 @@ and the internal game state - its responsibility is to read responses from
 clients and routinely send serialized copies of the game state to them
 */
 type GameEngine struct {
-	quitCh   chan struct{}
-	outputCh chan<- []byte
-	inputCh  <-chan []byte
-	hasQuit  bool
-	ticker   HighResTicker // serves as the game clock
+	quitCh      chan struct{}
+	webOutputCh chan<- []byte
+	webInputCh  <-chan []byte
+	hasQuit     bool
+	state       *gameState
+	ticker      *HighResTicker // serves as the game clock
 }
 
 // Create a new game engine, casting input and output channels to be uni-directional
-func NewGameEngine(_outputCh chan<- []byte, _inpuCh <-chan []byte, clockRate int32) *GameEngine {
+func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, clockRate int32) *GameEngine {
 	return &GameEngine{
-		quitCh:   make(chan struct{}),
-		outputCh: _outputCh,
-		inputCh:  _inpuCh,
-		hasQuit:  false,
-		ticker:   *NewHighResTicker(clockRate),
+		quitCh:      make(chan struct{}),
+		webOutputCh: _webOutputCh,
+		webInputCh:  _webInputCh,
+		hasQuit:     false,
+		state:       newGameState(),
+		ticker:      NewHighResTicker(clockRate),
 	}
 }
 
@@ -77,11 +79,14 @@ func (ge *GameEngine) RunLoop() {
 	for {
 
 		/* STEP 1: Serialize and send the current game state */
+		outputBuf := make([]byte, 256)
+		idx := 0
+		idx = ge.state.serPellets(outputBuf, idx)
 
 		// Check if the write will be blocked
-		b := len(ge.outputCh) == cap(ge.outputCh)
+		b := len(ge.webOutputCh) == cap(ge.webOutputCh)
 		start := time.Now()
-		ge.outputCh <- SerializePellets(Pellets)
+		ge.webOutputCh <- outputBuf[:idx]
 
 		// If the write was blocked for too long (> 1ms), send a warning to the terminal
 		if b {
@@ -95,7 +100,7 @@ func (ge *GameEngine) RunLoop() {
 		select {
 
 		// If we get a message from the web broker, handle it
-		case msg := <-ge.inputCh:
+		case msg := <-ge.webInputCh:
 			fmt.Printf("\033[2m\033[36m| Response: %s`\033[0m\n", string(msg))
 
 		// If we get a quit signal, quit this broker
@@ -104,13 +109,13 @@ func (ge *GameEngine) RunLoop() {
 
 		// If the web broker response channel hits full capacity, send a warning to the terminal
 		default:
-			if len(ge.inputCh) == cap(ge.inputCh) {
+			if len(ge.webInputCh) == cap(ge.webInputCh) {
 				fmt.Println("\033[35mWARN: Game engine input channel full\033[0m")
 			}
 		}
 
 		/* STEP 3: Update the game state for the next tick */
-		Pellets[0] += 1 // Test reactivity of Svelte frontend
+		ge.state.pellets[0] += 1 // Test reactivity of Svelte frontend
 
 		/* STEP 4: Wait for the ticker to complete the current frame */
 		<-ge.ticker.ReadyCh

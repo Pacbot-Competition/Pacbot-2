@@ -1,8 +1,14 @@
 package game
 
+// The number of rows in the pellets and walls states
+const mazeRows int = 31
+
+// The number of columns in the pellets and walls states
+const mazeCols int = 28
+
 // Encoded in little endian form (backwards; column 0 would be at bit 0)
 // (Tip: Ctrl+F '1' to see the initial pellet locations)
-var Pellets [31]uint32 = [...]uint32{
+var startingPellets [mazeRows]uint32 = [...]uint32{
 	//                middle
 	// col:             vv    8 6 4 2 0
 	0b0000_0000000000000000000000000000, // row 0
@@ -40,7 +46,7 @@ var Pellets [31]uint32 = [...]uint32{
 
 // Encoded in little endian form (backwards; column 0 would be at bit 0)
 // (Tip: Ctrl+F '0' to see the valid Pacman locations)
-var Walls [31]uint32 = [...]uint32{
+var walls [31]uint32 = [...]uint32{
 	//                middle
 	// col:             vv    8 6 4 2 0
 	0b0000_1111111111111111111111111111, // row 0
@@ -74,15 +80,4 @@ var Walls [31]uint32 = [...]uint32{
 	0b0000_1011111111110110111111111101, // row 28
 	0b0000_1000000000000000000000000001, // row 29
 	0b0000_1111111111111111111111111111, // row 30
-}
-
-// Serializes in big-endian form (most significant byte first)
-func SerializePellets(_pellets [31]uint32) []byte {
-	ret := make([]byte, 124)
-	for row := 0; row < 31; row++ {
-		for byte_num := 0; byte_num < 4; byte_num++ {
-			ret[row*4+byte_num] = byte((_pellets[row] >> (8 * (3 - byte_num))) & 0xff)
-		}
-	}
-	return ret
 }
