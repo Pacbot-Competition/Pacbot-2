@@ -73,9 +73,9 @@
 <button class='ticker-box' style:--grid-size='{gridSize}px' on:click={() => togglePause()}>
   <svg class='ticker' style:--grid-size='{gridSize}px' style:--pad='{pad}px'>
     <circle cx="{gridSize+pad}" cy="{gridSize+pad}" r="{gridSize}"/>
-    <path d="M {gridSize+pad} {gridSize+pad} 
-            L {gridSize+pad} {pad}
-            A {gridSize} {gridSize} 0 {longArcFlag} 1 {gridSize + gridSize * sine + pad} {gridSize - gridSize * cosine + pad} 
-            z" />
+    <path d='M {gridSize+pad} {gridSize+pad} 
+             L {gridSize+pad} {pad}
+             A {gridSize} {gridSize} 0 {longArcFlag} 1 {gridSize + gridSize * sine + pad} {gridSize - gridSize * cosine + pad} 
+             z' />
   </svg>
 </button>

@@ -83,8 +83,13 @@ func (ge *GameEngine) RunLoop() {
 
 		/* STEP 1: Serialize the current game state to the output buffer */
 		idx := 0
+
+		// Packet header - contains the necessary information to render the ticker
 		idx = ge.state.serCurrTicks(outputBuf, idx)
 		idx = ge.state.serUpdateTicks(outputBuf, idx)
+		idx = ge.state.serGameMode(outputBuf, idx)
+
+		// Pellets - serializes the pellets to a byte array
 		idx = ge.state.serPellets(outputBuf, idx)
 
 		/* STEP 2: Write the serialized game state to the output channel */

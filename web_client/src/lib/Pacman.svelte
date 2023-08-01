@@ -29,11 +29,11 @@
 
 <script>
   export let gridSize;
-  export let pacmanRow;
-  export let pacmanCol;
+  export let pacmanRowState;
+  export let pacmanColState;
 
-  $: posX = gridSize * pacmanCol;
-  $: posY = gridSize * pacmanRow;
+  $: posX = gridSize * pacmanColState;
+  $: posY = gridSize * pacmanRowState;
 
 </script>
 

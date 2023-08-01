@@ -9,7 +9,7 @@ const mazeCols int8 = 28
 // The number of update ticks that the game starts with
 const initUpdateTicks uint8 = 12
 
-// Encoded in little endian form (backwards; column 0 would be at bit 0)
+// Column-wise, this may look backwards; column 0 is at bit 0 on the right
 // (Tip: Ctrl+F '1' to see the initial pellet locations)
 var initPellets [mazeRows]uint32 = [...]uint32{
 	//                middle
@@ -47,7 +47,7 @@ var initPellets [mazeRows]uint32 = [...]uint32{
 	0b0000_0000000000000000000000000000, // row 30
 }
 
-// Encoded in little endian form (backwards; column 0 would be at bit 0)
+// Column-wise, this may look backwards; column 0 is at bit 0 on the right
 // (Tip: Ctrl+F '0' to see the valid Pacman locations)
 var initWalls [31]uint32 = [...]uint32{
 	//                middle

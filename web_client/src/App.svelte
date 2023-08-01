@@ -31,6 +31,7 @@
   import Maze from './lib/Maze.svelte';
   import Pellets from './lib/Pellets.svelte';
   import Pacman from './lib/Pacman.svelte';
+  import Ghost from './lib/Ghost.svelte';
   import Ghosts from './lib/Ghosts.svelte';
   import MpsCounter from './lib/MpsCounter.svelte';
   import Ticker from './lib/Ticker.svelte';
@@ -71,6 +72,10 @@
 
   // Keep track of the ticks per update (from the server)
   let updateTicks = 12;
+
+  // Keep track of the game mode (from the server)
+  /* TODO: Make use of game mode for changing the ticker color */
+  let gameMode = 0;
 
   // Handling a new connection
   socket.addEventListener('open', (_) => {
@@ -116,6 +121,10 @@
         updateTicks = view.getUint8(byteIdx, false);
         byteIdx += 1;
 
+        // Get the game mode from the server
+        gameMode = view.getUint8(byteIdx, false);
+        byteIdx += 1;
+
         // Parse pellet data
         for (let row = 0; row < 31; row++) {
           const binRow = view.getUint32(byteIdx, false);
@@ -143,20 +152,20 @@
   let gridSize;
   $: gridSize = 0.9 * ((innerHeight * 28 < innerWidth * 31) ? (innerHeight / 31) : (innerWidth / 28));
 
-  let pacmanRow = 23;
-  let pacmanCol = 14;
+  let pacmanRowState = 23;
+  let pacmanColState = 14;
 
-  let redRow = 11;
-  let redCol = 14;
+  let redRowState = 11;
+  let redColState = 14 | 0xc0; // left
 
-  let pinkRow = 14;
-  let pinkCol = 14;
+  let pinkRowState = 14;
+  let pinkColState = 14 | 0x40; // right
 
-  let blueRow = 14;
-  let blueCol = 12;
+  let cyanRowState = 14 | 0xc0; // up
+  let cyanColState = 12;
 
-  let orangeRow = 14;
-  let orangeCol = 16;
+  let orangeRowState = 14 | 0x40; // down
+  let orangeColState = 16;
 
 </script>
 
@@ -165,8 +174,19 @@
 <div class='maze-space'>
   <Maze {gridSize} />
   <Pellets {pelletGrid} {gridSize} />
-  <Pacman {gridSize} {pacmanRow} {pacmanCol} />
-  <Ghosts {gridSize} {redRow} {redCol} {pinkRow} {pinkCol} {blueRow} {blueCol} {orangeRow} {orangeCol} />
+  <Pacman {gridSize} {pacmanRowState} {pacmanColState} />
+
+  <!-- CSS Ghost Sprites - deprecated -->
+  <!--
+    <Ghosts {gridSize} {redRowState} {redColState} {pinkRowState} {pinkColState} {cyanRowState} {cyanColState} {orangeRowState} {orangeColState} />
+  -->
+
+  <!-- SVG Ghost Sprites -->
+  <Ghost {gridSize} rowState={redRowState} colState={redColState} color='red'/>
+  <Ghost {gridSize} rowState={pinkRowState} colState={pinkColState} color='pink'/>
+  <Ghost {gridSize} rowState={cyanRowState} colState={cyanColState} color='cyan'/>
+  <Ghost {gridSize} rowState={orangeRowState} colState={orangeColState} color='orange'/>
+
   <MpsCounter {gridSize} {mpsAvg} />
   <Ticker {gridSize} {currTicks} {updateTicks} bind:paused/>
 </div>

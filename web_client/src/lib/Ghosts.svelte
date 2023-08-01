@@ -1,3 +1,5 @@
+<!-- MARKED FOR DEPRECATION, CURRENTLY USED ONLY AS A REFERENCE FOR DESIGNING SVG -->
+
 <style>
   
   /* Ghost "sprite", designed in CSS */
@@ -57,7 +59,7 @@
   /* Ghost colors */
   .red    { background-color: red; }
   .pink   { background-color: hotpink; }
-  .blue   { background-color: cyan; }
+  .cyan   { background-color: cyan; }
   .orange { background-color: orange; }
 
   /* Frightened modifiers */
@@ -93,29 +95,29 @@
 
 <script>
   export let gridSize;
-  export let redRow;
-  export let redCol;
-  export let pinkRow;
-  export let pinkCol;
-  export let blueRow;
-  export let blueCol;
-  export let orangeRow;
-  export let orangeCol;
+  export let redRowState;
+  export let redColState;
+  export let pinkRowState;
+  export let pinkColState;
+  export let cyanRowState;
+  export let cyanColState;
+  export let orangeRowState;
+  export let orangeColState;
 
-  $: redPosX = gridSize * redCol;
-  $: redPosY = gridSize * redRow;
+  $: redPosX = gridSize * (redColState & 31);
+  $: redPosY = gridSize * (redRowState & 31);
   let redLookDir = " left";
 
-  $: pinkPosX = gridSize * pinkCol;
-  $: pinkPosY = gridSize * pinkRow;
+  $: pinkPosX = gridSize * (pinkColState & 31);
+  $: pinkPosY = gridSize * (pinkRowState & 31);
   let pinkLookDir = " right";
 
-  $: bluePosX = gridSize * blueCol;
-  $: bluePosY = gridSize * blueRow;
-  let blueLookDir = " up";
+  $: cyanPosX = gridSize * (cyanColState & 31);
+  $: cyanPosY = gridSize * (cyanRowState & 31);
+  let cyanLookDir = " up";
 
-  $: orangePosX = gridSize * orangeCol;
-  $: orangePosY = gridSize * orangeRow;
+  $: orangePosX = gridSize * (orangeColState & 31);
+  $: orangePosY = gridSize * (orangeRowState & 31);
   let orangeLookDir = " down";
 
   let frightened = false;
@@ -158,17 +160,17 @@
 
 </div>
 
-<div class="ghost blue {frightenedModifer}" 
+<div class="ghost cyan {frightenedModifer}" 
      style:--grid-size="{gridSize}px"
-     style:left="{bluePosX}px"
-     style:top="{bluePosY}px">
+     style:left="{cyanPosX}px"
+     style:top="{cyanPosY}px">
   
   <div class="left-eye">
-    <div class="iris {blueLookDir}"/>
+    <div class="iris {cyanLookDir}"/>
   </div>
 
   <div class="right-eye">
-    <div class="iris {blueLookDir}"/>
+    <div class="iris {cyanLookDir}"/>
   </div>
 
   <div class="mouth"/>
