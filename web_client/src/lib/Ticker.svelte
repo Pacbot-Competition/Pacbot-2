@@ -30,10 +30,10 @@
     opacity: 0.8;
 
     /* Grid-size related CSS */
-    width:  calc(2    * var(--grid-size) + 2 * var(--pad));
-    height: calc(2    * var(--grid-size) + 2 * var(--pad));
+    width:  calc(2   * var(--grid-size) + 2 * var(--pad));
+    height: calc(2   * var(--grid-size) + 2 * var(--pad));
     top:    calc(0.5 * var(--grid-size) - var(--pad));
-    left:   calc(1.5  * var(--grid-size) - var(--pad));
+    left:   calc(1.5 * var(--grid-size) - var(--pad));
   }
 
   circle {
@@ -60,13 +60,14 @@
     paused = !paused;
   }
 
-  // Math to calculate the degree measures and flags for the ticker object
-  export let currTicks;
-  export let updateTicks;
-  $: degrees = 360 * (currTicks % updateTicks) / updateTicks;
-  $: cosine = Math.cos(Math.PI / 180 * degrees);
-  $: sine = Math.sin(Math.PI / 180 * degrees);
-  $: longArcFlag = (degrees > 180) ? 1 : 0;
+  // Math to calculate the degree measures, lengths, and flags for the ticker object
+  export let modTicks;
+  export let updatePeriod;
+  const degToRad = Math.PI / 180
+  $: degrees     = 360 * modTicks / updatePeriod;
+  $: cosine      = Math.cos(degToRad * degrees);
+  $: sine        = Math.sin(degToRad * degrees);
+  $: longArcFlag = (degrees > 180) ? 1 : 0; // Keeps track of whether a reflexive angle should be used
 
 </script>
 

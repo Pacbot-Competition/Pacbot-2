@@ -86,7 +86,7 @@ func (ge *GameEngine) RunLoop() {
 
 		// Packet header - contains the necessary information to render the ticker
 		idx = ge.state.serCurrTicks(outputBuf, idx)
-		idx = ge.state.serUpdateTicks(outputBuf, idx)
+		idx = ge.state.serUpdatePeriod(outputBuf, idx)
 		idx = ge.state.serGameMode(outputBuf, idx)
 
 		// Pellets - serializes the pellets to a byte array

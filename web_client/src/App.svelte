@@ -32,7 +32,6 @@
   import Pellets from './lib/Pellets.svelte';
   import Pacman from './lib/Pacman.svelte';
   import Ghost from './lib/Ghost.svelte';
-  import Ghosts from './lib/Ghosts.svelte';
   import MpsCounter from './lib/MpsCounter.svelte';
   import Ticker from './lib/Ticker.svelte';
 
@@ -40,6 +39,8 @@
   var socket = new WebSocket(`ws://${config.ServerIP}:${config.WebSocketPort}`);
   socket.binaryType = 'arraybuffer';
   let socketOpen = false;
+
+  /* TODO - Add error handling for when the websocket client is not open, to avoid console errors */
 
   /* 
     This generates an empty array of pellet states 
@@ -71,7 +72,7 @@
   let currTicks = 0;
 
   // Keep track of the ticks per update (from the server)
-  let updateTicks = 12;
+  let updatePeriod = 12;
 
   // Keep track of the game mode (from the server)
   /* TODO: Make use of game mode for changing the ticker color */
@@ -118,7 +119,7 @@
         byteIdx += 2;
 
         // Get the update ticks from the server
-        updateTicks = view.getUint8(byteIdx, false);
+        updatePeriod = view.getUint8(byteIdx, false);
         byteIdx += 1;
 
         // Get the game mode from the server
@@ -146,26 +147,40 @@
     console.log('WebSocket connection closed');
   });
 
+  // Track the size of the window, to determine the grid size
   let innerWidth = 0;
   let innerHeight = 0;
-
-  let gridSize;
   $: gridSize = 0.9 * ((innerHeight * 28 < innerWidth * 31) ? (innerHeight / 31) : (innerWidth / 28));
+
+  // Calculate the remainder when currTicks is divided by updatePeriod
+  $: modTicks = currTicks % updatePeriod
+
+  /* TODO: Get the below values from the serialized stream, preferably organized in JSON format */
+
+  /* TODO: Fully calculate spawn offset using the 3 bytes for each ghost */
 
   let pacmanRowState = 23;
   let pacmanColState = 14;
 
   let redRowState = 11;
-  let redColState = 14 | 0xc0; // left
+  let redColState = 13 | 0xc0; // left
+  let redFrightenedCounter = 0;
+  let redSpawnOffset = updatePeriod;
 
   let pinkRowState = 14;
-  let pinkColState = 14 | 0x40; // right
+  let pinkColState = 13 | 0x40; // right
+  let pinkFrightenedCounter = 0;
+  let pinkSpawnOffset = updatePeriod;
 
   let cyanRowState = 14 | 0xc0; // up
-  let cyanColState = 12;
+  let cyanColState = 11;
+  let cyanFrightenedCounter = 0;
+  let cyanSpawnOffset = updatePeriod;
 
   let orangeRowState = 14 | 0x40; // down
-  let orangeColState = 16;
+  let orangeColState = 15;
+  let orangeFrightenedCounter = 0;
+  let orangeSpawnOffset = updatePeriod;
 
 </script>
 
@@ -176,17 +191,43 @@
   <Pellets {pelletGrid} {gridSize} />
   <Pacman {gridSize} {pacmanRowState} {pacmanColState} />
 
-  <!-- CSS Ghost Sprites - deprecated -->
-  <!--
-    <Ghosts {gridSize} {redRowState} {redColState} {pinkRowState} {pinkColState} {cyanRowState} {cyanColState} {orangeRowState} {orangeColState} />
-  -->
-
   <!-- SVG Ghost Sprites -->
-  <Ghost {gridSize} rowState={redRowState} colState={redColState} color='red'/>
-  <Ghost {gridSize} rowState={pinkRowState} colState={pinkColState} color='pink'/>
-  <Ghost {gridSize} rowState={cyanRowState} colState={cyanColState} color='cyan'/>
-  <Ghost {gridSize} rowState={orangeRowState} colState={orangeColState} color='orange'/>
+  <Ghost {gridSize}
+         {modTicks}
+         {updatePeriod} 
+         rowState={redRowState}
+         colState={redColState}
+         frightenedCounter={redFrightenedCounter}
+         spawnOffset={redSpawnOffset}
+         color='red'/>
+  
+  <Ghost {gridSize}
+         {modTicks}
+         {updatePeriod}
+         rowState={pinkRowState}
+         colState={pinkColState}
+         frightenedCounter={pinkFrightenedCounter}
+         spawnOffset={pinkSpawnOffset}
+         color='pink'/>
+
+  <Ghost {gridSize}
+         {modTicks}
+         {updatePeriod}
+         rowState={cyanRowState}
+         colState={cyanColState}
+         frightenedCounter={cyanFrightenedCounter}
+         spawnOffset={cyanSpawnOffset}
+         color='cyan'/>
+
+  <Ghost {gridSize}
+         {modTicks}
+         {updatePeriod} 
+         rowState={orangeRowState} 
+         colState={orangeColState} 
+         frightenedCounter={orangeFrightenedCounter}
+         spawnOffset={orangeSpawnOffset}
+         color='orange'/>
 
   <MpsCounter {gridSize} {mpsAvg} />
-  <Ticker {gridSize} {currTicks} {updateTicks} bind:paused/>
+  <Ticker {gridSize} {modTicks} {updatePeriod} bind:paused/>
 </div>

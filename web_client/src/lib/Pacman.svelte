@@ -13,6 +13,7 @@
     /* Grid-size related CSS */
     width: var(--grid-size);
     height: var(--grid-size);
+    transform: scale(1.5);
   }
 
   .eating {

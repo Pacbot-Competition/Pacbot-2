@@ -7,7 +7,13 @@ const mazeRows int8 = 31
 const mazeCols int8 = 28
 
 // The number of update ticks that the game starts with
-const initUpdateTicks uint8 = 12
+const initUpdatePeriod uint8 = 12
+
+// The level that Pacman starts on by default (mainly for testing purposes)
+const initLevel uint8 = 1
+
+// The number of lives that Pacman starts with
+const initLives uint8 = 3
 
 // Column-wise, this may look backwards; column 0 is at bit 0 on the right
 // (Tip: Ctrl+F '1' to see the initial pellet locations)

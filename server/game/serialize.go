@@ -8,10 +8,10 @@ func (gs *gameState) serCurrTicks(outputBuf []byte, startIdx int) int {
 }
 
 // Serialize the update ticks (1 byte)
-func (gs *gameState) serUpdateTicks(outputBuf []byte, startIdx int) int {
+func (gs *gameState) serUpdatePeriod(outputBuf []byte, startIdx int) int {
 
 	// Serialize the field, and return the new start index
-	return serUint8(gs.updateTicks, outputBuf, startIdx)
+	return serUint8(gs.updatePeriod, outputBuf, startIdx)
 }
 
 // Serialize the game mode (1 byte)
