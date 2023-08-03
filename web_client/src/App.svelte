@@ -165,22 +165,22 @@
   let redRowState = 11;
   let redColState = 13 | 0xc0; // left
   let redFrightenedCounter = 0;
-  let redSpawnOffset = updatePeriod;
+  let redSpawning = true;
 
-  let pinkRowState = 14;
-  let pinkColState = 13 | 0x40; // right
+  let pinkRowState = 13 | 0xc0; // up
+  let pinkColState = 13;
   let pinkFrightenedCounter = 0;
-  let pinkSpawnOffset = updatePeriod;
+  let pinkSpawning = true;
 
   let cyanRowState = 14 | 0xc0; // up
   let cyanColState = 11;
   let cyanFrightenedCounter = 0;
-  let cyanSpawnOffset = updatePeriod;
+  let cyanSpawning = true;
 
-  let orangeRowState = 14 | 0x40; // down
+  let orangeRowState = 13 | 0x40; // down
   let orangeColState = 15;
   let orangeFrightenedCounter = 0;
-  let orangeSpawnOffset = updatePeriod;
+  let orangeSpawning = true;
 
 </script>
 
@@ -198,7 +198,7 @@
          rowState={redRowState}
          colState={redColState}
          frightenedCounter={redFrightenedCounter}
-         spawnOffset={redSpawnOffset}
+         spawning={redSpawning}
          color='red'/>
   
   <Ghost {gridSize}
@@ -207,7 +207,7 @@
          rowState={pinkRowState}
          colState={pinkColState}
          frightenedCounter={pinkFrightenedCounter}
-         spawnOffset={pinkSpawnOffset}
+         spawning={pinkSpawning}
          color='pink'/>
 
   <Ghost {gridSize}
@@ -216,7 +216,7 @@
          rowState={cyanRowState}
          colState={cyanColState}
          frightenedCounter={cyanFrightenedCounter}
-         spawnOffset={cyanSpawnOffset}
+         spawning={cyanSpawning}
          color='cyan'/>
 
   <Ghost {gridSize}
@@ -225,7 +225,7 @@
          rowState={orangeRowState} 
          colState={orangeColState} 
          frightenedCounter={orangeFrightenedCounter}
-         spawnOffset={orangeSpawnOffset}
+         spawning={orangeSpawning}
          color='orange'/>
 
   <MpsCounter {gridSize} {mpsAvg} />

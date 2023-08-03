@@ -15,6 +15,19 @@ const initLevel uint8 = 1
 // The number of lives that Pacman starts with
 const initLives uint8 = 3
 
+// Initial starting position for Pacman
+var initLocPacman = newLocationState(23, 13, none)
+
+// Initial starting position for the fruit
+var initLocFruit = newLocationState(17, 13, none)
+var nullLoc = newLocationState(0, 0, none) // serializes to 0x00 0x00
+
+// Initial starting positions for the ghosts
+var initLocRed = newLocationState(11, 13, left)
+var initLocPink = newLocationState(13, 13, down)
+var initLocCyan = newLocationState(14, 11, up)
+var initLocOrange = newLocationState(14, 15, up)
+
 // Column-wise, this may look backwards; column 0 is at bit 0 on the right
 // (Tip: Ctrl+F '1' to see the initial pellet locations)
 var initPellets [mazeRows]uint32 = [...]uint32{

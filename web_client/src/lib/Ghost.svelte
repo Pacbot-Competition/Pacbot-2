@@ -77,7 +77,7 @@
   export let rowState;
   export let colState;
   export let frightenedCounter;
-  export let spawnOffset;
+  export let spawning;
 
   // Timing info
   export let modTicks;
@@ -85,6 +85,9 @@
 
   // Padding for frightened ghost sprite
   $: pad = gridSize/20
+
+  // Control whether ghosts look like they are fluidly moving
+  const showMotion = true;
 
   /* 
     The last 5 bits of each state byte are the position, 
@@ -100,9 +103,15 @@
   $: dirX = ((colState >> 6) << 30) >> 30
   $: dirY = ((rowState >> 6) << 30) >> 30
 
+  // Visual effects, to make the ghosts appear as if they are between squares when spawning
+  $: spawnExitSquare1 = (posX === 13) && (posY == 13)
+  $: spawnOffsetY = (spawning && (posY > 12)) ? (spawnExitSquare1 ? (updatePeriod - modTicks) / (updatePeriod) / 2 : 1/2) : 0
+  $: spawnExitSquare2 = (posX === 13) && (posY == 11)
+  $: spawnOffsetX = (spawning) ? (spawnExitSquare2 ? (updatePeriod - modTicks) / (updatePeriod) / 2 : 1/2) : 0
+
   // Determines if the ghost is frightened, using the frightened counter
   $: fr = (frightenedCounter > 0)
-  $: rc = (frightenedCounter <= 4) && (2 * modTicks < updatePeriod)
+  $: rc = (frightenedCounter <= 5) && (2 * modTicks >= updatePeriod)
 
 </script>
 
@@ -111,8 +120,8 @@
      style:--grid-size='{~~gridSize+1}px'
      style:--color={color}
      style:--pad='{pad}px'
-     style:top='{posY*gridSize - pad}px' 
-     style:left='{(posX+spawnOffset/updatePeriod/2)*gridSize - pad}px'>
+     style:top='{(posY  + showMotion*(dirY*modTicks/updatePeriod) + spawnOffsetY) * gridSize - pad}px' 
+     style:left='{(posX + showMotion*(dirX*modTicks/updatePeriod) + spawnOffsetX) * gridSize - pad}px'>
 
   <!-- Body of ghost -->
   <path d='M {pad} {pad + gridSize/2}

@@ -34,3 +34,56 @@ func (gs *gameState) serPellets(outputBuf []byte, startIdx int) int {
 	// Return the starting index of the next field
 	return startIdx
 }
+
+// Serialize the location of Pacman (2 bytes)
+func (gs *gameState) serPacman(outputBuf []byte, startIdx int) int {
+
+	gs.pacmanLoc.RLock()
+	defer gs.pacmanLoc.RUnlock()
+	startIdx = serLocation(gs.pacmanLoc, outputBuf, startIdx)
+
+	// Return the starting index of the next field
+	return startIdx
+}
+
+// Serialize the location of the fruit (2 bytes)
+func (gs *gameState) serFruit(outputBuf []byte, startIdx int) int {
+
+	if gs.fruitExists {
+		startIdx = serLocation(gs.fruitLoc, outputBuf, startIdx)
+	} else {
+		startIdx = serLocation(nullLoc, outputBuf, startIdx)
+	}
+
+	// Return the starting index of the next field
+	return startIdx
+}
+
+// Serialize a ghost's information (3 bytes) - TODO: implement spawn offset
+func (gs *gameState) serGhost(color int8, outputBuf []byte, startIdx int) int {
+
+	// Add a flag at the 7th (highest) bit to indicate spawning
+	var spawnFlag uint8 = 0
+	g := gs.ghosts[color]
+	if g.spawning {
+		spawnFlag = 0x80
+	}
+
+	startIdx = serLocation(g.loc, outputBuf, startIdx)
+	startIdx = serUint8(g.frightCycles|spawnFlag, outputBuf, startIdx)
+
+	// Return the starting index of the next field
+	return startIdx
+}
+
+// Serialize a ghost's information (3 bytes) - TODO: implement spawn offset
+func (gs *gameState) serGhosts(outputBuf []byte, startIdx int) int {
+
+	startIdx = gs.serGhost(red, outputBuf, startIdx)
+	startIdx = gs.serGhost(pink, outputBuf, startIdx)
+	startIdx = gs.serGhost(cyan, outputBuf, startIdx)
+	startIdx = gs.serGhost(orange, outputBuf, startIdx)
+
+	// Return the starting index of the next field
+	return startIdx
+}

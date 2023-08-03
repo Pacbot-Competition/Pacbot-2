@@ -18,11 +18,18 @@ type gameState struct {
 	currLevel uint8  // Current level number (by default, starts at 1)
 	currLives uint8  // Current lives        (by default, starts at 3)
 
-	/* Pacman - 2 bytes */
+	/* Pacman location - 2 bytes */
 
-	/* Fruit - 2 bytes */
+	pacmanLoc *locationState
+
+	/* Fruit location - 2 bytes */
+
+	fruitExists bool
+	fruitLoc    *locationState
 
 	/* Ghosts - 4 * 3 = 12 bytes */
+
+	ghosts []*ghostState
 
 	/* Pellet State - 31 * 4 = 124 bytes */
 
@@ -50,7 +57,21 @@ func newGameState() *gameState {
 		currScore: 0,
 		currLevel: initLevel,
 		currLives: initLives,
+
+		// Fruit
+		fruitExists: false,
+
+		// Ghosts
+		ghosts: make([]*ghostState, 4),
 	}
+
+	gs.pacmanLoc = newLocationStateCopy(initLocPacman)
+	gs.fruitLoc = newLocationStateCopy(initLocFruit)
+
+	gs.ghosts[red] = newGhostState(red, gs.pacmanLoc)
+	gs.ghosts[pink] = newGhostState(pink, gs.pacmanLoc)
+	gs.ghosts[cyan] = newGhostState(cyan, gs.pacmanLoc)
+	gs.ghosts[orange] = newGhostState(orange, gs.pacmanLoc)
 
 	// Copy over maze bit arrays
 	copy(gs.pellets[:], initPellets[:])

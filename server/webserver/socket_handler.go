@@ -15,7 +15,7 @@ var openWebSessions = make(map[*webSession](struct{}))
 Protects the "openWebSessions" map from race conditions with a
 mutex - it will lock the resources until they are successfully written to
 */
-var muOWS sync.Mutex
+var muOWS sync.RWMutex
 
 /*
 Websockets are the way that the server will communicate with

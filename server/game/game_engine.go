@@ -79,6 +79,13 @@ func (ge *GameEngine) RunLoop() {
 	// Output buffer to store the serialized output
 	outputBuf := make([]byte, 256)
 
+	// Test, should be removed later (TODO)
+	ge.state.pacmanLoc.col = 14
+	idx := 0
+	idx = ge.state.serGhosts(outputBuf, idx)
+	idx = serLocation(ge.state.ghosts[red].pacmanLoc, outputBuf, idx)
+	fmt.Println(outputBuf[:idx])
+
 	for {
 
 		/* STEP 1: Serialize the current game state to the output buffer */

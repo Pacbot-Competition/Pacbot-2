@@ -44,7 +44,7 @@ func (wb *WebBroker) quit() {
 	fmt.Println("\033[35m\033[1mLOG:  Web broker exit: killing all websocket connections")
 	fmt.Println("      No new connections allowed\033[0m")
 	newConnectionsAllowed = false // Doesn't need a mutex since we can't ever make it true again
-	muOWS.Lock()
+	muOWS.RLock()
 	{
 		// Decrement the number of active web broker loops
 		muAWB.Lock()
@@ -58,7 +58,7 @@ func (wb *WebBroker) quit() {
 			ws.quitCh <- struct{}{}
 		}
 	}
-	muOWS.Unlock()
+	muOWS.RUnlock()
 
 	// Log that the web broker has quit (if this message doesn't get sent, we are blocked by some mutex)
 	fmt.Println("\033[35mLOG:  Web broker successfully quit\033[0m")
@@ -110,7 +110,7 @@ func (wb *WebBroker) RunLoop() {
 
 		// If we get a message, broadcast it to all web sessions
 		case msg := <-wb.broadcastCh:
-			muOWS.Lock()
+			muOWS.RLock()
 			{
 				for ws := range openWebSessions {
 
@@ -131,7 +131,7 @@ func (wb *WebBroker) RunLoop() {
 					}
 				}
 			}
-			muOWS.Unlock()
+			muOWS.RUnlock()
 
 		// If we get a quit signal, quit this broker
 		case <-wb.quitCh:
