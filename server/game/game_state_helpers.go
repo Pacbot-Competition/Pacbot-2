@@ -87,3 +87,15 @@ func (gs *gameState) wallAt(row int8, col int8) bool {
 	// Returns the bit of the wall row corresponding to the column
 	return getBit(gs.walls[row], col)
 }
+
+// Determines if a wall is at a given location (excluding the ghost house gate)
+func (gs *gameState) ghostSpawnWallAt(row int8, col int8) bool {
+
+	// If the ghost house door is at here, return no wall so the ghost can exit
+	if (row == 12) && (col == 13) {
+		return false
+	}
+
+	// Returns the bit of the wall row corresponding to the column
+	return gs.wallAt(row, col)
+}

@@ -1,5 +1,12 @@
 package game
 
+// Enum-like declaration to hold the game mode options
+const (
+	paused  = 0
+	scatter = 1
+	chase   = 2
+)
+
 /*
 A game state object, to hold the internal game state and provide
 helper methods that can be accessed by the game engine
@@ -72,10 +79,10 @@ func newGameState() *gameState {
 	gs.pacmanLoc = newLocationStateCopy(initLocPacman)
 	gs.fruitLoc = newLocationStateCopy(initLocFruit)
 
-	gs.ghosts[red] = newGhostState(red, gs.pacmanLoc)
-	gs.ghosts[pink] = newGhostState(pink, gs.pacmanLoc)
-	gs.ghosts[cyan] = newGhostState(cyan, gs.pacmanLoc)
-	gs.ghosts[orange] = newGhostState(orange, gs.pacmanLoc)
+	gs.ghosts[red] = newGhostState(red, gs.pacmanLoc, &gs.gameMode)
+	gs.ghosts[pink] = newGhostState(pink, gs.pacmanLoc, &gs.gameMode)
+	gs.ghosts[cyan] = newGhostState(cyan, gs.pacmanLoc, &gs.gameMode)
+	gs.ghosts[orange] = newGhostState(orange, gs.pacmanLoc, &gs.gameMode)
 
 	// Copy over maze bit arrays
 	copy(gs.pellets[:], initPellets[:])

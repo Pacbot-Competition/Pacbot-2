@@ -87,7 +87,16 @@ func (ge *GameEngine) RunLoop() {
 
 		// Test: update game state on the fly
 		if ge.state.updateReady() {
-			ge.state.ghosts[red].loc.stepNow()
+
+			// Loop over the individual colors
+			for color := 0; color < 4; color++ {
+				ge.state.ghosts[color].loc.stepNow()
+
+				// If the ghost is trapped, reverse its direction to keep it trapped
+				if ge.state.ghosts[color].trapped {
+					ge.state.ghosts[color].loc.reverseDir()
+				}
+			}
 		}
 
 		/* STEP 1: Serialize the current game state to the output buffer */
@@ -147,7 +156,6 @@ func (ge *GameEngine) RunLoop() {
 		}
 
 		/* STEP 4: Update the game state for the next tick */
-		ge.state.pellets[0] += 1 // Test reactivity of Svelte frontend
 
 		// Increment the number of ticks
 		ge.state.currTicks++

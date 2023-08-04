@@ -9,12 +9,5 @@
     "localhost"
   ],
 
-  "GameFPS": 24,
-
-  "GameStateEnum": {
-    "PAUSED":     0,
-    "CHASE":      1,
-    "SCATTER":    2,
-    "FRIGHTENED": 3
-  }
+  "GameFPS": 24
 }
