@@ -78,23 +78,35 @@
   /* TODO: Make use of game mode for changing the ticker color */
   let gameMode = 0;
 
+  // Local object to encode the starting states
+  const Flags = {
+    Up:       0b11000000,
+    Left:     0b11000000,
+    Down:     0b01000000,
+    Right:    0b01000000,
+    Spawning: 0b10000000,
+  }
+
   // Initial states for all the agents
   let pacmanRowState = 23;
-  let pacmanColState = 14;
+  let pacmanColState = 13;
+
+  let fruitRowState = 0;
+  let fruitColState = 0;
 
   let redRowState = 11;
-  let redColState = 13 | 0xc0; // left
+  let redColState = 13 | Flags.Left; // left
   let redFrightState = 0 | 128;
 
-  let pinkRowState = 13 | 0x40; // down
+  let pinkRowState = 13 | Flags.Down; // down
   let pinkColState = 13;
   let pinkFrightState = 0 | 128;
 
-  let cyanRowState = 14 | 0xc0; // up
+  let cyanRowState = 14 | Flags.Up; // up
   let cyanColState = 11;
   let cyanFrightState = 0 | 128;
 
-  let orangeRowState = 14 | 0xc0; // up
+  let orangeRowState = 14 | Flags.Up; // up
   let orangeColState = 15;
   let orangeFrightState = 0 | 128;
 
@@ -120,7 +132,7 @@
       mpsBuffer[mpsIdxRight] = ts;
       mpsAvg++;
       mpsIdxRight = (mpsIdxRight + 1) % MPS_BUFFER_SIZE;
-      // Leeway of about 2%
+      // With a 2% leeway, calculate the number of messages in the window
       while (ts - mpsBuffer[mpsIdxLeft] > 1020 && mpsIdxLeft != mpsIdxRight) {
         mpsIdxLeft = (mpsIdxLeft + 1) % MPS_BUFFER_SIZE;
         mpsAvg--;
@@ -135,30 +147,36 @@
         let byteIdx = 0;
 
         // Get the current ticks from the server
-        currTicks = view.getUint16(byteIdx, false);
-        byteIdx += 2;
+        currTicks = view.getUint16(byteIdx, false); byteIdx += 2;
 
         // Get the update ticks from the server
-        updatePeriod = view.getUint8(byteIdx, false);
-        byteIdx += 1;
+        updatePeriod      = view.getUint8(byteIdx++, false);
 
         // Get the game mode from the server
-        gameMode = view.getUint8(byteIdx, false);
-        byteIdx += 1;
+        gameMode          = view.getUint8(byteIdx++, false);
 
         // Parse ghost data
-        redRowState       = view.getUint8(byteIdx, false); byteIdx += 1;
-        redColState       = view.getUint8(byteIdx, false); byteIdx += 1;
-        redFrightState    = view.getUint8(byteIdx, false); byteIdx += 1;
-        pinkRowState      = view.getUint8(byteIdx, false); byteIdx += 1;
-        pinkColState      = view.getUint8(byteIdx, false); byteIdx += 1;
-        pinkFrightState   = view.getUint8(byteIdx, false); byteIdx += 1;
-        cyanRowState      = view.getUint8(byteIdx, false); byteIdx += 1;
-        cyanColState      = view.getUint8(byteIdx, false); byteIdx += 1;
-        cyanFrightState   = view.getUint8(byteIdx, false); byteIdx += 1;
-        orangeRowState    = view.getUint8(byteIdx, false); byteIdx += 1;
-        orangeColState    = view.getUint8(byteIdx, false); byteIdx += 1;
-        orangeFrightState = view.getUint8(byteIdx, false); byteIdx += 1;
+        redRowState       = view.getUint8(byteIdx++, false);
+        redColState       = view.getUint8(byteIdx++, false);
+        redFrightState    = view.getUint8(byteIdx++, false);
+        pinkRowState      = view.getUint8(byteIdx++, false);
+        pinkColState      = view.getUint8(byteIdx++, false);
+        pinkFrightState   = view.getUint8(byteIdx++, false);
+        cyanRowState      = view.getUint8(byteIdx++, false);
+        cyanColState      = view.getUint8(byteIdx++, false);
+        cyanFrightState   = view.getUint8(byteIdx++, false);
+        orangeRowState    = view.getUint8(byteIdx++, false);
+        orangeColState    = view.getUint8(byteIdx++, false);
+        orangeFrightState = view.getUint8(byteIdx++, false);
+
+        // Parse Pacman data
+        pacmanRowState    = view.getUint8(byteIdx++, false);
+        pacmanColState    = view.getUint8(byteIdx++, false);
+        console.log(pacmanRowState, pacmanColState)
+
+        // Parse fruit data
+        fruitRowState     = view.getUint8(byteIdx++, false);
+        fruitColState     = view.getUint8(byteIdx++, false);
 
         // Parse pellet data
         for (let row = 0; row < 31; row++) {

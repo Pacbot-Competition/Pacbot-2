@@ -83,13 +83,6 @@ func (ge *GameEngine) RunLoop() {
 	// Output buffer to store the serialized output
 	outputBuf := make([]byte, 256)
 
-	// Test, should be removed later (TODO)
-	ge.state.pacmanLoc.col = 14
-	idx := 0
-	idx = ge.state.serGhosts(outputBuf, idx)
-	idx = serLocation(ge.state.ghosts[red].pacmanLoc, outputBuf, idx)
-	fmt.Println(outputBuf[:idx])
-
 	for {
 
 		// Test: update game state on the fly
@@ -107,6 +100,12 @@ func (ge *GameEngine) RunLoop() {
 
 		// Ghosts - serializes the ghost states to the buffer
 		idx = ge.state.serGhosts(outputBuf, idx)
+
+		// Pacman - serializes the pacman location to the buffer
+		idx = ge.state.serPacman(outputBuf, idx)
+
+		// Fruit - serializes the fruit location (null if fruit doesn't exist)
+		idx = ge.state.serFruit(outputBuf, idx)
 
 		// Pellets - serializes the pellets to the buffer
 		idx = ge.state.serPellets(outputBuf, idx)
