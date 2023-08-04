@@ -61,7 +61,7 @@
     length of this array will be the MPS (messages per second), which should be
     synced with the frame rate of the game engine if there is no lag.
   */
-  const MPS_BUFFER_SIZE = 60; // For higher fps, replace this
+  const MPS_BUFFER_SIZE = 2 * config.GameFPS; // Allow double the specified FPS
   let mpsBuffer = new Array(MPS_BUFFER_SIZE);
   let mpsIdxLeft = 0;
   let mpsIdxRight = 1;
@@ -77,6 +77,26 @@
   // Keep track of the game mode (from the server)
   /* TODO: Make use of game mode for changing the ticker color */
   let gameMode = 0;
+
+  // Initial states for all the agents
+  let pacmanRowState = 23;
+  let pacmanColState = 14;
+
+  let redRowState = 11;
+  let redColState = 13 | 0xc0; // left
+  let redFrightState = 0 | 128;
+
+  let pinkRowState = 13 | 0x40; // down
+  let pinkColState = 13;
+  let pinkFrightState = 0 | 128;
+
+  let cyanRowState = 14 | 0xc0; // up
+  let cyanColState = 11;
+  let cyanFrightState = 0 | 128;
+
+  let orangeRowState = 14 | 0xc0; // up
+  let orangeColState = 15;
+  let orangeFrightState = 0 | 128;
 
   // Handling a new connection
   socket.addEventListener('open', (_) => {
@@ -126,6 +146,20 @@
         gameMode = view.getUint8(byteIdx, false);
         byteIdx += 1;
 
+        // Parse ghost data
+        redRowState       = view.getUint8(byteIdx, false); byteIdx += 1;
+        redColState       = view.getUint8(byteIdx, false); byteIdx += 1;
+        redFrightState    = view.getUint8(byteIdx, false); byteIdx += 1;
+        pinkRowState      = view.getUint8(byteIdx, false); byteIdx += 1;
+        pinkColState      = view.getUint8(byteIdx, false); byteIdx += 1;
+        pinkFrightState   = view.getUint8(byteIdx, false); byteIdx += 1;
+        cyanRowState      = view.getUint8(byteIdx, false); byteIdx += 1;
+        cyanColState      = view.getUint8(byteIdx, false); byteIdx += 1;
+        cyanFrightState   = view.getUint8(byteIdx, false); byteIdx += 1;
+        orangeRowState    = view.getUint8(byteIdx, false); byteIdx += 1;
+        orangeColState    = view.getUint8(byteIdx, false); byteIdx += 1;
+        orangeFrightState = view.getUint8(byteIdx, false); byteIdx += 1;
+
         // Parse pellet data
         for (let row = 0; row < 31; row++) {
           const binRow = view.getUint32(byteIdx, false);
@@ -142,6 +176,7 @@
     }
   });
 
+  // Event on close
   socket.addEventListener('close', (_) => {
     socketOpen = false;
     console.log('WebSocket connection closed');
@@ -154,33 +189,6 @@
 
   // Calculate the remainder when currTicks is divided by updatePeriod
   $: modTicks = currTicks % updatePeriod
-
-  /* TODO: Get the below values from the serialized stream, preferably organized in JSON format */
-
-  /* TODO: Fully calculate spawn offset using the 3 bytes for each ghost */
-
-  let pacmanRowState = 23;
-  let pacmanColState = 14;
-
-  let redRowState = 11;
-  let redColState = 13 | 0xc0; // left
-  let redFrightenedCounter = 0;
-  let redSpawning = true;
-
-  let pinkRowState = 13 | 0xc0; // up
-  let pinkColState = 13;
-  let pinkFrightenedCounter = 0;
-  let pinkSpawning = true;
-
-  let cyanRowState = 14 | 0xc0; // up
-  let cyanColState = 11;
-  let cyanFrightenedCounter = 0;
-  let cyanSpawning = true;
-
-  let orangeRowState = 13 | 0x40; // down
-  let orangeColState = 15;
-  let orangeFrightenedCounter = 0;
-  let orangeSpawning = true;
 
 </script>
 
@@ -197,8 +205,7 @@
          {updatePeriod} 
          rowState={redRowState}
          colState={redColState}
-         frightenedCounter={redFrightenedCounter}
-         spawning={redSpawning}
+         frightState={redFrightState}
          color='red'/>
   
   <Ghost {gridSize}
@@ -206,8 +213,7 @@
          {updatePeriod}
          rowState={pinkRowState}
          colState={pinkColState}
-         frightenedCounter={pinkFrightenedCounter}
-         spawning={pinkSpawning}
+         frightState={pinkFrightState}
          color='pink'/>
 
   <Ghost {gridSize}
@@ -215,8 +221,7 @@
          {updatePeriod}
          rowState={cyanRowState}
          colState={cyanColState}
-         frightenedCounter={cyanFrightenedCounter}
-         spawning={cyanSpawning}
+         frightState={cyanFrightState}
          color='cyan'/>
 
   <Ghost {gridSize}
@@ -224,8 +229,7 @@
          {updatePeriod} 
          rowState={orangeRowState} 
          colState={orangeColState} 
-         frightenedCounter={orangeFrightenedCounter}
-         spawning={orangeSpawning}
+         frightState={orangeFrightState}
          color='orange'/>
 
   <MpsCounter {gridSize} {mpsAvg} />

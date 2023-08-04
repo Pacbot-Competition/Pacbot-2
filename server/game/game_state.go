@@ -8,9 +8,13 @@ type gameState struct {
 
 	/* Message header - 4 bytes */
 
-	currTicks    uint16 // Current ticks elapsed
-	updatePeriod uint8  // Ticks / update
-	gameMode     uint8  // Game mode, encoded using an enum (TODO)
+	// Current ticks elapsed - WARN: at 24 ticks/sec, this will have
+	// an integer overflow after about 45 minutes, so don't run it
+	// continuously for too long
+	currTicks uint16
+
+	updatePeriod uint8 // Ticks / update
+	gameMode     uint8 // Game mode, encoded using an enum (TODO)
 
 	/* Game information - 4 bytes */
 

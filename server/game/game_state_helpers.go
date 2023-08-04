@@ -29,7 +29,14 @@ func modifyBit[T uint8 | uint16 | uint32](num *T, bitIdx int8, bitVal bool) {
 	}
 }
 
-/**************************** Game State Functions ****************************/
+/****************************** Timing Functions ******************************/
+
+// Determines if the game state is ready to update
+func (gs *gameState) updateReady() bool {
+	return (gs.currTicks > 0) && (gs.currTicks%uint16(gs.updatePeriod) == 0)
+}
+
+/**************************** Positional Functions ****************************/
 
 // Determines if a position is within the bounds of the maze
 func (gs *gameState) inBounds(row int8, col int8) bool {

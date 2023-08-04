@@ -59,9 +59,13 @@ func serUint32(num uint32, outputBuf []byte, startIdx int) int {
 // Serialize a location (no getByte calls, serialized manually)
 func serLocation(loc *locationState, outputBuf []byte, startIdx int) int {
 
+	// Lock the location state (so no writes can be done simultaneously)
+	loc.RLock()
+	defer loc.RUnlock()
+
 	// Cover each coordinate of the location, one at a time
-	outputBuf[startIdx+0] = byte((loc.dRow << 6) | loc.row)
-	outputBuf[startIdx+1] = byte((loc.dCol << 6) | loc.col)
+	outputBuf[startIdx+0] = byte((loc.dRow() << 6) | loc.row)
+	outputBuf[startIdx+1] = byte((loc.dCol() << 6) | loc.col)
 
 	// Return the starting index of the next field
 	return startIdx + 2

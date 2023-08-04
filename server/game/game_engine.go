@@ -23,19 +23,23 @@ type GameEngine struct {
 	webInputCh  <-chan []byte
 	hasQuit     bool
 	state       *gameState
-	ticker      *HighResTicker // serves as the game clock
+	ticker      *time.Ticker   // serves as the game clock
+	hrticker    *HighResTicker // serves as the game clock (unused, but available)
 }
 
 // Create a new game engine, casting input and output channels to be uni-directional
 func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, clockRate int32) *GameEngine {
-	return &GameEngine{
+	_tickTime := 1000000 * time.Microsecond / time.Duration(clockRate)
+	ge := GameEngine{
 		quitCh:      make(chan struct{}),
 		webOutputCh: _webOutputCh,
 		webInputCh:  _webInputCh,
 		hasQuit:     false,
 		state:       newGameState(),
-		ticker:      NewHighResTicker(clockRate),
+		hrticker:    NewHighResTicker(_tickTime),
+		ticker:      time.NewTicker(_tickTime),
 	}
+	return &ge
 }
 
 // Quit by closing the game engine, in case the loop ends
@@ -73,8 +77,8 @@ func (ge *GameEngine) RunLoop() {
 		return
 	}
 
-	// Start the game clock (called as a new go-routine)
-	go ge.ticker.Start()
+	// Start the high-res game clock (called as a new go-routine)
+	// go ge.ticker.Start()
 
 	// Output buffer to store the serialized output
 	outputBuf := make([]byte, 256)
@@ -88,6 +92,11 @@ func (ge *GameEngine) RunLoop() {
 
 	for {
 
+		// Test: update game state on the fly
+		if ge.state.updateReady() {
+			ge.state.ghosts[red].loc.stepNow()
+		}
+
 		/* STEP 1: Serialize the current game state to the output buffer */
 		idx := 0
 
@@ -96,7 +105,10 @@ func (ge *GameEngine) RunLoop() {
 		idx = ge.state.serUpdatePeriod(outputBuf, idx)
 		idx = ge.state.serGameMode(outputBuf, idx)
 
-		// Pellets - serializes the pellets to a byte array
+		// Ghosts - serializes the ghost states to the buffer
+		idx = ge.state.serGhosts(outputBuf, idx)
+
+		// Pellets - serializes the pellets to the buffer
 		idx = ge.state.serPellets(outputBuf, idx)
 
 		/* STEP 2: Write the serialized game state to the output channel */
@@ -142,6 +154,6 @@ func (ge *GameEngine) RunLoop() {
 		ge.state.currTicks++
 
 		/* STEP 5: Wait for the ticker to complete the current frame */
-		<-ge.ticker.ReadyCh
+		<-ge.ticker.C // use hrticker (with proper initialization) for higher speed
 	}
 }

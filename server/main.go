@@ -45,7 +45,7 @@ func main() {
 	*/
 	go func(wb *webserver.WebBroker) {
 		start := hrtime.Now()
-		time.Sleep(10 * time.Second)
+		time.Sleep(60 * time.Second)
 		wb.Quit()
 		fmt.Println("slow:", hrtime.Since(start))
 		wb.Quit()

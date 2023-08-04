@@ -76,7 +76,7 @@
   // Ghost state
   export let rowState;
   export let colState;
-  export let frightenedCounter;
+  export let frightState;
   export let spawning;
 
   // Timing info
@@ -103,15 +103,23 @@
   $: dirX = ((colState >> 6) << 30) >> 30
   $: dirY = ((rowState >> 6) << 30) >> 30
 
+  // Using bitwise operations to unpack the spawning and frighten cycles 
+  // of ghosts
+  $: spawning = (frightState >> 7)
+  $: frightCycles = (frightState & 0b1111111)
+
   // Visual effects, to make the ghosts appear as if they are between squares when spawning
-  $: spawnExitSquare1 = (posX === 13) && (posY == 13)
+  $: spawnExitSquare1 = (colState === 13) && (rowState === (13 | 0xc0) /* up */)
   $: spawnOffsetY = (spawning && (posY > 12)) ? (spawnExitSquare1 ? (updatePeriod - modTicks) / (updatePeriod) / 2 : 1/2) : 0
-  $: spawnExitSquare2 = (posX === 13) && (posY == 11)
+  $: spawnExitSquare2 = (colState === (13 | 0xc0) /* left */) && (rowState === 11)
   $: spawnOffsetX = (spawning) ? (spawnExitSquare2 ? (updatePeriod - modTicks) / (updatePeriod) / 2 : 1/2) : 0
 
   // Determines if the ghost is frightened, using the frightened counter
-  $: fr = (frightenedCounter > 0)
-  $: rc = (frightenedCounter <= 5) && (2 * modTicks >= updatePeriod)
+  $: fr = (frightCycles > 0)
+  $: rc = (frightCycles <= 5) && (2 * modTicks >= updatePeriod)
+
+  // Allow "animated" sprites by toggling every 2 ticks
+  $: spriteTwo = ((modTicks >> 1) & 1)
 
 </script>
 
@@ -120,10 +128,20 @@
      style:--grid-size='{~~gridSize+1}px'
      style:--color={color}
      style:--pad='{pad}px'
-     style:top='{(posY  + showMotion*(dirY*modTicks/updatePeriod) + spawnOffsetY) * gridSize - pad}px' 
+     style:top= '{(posY + showMotion*(dirY*modTicks/updatePeriod) + spawnOffsetY) * gridSize - pad}px' 
      style:left='{(posX + showMotion*(dirX*modTicks/updatePeriod) + spawnOffsetX) * gridSize - pad}px'>
 
   <!-- Body of ghost -->
+  {#if spriteTwo}
+  <path d='M {pad} {pad + gridSize/2}
+           A {gridSize/2} {gridSize/2} 0 0 1 {pad + gridSize} {gridSize/2} 
+           L {pad + gridSize} {pad + gridSize}
+           L {pad + 0.72 * gridSize} {pad + 0.9 * gridSize}
+           L {pad + 0.50 * gridSize} {pad +       gridSize}
+           L {pad + 0.26 * gridSize} {pad + 0.9 * gridSize}
+           L {pad + 0    * gridSize} {pad +       gridSize}
+           z' class={fr ? (rc ? 'white outlined' : 'blue outlined') : color}/>
+  {:else}
   <path d='M {pad} {pad + gridSize/2}
            A {gridSize/2} {gridSize/2} 0 0 1 {pad + gridSize} {gridSize/2} 
            L {pad + gridSize} {pad + gridSize}
@@ -134,6 +152,7 @@
            L {pad + 0.18 * gridSize} {pad + 0.9 * gridSize}
            L {pad + 0    * gridSize} {pad +       gridSize}
            z' class={fr ? (rc ? 'white outlined' : 'blue outlined') : color}/>
+  {/if}
 
   <!-- Left eye -->
   <ellipse cx='{pad + (0.30 + 0.06*dirX) * gridSize}' 

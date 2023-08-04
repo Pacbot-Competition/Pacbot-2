@@ -38,8 +38,7 @@ func (gs *gameState) serPellets(outputBuf []byte, startIdx int) int {
 // Serialize the location of Pacman (2 bytes)
 func (gs *gameState) serPacman(outputBuf []byte, startIdx int) int {
 
-	gs.pacmanLoc.RLock()
-	defer gs.pacmanLoc.RUnlock()
+	// Serialize the pacman state (with locking to be thread-safe)
 	startIdx = serLocation(gs.pacmanLoc, outputBuf, startIdx)
 
 	// Return the starting index of the next field
@@ -69,6 +68,7 @@ func (gs *gameState) serGhost(color int8, outputBuf []byte, startIdx int) int {
 		spawnFlag = 0x80
 	}
 
+	// Serialize the location information, followed by the fright cycles and spawn flag info
 	startIdx = serLocation(g.loc, outputBuf, startIdx)
 	startIdx = serUint8(g.frightCycles|spawnFlag, outputBuf, startIdx)
 
@@ -76,9 +76,10 @@ func (gs *gameState) serGhost(color int8, outputBuf []byte, startIdx int) int {
 	return startIdx
 }
 
-// Serialize a ghost's information (3 bytes) - TODO: implement spawn offset
+// Serialize a ghost's information (3 bytes)
 func (gs *gameState) serGhosts(outputBuf []byte, startIdx int) int {
 
+	// Serialize the ghost states, in the order (red -> pink -> cyan -> orange)
 	startIdx = gs.serGhost(red, outputBuf, startIdx)
 	startIdx = gs.serGhost(pink, outputBuf, startIdx)
 	startIdx = gs.serGhost(cyan, outputBuf, startIdx)

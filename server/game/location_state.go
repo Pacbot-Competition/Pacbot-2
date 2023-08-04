@@ -22,19 +22,15 @@ type locationState struct {
 	row          int8 // Row
 	col          int8 // Col
 	dir          int8 // Index of the direction, within the direction arrays
-	dRow         int8 // Row (vertical, y) direction
-	dCol         int8 // Col (horizontal, x) direction
 	sync.RWMutex      // Mainly useful for Pacman, to make sure races don't happen
 }
 
 // Create a new location state with given position and direction values
 func newLocationState(_row int8, _col int8, _dir int8) *locationState {
 	return &locationState{
-		row:  _row,
-		col:  _col,
-		dir:  _dir,
-		dRow: rowDirections[_dir],
-		dCol: colDirections[_dir],
+		row: _row,
+		col: _col,
+		dir: _dir,
 	}
 }
 
@@ -47,12 +43,30 @@ func newLocationStateCopy(_existingLocationState *locationState) *locationState 
 
 	// Copy over the variables into a new location state
 	return &locationState{
-		row:  _existingLocationState.row,
-		col:  _existingLocationState.col,
-		dir:  _existingLocationState.dir,
-		dRow: _existingLocationState.dRow,
-		dCol: _existingLocationState.dCol,
+		row: _existingLocationState.row,
+		col: _existingLocationState.col,
+		dir: _existingLocationState.dir,
 	}
+}
+
+// Get the row direction (-1, 0, or 1)
+func (loc *locationState) dRow() int8 {
+	return rowDirections[loc.dir]
+}
+
+// Get the col direction (-1, 0, or 1)
+func (loc *locationState) dCol() int8 {
+	return colDirections[loc.dir]
+}
+
+func (loc *locationState) stepNow() {
+
+	// Lock the state (to prevent other reads or rights during the update)
+	loc.Lock()
+	defer loc.Unlock()
+
+	loc.row += loc.dRow()
+	loc.col += loc.dCol()
 }
 
 // TODO: Add changeDir and updatePos functions
