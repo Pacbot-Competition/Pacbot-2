@@ -3,11 +3,11 @@
   "TcpPort": 3001,
   "WebSocketPort": 3002,
   "OneBrowserPerIP": true,
-  
+
   "TrustedBrowserIPs": [
     "[::1]",
     "localhost"
   ],
-
+  
   "GameFPS": 24
 }

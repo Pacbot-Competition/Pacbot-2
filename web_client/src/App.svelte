@@ -172,7 +172,6 @@
         // Parse Pacman data
         pacmanRowState    = view.getUint8(byteIdx++, false);
         pacmanColState    = view.getUint8(byteIdx++, false);
-        console.log(pacmanRowState, pacmanColState)
 
         // Parse fruit data
         fruitRowState     = view.getUint8(byteIdx++, false);

@@ -29,7 +29,7 @@ type GameEngine struct {
 
 // Create a new game engine, casting input and output channels to be uni-directional
 func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, clockRate int32) *GameEngine {
-	_tickTime := 1000000 * time.Microsecond / time.Duration(clockRate)
+	_tickTime := 1000000 * time.Microsecond / time.Duration(clockRate) // Time between ticks
 	ge := GameEngine{
 		quitCh:      make(chan struct{}),
 		webOutputCh: _webOutputCh,
@@ -77,8 +77,8 @@ func (ge *GameEngine) RunLoop() {
 		return
 	}
 
-	// Start the high-res game clock (called as a new go-routine)
-	// go ge.ticker.Start()
+	// Start the high-res game clock
+	// ge.hrticker.Start()
 
 	// Output buffer to store the serialized output
 	outputBuf := make([]byte, 256)
@@ -88,36 +88,24 @@ func (ge *GameEngine) RunLoop() {
 		// Test: update game state on the fly
 		if ge.state.updateReady() {
 
-			// Loop over the individual colors
-			for color := 0; color < 4; color++ {
-				ge.state.ghosts[color].loc.stepNow()
-
-				// If the ghost is trapped, reverse its direction to keep it trapped
-				if ge.state.ghosts[color].trapped {
-					ge.state.ghosts[color].loc.reverseDir()
-				}
+			// Loop over the individual ghosts
+			for _, ghost := range ge.state.ghosts {
+				ghost.update()
 			}
 		}
 
 		/* STEP 1: Serialize the current game state to the output buffer */
 		idx := 0
 
-		// Packet header - contains the necessary information to render the ticker
-		idx = ge.state.serCurrTicks(outputBuf, idx)
-		idx = ge.state.serUpdatePeriod(outputBuf, idx)
-		idx = ge.state.serGameMode(outputBuf, idx)
+		// Send the full state
+		idx = ge.state.serFull(outputBuf, idx)
 
-		// Ghosts - serializes the ghost states to the buffer
-		idx = ge.state.serGhosts(outputBuf, idx)
-
-		// Pacman - serializes the pacman location to the buffer
-		idx = ge.state.serPacman(outputBuf, idx)
-
-		// Fruit - serializes the fruit location (null if fruit doesn't exist)
-		idx = ge.state.serFruit(outputBuf, idx)
-
-		// Pellets - serializes the pellets to the buffer
-		idx = ge.state.serPellets(outputBuf, idx)
+		// If we're ready for an update, plan the next move
+		if ge.state.updateReady() {
+			for _, ghost := range ge.state.ghosts {
+				ghost.plan()
+			}
+		}
 
 		/* STEP 2: Write the serialized game state to the output channel */
 
@@ -161,6 +149,6 @@ func (ge *GameEngine) RunLoop() {
 		ge.state.currTicks++
 
 		/* STEP 5: Wait for the ticker to complete the current frame */
-		<-ge.ticker.C // use hrticker (with proper initialization) for higher speed
+		<-ge.ticker.C
 	}
 }

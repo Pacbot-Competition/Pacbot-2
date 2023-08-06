@@ -10,7 +10,9 @@ import (
 
 /*
 A high-resolution ticker, which I designed as an alternative to time.Ticker
-in case it ends up being inaccurate on Windows machines
+in case it ends up being inaccurate on Windows machines - beware, this has
+high overhead (due to repetitive Time Step Counter polling), so only use if
+absolutely necessary
 */
 type HighResTicker struct {
 	C        chan struct{}

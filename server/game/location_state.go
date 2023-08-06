@@ -3,8 +3,8 @@ package game
 import "sync"
 
 // Directions:                         U   L   D   R  None
-var rowDirections [5]int8 = [...]int8{-1, -0, +1, +0, +0}
-var colDirections [5]int8 = [...]int8{-0, -1, +0, +1, +0}
+var dRow [5]int8 = [...]int8{-1, -0, +1, +0, +0}
+var dCol [5]int8 = [...]int8{-0, -1, +0, +1, +0}
 
 // Enum-like declaration to hold the direction indices from above
 const (
@@ -51,20 +51,10 @@ func newLocationStateCopy(_loc *locationState) *locationState {
 
 /******************************** Read Location *******************************/
 
-// Get the row direction (-1, 0, or 1)
-func (loc *locationState) dRow() int8 {
-	return rowDirections[loc.dir]
-}
-
-// Get the col direction (-1, 0, or 1)
-func (loc *locationState) dCol() int8 {
-	return colDirections[loc.dir]
-}
-
 // Determine if another location state matches with the given location
-func (loc *locationState) at(loc2 *locationState) bool {
+func (loc *locationState) collidesWith(loc2 *locationState) bool {
 
-	// (Read) lock the states (to prevent other reads or rights during the update)
+	// (Read) lock the states (to prevent other reads or writes)
 	loc.RLock()
 	loc2.RLock()
 	defer func() {
@@ -78,10 +68,10 @@ func (loc *locationState) at(loc2 *locationState) bool {
 
 /******************************* Update Location ******************************/
 
-// Copy all the attributes from another location state into the given state
-func (loc *locationState) update(loc2 *locationState) {
+// Copy all the variables from another location state into the given location
+func (loc *locationState) copyFrom(loc2 *locationState) {
 
-	// (Write) lock the state (to prevent other reads or rights during the update)
+	// Lock the states for thread safety
 	loc.Lock()
 	loc2.RLock()
 	defer func() {
@@ -95,20 +85,44 @@ func (loc *locationState) update(loc2 *locationState) {
 	loc.dir = loc2.dir
 }
 
-func (loc *locationState) stepNow() {
+/*
+Set the given location to be one time step after another location,
+and copy the current direction
+*/
+func (loc *locationState) advanceFrom(loc2 *locationState) {
 
-	// (Write) lock the state (to prevent other reads or rights during the update)
+	// Lock the states for thread safety
+	loc.Lock()
+	loc2.RLock()
+	defer func() {
+		loc.Unlock()
+		loc2.RUnlock()
+	}()
+
+	// Update the values
+	loc.row += dRow[loc2.dir]
+	loc.col += dCol[loc2.dir]
+
+	// Keep the same direction by default
+	loc.dir = loc2.dir
+}
+
+// Copy all the variables from another location state into the given location
+func (loc *locationState) updateDir(dir int8) {
+
+	// Lock the state for thread safety
 	loc.Lock()
 	defer loc.Unlock()
 
-	// Add the deltas to the coordinates
-	loc.row += loc.dRow()
-	loc.col += loc.dCol()
+	// Update the values
+	loc.dir = dir
 }
+
+//--------------------------------------------------
 
 func (loc *locationState) reverseDir() {
 
-	// (Write) the state (to prevent other reads or rights during the update)
+	// (Write) the state (to prevent other reads or writes)
 	loc.Lock()
 	defer loc.Unlock()
 
@@ -116,4 +130,28 @@ func (loc *locationState) reverseDir() {
 	if loc.dir < 4 {
 		loc.dir ^= 2
 	}
+}
+
+func (loc *locationState) getReverseDir() int8 {
+
+	// (Write) the state (to prevent other reads or writes)
+	loc.Lock()
+	defer loc.Unlock()
+
+	// Bitwise trick to switch between up and down, or left and right
+	if loc.dir < 4 {
+		return loc.dir ^ 2
+	}
+	return loc.dir
+}
+
+// Create a new location state as the neighbor of an existing one
+func (loc *locationState) getNeighborCoords(dir int8) (int8, int8) {
+
+	// Lock the states for thread safety
+	loc.Lock()
+	defer loc.Unlock()
+
+	// Add the deltas to the coordinates and return the pair
+	return (loc.row + dRow[dir]), (loc.col + dCol[dir])
 }

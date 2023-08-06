@@ -1,5 +1,10 @@
 package game
 
+import (
+	"math/rand"
+	"time"
+)
+
 // Enum-like declaration to hold the game mode options
 const (
 	paused  = 0
@@ -21,7 +26,7 @@ type gameState struct {
 	currTicks uint16
 
 	updatePeriod uint8 // Ticks / update
-	gameMode     uint8 // Game mode, encoded using an enum (TODO)
+	mode         uint8 // Game mode, encoded using an enum (TODO)
 
 	/* Game information - 4 bytes */
 
@@ -51,6 +56,9 @@ type gameState struct {
 
 	// Wall state
 	walls [mazeRows]uint32
+
+	// A random number generator for making frightened ghost decisions
+	rng *rand.Rand
 }
 
 // Create a new game state with default values
@@ -62,7 +70,7 @@ func newGameState() *gameState {
 		// Message header
 		currTicks:    0,
 		updatePeriod: initUpdatePeriod,
-		gameMode:     0,
+		mode:         chase,
 
 		// Game info
 		currScore: 0,
@@ -74,15 +82,18 @@ func newGameState() *gameState {
 
 		// Ghosts
 		ghosts: make([]*ghostState, 4),
+
+		// RNG source
+		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
-	gs.pacmanLoc = newLocationStateCopy(initLocPacman)
-	gs.fruitLoc = newLocationStateCopy(initLocFruit)
+	gs.pacmanLoc = newLocationStateCopy(pacmanSpawnLoc)
+	gs.fruitLoc = newLocationStateCopy(fruitSpawnLoc)
 
-	gs.ghosts[red] = newGhostState(red, gs.pacmanLoc, &gs.gameMode)
-	gs.ghosts[pink] = newGhostState(pink, gs.pacmanLoc, &gs.gameMode)
-	gs.ghosts[cyan] = newGhostState(cyan, gs.pacmanLoc, &gs.gameMode)
-	gs.ghosts[orange] = newGhostState(orange, gs.pacmanLoc, &gs.gameMode)
+	gs.ghosts[red] = newGhostState(&gs, red)
+	gs.ghosts[pink] = newGhostState(&gs, pink)
+	gs.ghosts[cyan] = newGhostState(&gs, cyan)
+	gs.ghosts[orange] = newGhostState(&gs, orange)
 
 	// Copy over maze bit arrays
 	copy(gs.pellets[:], initPellets[:])

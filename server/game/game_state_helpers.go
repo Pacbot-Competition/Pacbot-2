@@ -32,11 +32,10 @@ func modifyBit[T uint8 | uint16 | uint32](num *T, bitIdx int8, bitVal bool) {
 /****************************** Timing Functions ******************************/
 
 /*
-Determines if the game state is ready to update (i.e. we reached the start
-of an update cycle, excluding the first cycle
+Determines if the game state is ready to update
 */
 func (gs *gameState) updateReady() bool {
-	return (gs.currTicks%uint16(gs.updatePeriod) == 0) && (gs.currTicks > 0)
+	return (gs.currTicks%uint16(gs.updatePeriod) == 0)
 }
 
 /**************************** Positional Functions ****************************/
@@ -86,16 +85,4 @@ func (gs *gameState) wallAt(row int8, col int8) bool {
 
 	// Returns the bit of the wall row corresponding to the column
 	return getBit(gs.walls[row], col)
-}
-
-// Determines if a wall is at a given location (excluding the ghost house gate)
-func (gs *gameState) ghostSpawnWallAt(row int8, col int8) bool {
-
-	// If the ghost house door is at here, return no wall so the ghost can exit
-	if (row == 12) && (col == 13) {
-		return false
-	}
-
-	// Returns the bit of the wall row corresponding to the column
-	return gs.wallAt(row, col)
 }

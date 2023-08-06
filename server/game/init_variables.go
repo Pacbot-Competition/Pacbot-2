@@ -15,24 +15,24 @@ const initLevel uint8 = 1
 // The number of lives that Pacman starts with
 const initLives uint8 = 3
 
+// The coordinates where the ghost house exit is located
+const ghostHouseExitRow int8 = 12
+const ghostHouseExitCol int8 = 13
+
 // Spawn position for Pacman
-var initLocPacman = newLocationState(23, 13, none)
+var pacmanSpawnLoc = newLocationState(23, 13, none)
 
 // Spawn position for the fruit
-var initLocFruit = newLocationState(17, 13, none)
-var nullLoc = newLocationState(0, 0, none) // serializes to 0x00 0x00
+var fruitSpawnLoc = newLocationState(17, 13, none)
+var emptyLoc = newLocationState(63, 63, none) // serializes to 0x0 0x00
 
 // Spawn positions for the ghosts
-var initLocRed = newLocationState(11, 13, left)
-var initLocPink = newLocationState(13, 13, down)
-var initLocCyan = newLocationState(14, 11, up)
-var initLocOrange = newLocationState(14, 15, up)
-
-// Scatter targets for the ghosts
-var initScatterTargetRed = newLocationState(-3, 25, none)
-var initScatterTargetPink = newLocationState(-3, 2, none)
-var initScatterTargetCyan = newLocationState(31, 0, none)
-var initScatterTargetOrange = newLocationState(31, 27, none)
+var ghostSpawnLocs [4]*locationState = [...]*locationState{
+	newLocationState(11, 13, left), // red
+	newLocationState(13, 13, down), // pink
+	newLocationState(14, 11, up),   // cyan
+	newLocationState(14, 15, up),   // orange
+}
 
 // Column-wise, this may look backwards; column 0 is at bit 0 on the right
 // (Tip: Ctrl+F '1' to see the initial pellet locations)
@@ -90,9 +90,9 @@ var initWalls [31]uint32 = [...]uint32{
 	0b0000_1111110111110110111110111111, // row 10
 	0b0000_1111110110000000000110111111, // row 11
 	0b0000_1111110110111111110110111111, // row 12
-	0b0000_1111110110100000010110111111, // row 13
-	0b0000_1111110000100000010000111111, // row 14
-	0b0000_1111110110100000010110111111, // row 15
+	0b0000_1111110110110000010110111111, // row 13
+	0b0000_1111110000110000010000111111, // row 14
+	0b0000_1111110110111111110110111111, // row 15
 	0b0000_1111110110111111110110111111, // row 16
 	0b0000_1111110110000000000110111111, // row 17
 	0b0000_1111110110111111110110111111, // row 18
