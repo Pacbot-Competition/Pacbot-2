@@ -33,12 +33,12 @@
   export let pacmanRowState;
   export let pacmanColState;
 
-  $: posX = gridSize * pacmanColState;
-  $: posY = gridSize * pacmanRowState;
+  $: posX = pacmanColState & 0b11111;
+  $: posY = pacmanRowState & 0b11111;
 
 </script>
 
 <div class="pacman eating" 
      style:--grid-size="{gridSize}px"
-     style:left="{posX}px"
-     style:top="{posY}px"/>
+     style:left="{gridSize * posX}px"
+     style:top="{gridSize * posY}px"/>

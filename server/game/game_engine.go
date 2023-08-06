@@ -83,10 +83,16 @@ func (ge *GameEngine) RunLoop() {
 	// Output buffer to store the serialized output
 	outputBuf := make([]byte, 256)
 
+	// Create a wait group for synchronizing ghost plans
+	var wgPlans sync.WaitGroup
+
 	for {
 
 		// Test: update game state on the fly
 		if ge.state.updateReady() {
+
+			// Wait until all pending ghost plans are complete
+			wgPlans.Wait()
 
 			// Loop over the individual ghosts
 			for _, ghost := range ge.state.ghosts {
@@ -100,10 +106,11 @@ func (ge *GameEngine) RunLoop() {
 		// Send the full state
 		idx = ge.state.serFull(outputBuf, idx)
 
-		// If we're ready for an update, plan the next move
+		// If we're ready for an update, plan the next ghost moves asynchronously
 		if ge.state.updateReady() {
+			wgPlans.Add(4)
 			for _, ghost := range ge.state.ghosts {
-				ghost.plan()
+				go ghost.plan(&wgPlans)
 			}
 		}
 

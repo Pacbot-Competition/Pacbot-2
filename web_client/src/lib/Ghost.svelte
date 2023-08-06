@@ -111,7 +111,7 @@
   // Visual effects, to make the ghosts appear as if they are between squares when spawning
   $: spawnExitSquare1 = (colState === 13) && (rowState === (13 | 0xc0) /* up */)
   $: spawnOffsetY = (spawning && (posY > 12)) ? (spawnExitSquare1 ? (updatePeriod - modTicks) / (updatePeriod) / 2 : 1/2) : 0
-  $: spawnExitSquare2 = (colState === (13 | 0xc0) /* left */) && (rowState === 11)
+  $: spawnExitSquare2 = (posX === 13) && (posY === 11)
   $: spawnOffsetX = (spawning) ? (spawnExitSquare2 ? (updatePeriod - modTicks) / (updatePeriod) / 2 : 1/2) : 0
 
   // Determines if the ghost is frightened, using the frightened counter

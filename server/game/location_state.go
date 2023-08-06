@@ -2,7 +2,7 @@ package game
 
 import "sync"
 
-// Directions:                         U   L   D   R  None
+// Directions:                U   L   D   R  None
 var dRow [5]int8 = [...]int8{-1, -0, +1, +0, +0}
 var dCol [5]int8 = [...]int8{-0, -1, +0, +1, +0}
 
@@ -118,11 +118,9 @@ func (loc *locationState) updateDir(dir int8) {
 	loc.dir = dir
 }
 
-//--------------------------------------------------
-
 func (loc *locationState) reverseDir() {
 
-	// (Write) the state (to prevent other reads or writes)
+	// (Write) lock the state (to prevent other reads or writes)
 	loc.Lock()
 	defer loc.Unlock()
 
@@ -132,11 +130,11 @@ func (loc *locationState) reverseDir() {
 	}
 }
 
-func (loc *locationState) getReverseDir() int8 {
+func (loc *locationState) getReversedDir() int8 {
 
-	// (Write) the state (to prevent other reads or writes)
-	loc.Lock()
-	defer loc.Unlock()
+	// (Read) the state (to prevent writes)
+	loc.RLock()
+	defer loc.RUnlock()
 
 	// Bitwise trick to switch between up and down, or left and right
 	if loc.dir < 4 {
@@ -149,9 +147,10 @@ func (loc *locationState) getReverseDir() int8 {
 func (loc *locationState) getNeighborCoords(dir int8) (int8, int8) {
 
 	// Lock the states for thread safety
-	loc.Lock()
-	defer loc.Unlock()
+	loc.RLock()
+	defer loc.RUnlock()
 
 	// Add the deltas to the coordinates and return the pair
-	return (loc.row + dRow[dir]), (loc.col + dCol[dir])
+	return (loc.row + dRow[dir]),
+		(loc.col + dCol[dir])
 }

@@ -9,6 +9,9 @@ const mazeCols int8 = 28
 // The number of update ticks that the game starts with
 const initUpdatePeriod uint8 = 12
 
+// The mode that the game starts on by default (mainly for testing purposes)
+const initMode uint8 = chase
+
 // The level that Pacman starts on by default (mainly for testing purposes)
 const initLevel uint8 = 1
 
@@ -20,7 +23,7 @@ const ghostHouseExitRow int8 = 12
 const ghostHouseExitCol int8 = 13
 
 // Spawn position for Pacman
-var pacmanSpawnLoc = newLocationState(23, 13, none)
+var pacmanSpawnLoc = newLocationState(23, 13, right)
 
 // Spawn position for the fruit
 var fruitSpawnLoc = newLocationState(17, 13, none)

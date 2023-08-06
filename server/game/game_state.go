@@ -70,7 +70,7 @@ func newGameState() *gameState {
 		// Message header
 		currTicks:    0,
 		updatePeriod: initUpdatePeriod,
-		mode:         chase,
+		mode:         initMode,
 
 		// Game info
 		currScore: 0,
