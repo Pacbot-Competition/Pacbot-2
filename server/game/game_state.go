@@ -87,13 +87,14 @@ func newGameState() *gameState {
 		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
+	// Declare the initial locations of Pacman and the fruit
 	gs.pacmanLoc = newLocationStateCopy(pacmanSpawnLoc)
 	gs.fruitLoc = newLocationStateCopy(fruitSpawnLoc)
 
-	gs.ghosts[red] = newGhostState(&gs, red)
-	gs.ghosts[pink] = newGhostState(&gs, pink)
-	gs.ghosts[cyan] = newGhostState(&gs, cyan)
-	gs.ghosts[orange] = newGhostState(&gs, orange)
+	// Initialize the ghosts
+	for color := int8(0); color < 4; color++ {
+		gs.ghosts[color] = newGhostState(&gs, color)
+	}
 
 	// Copy over maze bit arrays
 	copy(gs.pellets[:], initPellets[:])

@@ -21,22 +21,6 @@ var ghostNames [4]string = [...]string{
 	"orange",
 }
 
-// Scatter targets for the ghosts - should remain constant
-var ghostScatterTargets [4]*locationState = [...]*locationState{
-	newLocationState(-3, 25, none), // red
-	newLocationState(-3, 2, none),  // pink
-	newLocationState(31, 27, none), // cyan
-	newLocationState(31, 0, none),  // orange
-}
-
-// The number of cycles that the ghosts stay in the trapped state for
-var ghostTrappedCycles [4]uint8 = [...]uint8{
-	0,  // red
-	5,  // pink
-	32, // cyan
-	64, // orange
-}
-
 /*
 An object to keep track of the location and attributes of a ghost
 */

@@ -31,9 +31,7 @@ func modifyBit[T uint8 | uint16 | uint32](num *T, bitIdx int8, bitVal bool) {
 
 /****************************** Timing Functions ******************************/
 
-/*
-Determines if the game state is ready to update
-*/
+// Determines if the game state is ready to update
 func (gs *gameState) updateReady() bool {
 	return (gs.currTicks%uint16(gs.updatePeriod) == 0)
 }
