@@ -66,6 +66,9 @@ func newWebSession(conn *websocket.Conn) *webSession {
 // Register this web session in the active connections
 func (ws *webSession) register() {
 
+	// Increment the web broker quit wait group counter
+	wgQuit.Add(1)
+
 	// If we're not allowing new connections, kick the connection
 	if !newConnectionsAllowed {
 		ws.quitCh <- struct{}{}
@@ -123,6 +126,9 @@ func (ws *webSession) unregister() {
 		delete(openWebSessions, ws)
 	}
 	muOWS.Unlock()
+
+	// Decrement the web broker quit wait group counter
+	wgQuit.Done()
 }
 
 // Run a read-loop go-routine to keep track of the incoming messages for a session

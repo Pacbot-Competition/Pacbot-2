@@ -8,8 +8,11 @@ import (
 	"sync"
 )
 
-// Credit for this specific TCP server implementation goes to
-// https://www.youtube.com/watch?v=qJQrrscB1-4
+/*
+The design for this TCP server is heavily inspired by
+https://www.youtube.com/watch?v=qJQrrscB1-4 (check out that
+video if you're interested in writing a more general one)
+*/
 
 // Keep track of the number of open TCP connections
 var openTcpClients int = 0
@@ -44,13 +47,18 @@ func NewTcpServer(listenAddr string) *TcpServer {
 }
 
 // Initialize the TCP server and handle connections andd messages
-func (s *TcpServer) TcpStart() error {
+func (s *TcpServer) TcpStart(wgQuit *sync.WaitGroup) {
 
 	// Start the TCP connection
 	listener, err := net.Listen("tcp", s.listenAddr)
 	if err != nil {
-		return err
+		fmt.Println("\033[35m\033[1mERR:  Failed to initialize the TCP server. Quitting...\033[0m")
+		return
 	}
+
+	// Increment the wait group counter, and defer closing it upon returning
+	wgQuit.Add(1)
+	defer wgQuit.Done()
 
 	// Close the listener upon exiting the function or (less ideally) crashing
 	defer listener.Close()
@@ -65,8 +73,8 @@ func (s *TcpServer) TcpStart() error {
 	// Close the read channel once we have quit
 	close(s.readCh)
 
-	// No errors
-	return nil
+	// Log that the TCP server successfully quit
+	fmt.Println("\033[35mLOG:  TCP server successfully quit\033[0m")
 }
 
 // Accept incoming TCP connections
@@ -81,9 +89,11 @@ func (s *TcpServer) tcpAcceptLoop() {
 
 		// Increment the open clients, and print out debug info
 		muTcp.Lock()
-		openTcpClients++
-		fmt.Printf("\033[32m[%d -> %d] robot connected at %s\033[0m\n", openTcpClients-1, openTcpClients, conn.RemoteAddr().String())
-		muTcp.Unlock()
+		{
+			openTcpClients++
+			fmt.Printf("\033[32m[%d -> %d] robot connected at %s\033[0m\n", openTcpClients-1, openTcpClients, conn.RemoteAddr().String())
+			muTcp.Unlock()
+		}
 		go s.tcpReadLoop(conn)
 	}
 }
@@ -104,8 +114,10 @@ func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 			// If the connection ends, log and return
 			if err == io.EOF {
 				muTcp.Lock()
-				openTcpClients--
-				fmt.Printf("\033[31m[%d -> %d] robot disconnected at %s\033[0m\n", openTcpClients+1, openTcpClients, conn.RemoteAddr().String())
+				{
+					openTcpClients--
+					fmt.Printf("\033[31m[%d -> %d] robot disconnected at %s\033[0m\n", openTcpClients+1, openTcpClients, conn.RemoteAddr().String())
+				}
 				muTcp.Unlock()
 				return
 			}
@@ -113,8 +125,10 @@ func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 			// If the connection forcefully ends, log and return
 			if _, ok := err.(*net.OpError); ok {
 				muTcp.Lock()
-				openTcpClients--
-				fmt.Printf("\033[31m[%d -> %d] robot vanished at %s\033[0m\n", openTcpClients+1, openTcpClients, conn.RemoteAddr().String())
+				{
+					openTcpClients--
+					fmt.Printf("\033[31m[%d -> %d] robot vanished at %s\033[0m\n", openTcpClients+1, openTcpClients, conn.RemoteAddr().String())
+				}
 				muTcp.Unlock()
 				return
 			}
@@ -133,8 +147,10 @@ func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 		// For testing purposes (if a message 'q' is sent, kick the connection)
 		if bytes.Equal(buf[:n], []byte("q")) {
 			muTcp.Lock()
-			openTcpClients--
-			fmt.Printf("\033[31m[%d -> %d] robot quit at %s\033[0m\n", openTcpClients+1, openTcpClients, conn.RemoteAddr().String())
+			{
+				openTcpClients--
+				fmt.Printf("\033[31m[%d -> %d] robot quit at %s\033[0m\n", openTcpClients+1, openTcpClients, conn.RemoteAddr().String())
+			}
 			muTcp.Unlock()
 			return
 		}
@@ -142,6 +158,13 @@ func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 		// For testing purposes (if a message is received, send '[ACK]' to the client)
 		conn.Write([]byte("[ACK]\n"))
 	}
+}
+
+// Quit the TCP server
+func (s *TcpServer) Quit() {
+
+	// Add an object to its quit channel to allow it to quit
+	s.quitCh <- struct{}{}
 }
 
 // Print out messages that are received

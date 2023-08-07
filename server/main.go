@@ -2,14 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"pacbot_server/game"
 	"pacbot_server/tcpserver"
 	"pacbot_server/webserver"
-	"time"
-
-	"github.com/loov/hrtime"
+	"sync"
 )
 
 func main() {
@@ -25,32 +22,38 @@ func main() {
 	webBroadcastCh := make(chan []byte, 100)
 	webResponseCh := make(chan []byte, 10)
 
+	// A wait group for quitting synchronously (allowing go-routines to complete)
+	var wgQuit sync.WaitGroup
+
 	// Websocket setup (package webserver)
-	wb := webserver.NewWebBroker(webBroadcastCh, webResponseCh)
+	wb := webserver.NewWebBroker(webBroadcastCh, webResponseCh, &wgQuit)
 	go wb.RunLoop() // Run the web broker loop asynchronously
 	http.HandleFunc("/", webserver.WebSocketHandler)
 	go http.ListenAndServe(fmt.Sprintf(":%d", conf.WebSocketPort), nil)
 
 	// TCP setup (package tcpserver)
-	server := tcpserver.NewTcpServer(fmt.Sprintf(":%d", conf.TcpPort))
-	go server.Printer()
+	ts := tcpserver.NewTcpServer(fmt.Sprintf(":%d", conf.TcpPort))
+	go ts.Printer()
+	go ts.TcpStart(&wgQuit) // Start the TCP server asynchronously
 
 	// Game engine setup (package game)
-	ge := game.NewGameEngine(webBroadcastCh, webResponseCh, conf.GameFPS)
+	ge := game.NewGameEngine(webBroadcastCh, webResponseCh, &wgQuit, conf.GameFPS)
 	go ge.RunLoop() // Run the game engine loop asynchronously
 
-	/*
-		Demo for time-keeping abilities: after 60s, all websockets will be killed through
-		quitting the broker, freezing the time received on the web client
-	*/
-	go func(wb *webserver.WebBroker) {
-		start := hrtime.Now()
-		time.Sleep(60 * time.Second)
-		wb.Quit()
-		fmt.Println("slow:", hrtime.Since(start))
-		wb.Quit()
-	}(wb)
+	// Keep the game engine alive until a user types 'q'
+	var input string
+	for {
+		fmt.Scanf("%s", &input) // Blocking I/O to keep the program alive
+		if input == "q" {
+			break
+		}
+	}
 
-	// Log TCP errors
-	log.Fatal(server.TcpStart())
+	// Quit the web server and game engine once complete
+	wb.Quit()
+	ge.Quit()
+	ts.Quit()
+
+	// Synchronize to allow all processes to end safely
+	wgQuit.Wait()
 }

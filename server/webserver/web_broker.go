@@ -15,6 +15,9 @@ var newConnectionsAllowed = true
 // Mutex to protect numActiveWebBrokerLoops
 var muAWB sync.Mutex
 
+// Wait group to safely close all open browsers when quitting
+var wgQuit *sync.WaitGroup
+
 /*
 A web-broker object, to act as an intermediary between web sessions
 and messages from the game engine - its responsibility is to forward byte
@@ -28,13 +31,15 @@ type WebBroker struct {
 }
 
 // Create a new web broker, casting input and output channels to be uni-directional
-func NewWebBroker(_broadcastCh <-chan []byte, _responseCh chan<- []byte) *WebBroker {
-	return &WebBroker{
+func NewWebBroker(_broadcastCh <-chan []byte, _responseCh chan<- []byte, _wgQuit *sync.WaitGroup) *WebBroker {
+	wb := WebBroker{
 		quitCh:      make(chan struct{}),
 		broadcastCh: _broadcastCh,
 		responseCh:  _responseCh,
 		hasQuit:     false,
 	}
+	wgQuit = _wgQuit
+	return &wb
 }
 
 // Quit by closing all web sessions, in case the loop ends
@@ -61,7 +66,7 @@ func (wb *WebBroker) quit() {
 	muOWS.RUnlock()
 
 	// Log that the web broker has quit (if this message doesn't get sent, we are blocked by some mutex)
-	fmt.Println("\033[35mLOG:  Web broker successfully quit\033[0m")
+	fmt.Println("\033[35mLOG:  Web server successfully quit\033[0m")
 }
 
 // Quit function exported to other packages

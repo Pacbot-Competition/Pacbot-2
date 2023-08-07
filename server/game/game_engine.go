@@ -23,11 +23,12 @@ type GameEngine struct {
 	webInputCh  <-chan []byte
 	hasQuit     bool
 	state       *gameState
-	ticker      *time.Ticker // serves as the game clock
+	ticker      *time.Ticker    // serves as the game clock
+	wgQuit      *sync.WaitGroup // wait group to make sure it quits safely
 }
 
 // Create a new game engine, casting input and output channels to be uni-directional
-func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, clockRate int32) *GameEngine {
+func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, _wgQuit *sync.WaitGroup, clockRate int32) *GameEngine {
 	_tickTime := 1000000 * time.Microsecond / time.Duration(clockRate) // Time between ticks
 	ge := GameEngine{
 		quitCh:      make(chan struct{}),
@@ -36,6 +37,7 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, clockR
 		hasQuit:     false,
 		state:       newGameState(),
 		ticker:      time.NewTicker(_tickTime),
+		wgQuit:      _wgQuit,
 	}
 	return &ge
 }
@@ -43,6 +45,11 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, clockR
 // Quit by closing the game engine, in case the loop ends
 func (ge *GameEngine) quit() {
 
+	// Log that the game engine successfully quit
+	fmt.Println("\033[35mLOG:  Game engine successfully quit\033[0m")
+
+	// Decrement the quit wait group counter
+	ge.wgQuit.Done()
 }
 
 // Quit function exported to other packages
@@ -58,6 +65,9 @@ func (ge *GameEngine) RunLoop() {
 	defer func() {
 		ge.quit()
 	}()
+
+	// Increment the quit wait group counter
+	ge.wgQuit.Add(1)
 
 	// Update the number of active game engines
 	// (Lock the mutex to prevent races in case of a multiple engine issue)
@@ -83,7 +93,9 @@ func (ge *GameEngine) RunLoop() {
 
 	for {
 
-		// Test: update game state on the fly
+		/* STEP 1: Update the ghost positions if necessary */
+
+		// If the game state is ready to update, update the ghost positions
 		if ge.state.updateReady() {
 
 			// Wait until all pending ghost plans are complete
@@ -95,11 +107,15 @@ func (ge *GameEngine) RunLoop() {
 			}
 		}
 
-		/* STEP 1: Serialize the current game state to the output buffer */
+		/* STEP 2: Serialize the current game state to the output buffer */
+
+		// Starting index for serialization
 		idx := 0
 
 		// Send the full state
 		idx = ge.state.serFull(outputBuf, idx)
+
+		/* STEP 3: Start planning the next ghost moves if an update just happened */
 
 		// If we're ready for an update, plan the next ghost moves asynchronously
 		if ge.state.updateReady() {
@@ -109,7 +125,7 @@ func (ge *GameEngine) RunLoop() {
 			}
 		}
 
-		/* STEP 2: Write the serialized game state to the output channel */
+		/* STEP 4: Write the serialized game state to the output channel */
 
 		// Check if the write will be blocked, and try to write the serialized state
 		b := len(ge.webOutputCh) == cap(ge.webOutputCh)
@@ -124,7 +140,7 @@ func (ge *GameEngine) RunLoop() {
 			}
 		}
 
-		/* STEP 3: Read the input channel and update the game state accordingly */
+		/* STEP 5: Read the input channel and update the game state accordingly */
 		select {
 
 		// If we get a message from the web broker, handle it
@@ -145,7 +161,7 @@ func (ge *GameEngine) RunLoop() {
 			}
 		}
 
-		/* STEP 4: Update the game state for the next tick */
+		/* STEP 6: Update the game state for the next tick */
 
 		// Increment the number of ticks
 		ge.state.currTicks++

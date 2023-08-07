@@ -20,9 +20,14 @@ type gameState struct {
 
 	/* Message header - 4 bytes */
 
-	// Current ticks elapsed - WARN: at 24 ticks/sec, this will have
-	// an integer overflow after about 45 minutes, so don't run it
-	// continuously for too long
+	/*
+		Current ticks elapsed
+
+		NOTE: at 24 ticks/sec, this will have suffer an integer
+		overflow after about 45 minutes, so don't run it continuously
+		for too long (indefinite pausing is fine though, as it doesn't
+		increment the current tick amount)
+	*/
 	currTicks uint16
 
 	updatePeriod uint8 // Ticks / update
@@ -99,5 +104,7 @@ func newGameState() *gameState {
 	// Copy over maze bit arrays
 	copy(gs.pellets[:], initPellets[:])
 	copy(gs.walls[:], initWalls[:])
+
+	// Return the new game state
 	return &gs
 }
