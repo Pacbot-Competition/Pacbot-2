@@ -66,6 +66,31 @@ func (loc *locationState) collidesWith(loc2 *locationState) bool {
 	return ((loc.row == loc2.row) && (loc.col == loc2.col))
 }
 
+func (loc *locationState) getReversedDir() int8 {
+
+	// (Read) the state (to prevent writes)
+	loc.RLock()
+	defer loc.RUnlock()
+
+	// Bitwise trick to switch between up and down, or left and right
+	if loc.dir < 4 {
+		return loc.dir ^ 2
+	}
+	return loc.dir
+}
+
+// Create a new location state as the neighbor of an existing one
+func (loc *locationState) getNeighborCoords(dir int8) (int8, int8) {
+
+	// Lock the states for thread safety
+	loc.RLock()
+	defer loc.RUnlock()
+
+	// Add the deltas to the coordinates and return the pair
+	return (loc.row + dRow[dir]),
+		(loc.col + dCol[dir])
+}
+
 /******************************* Update Location ******************************/
 
 // Copy all the variables from another location state into the given location
@@ -128,29 +153,4 @@ func (loc *locationState) reverseDir() {
 	if loc.dir < 4 {
 		loc.dir ^= 2
 	}
-}
-
-func (loc *locationState) getReversedDir() int8 {
-
-	// (Read) the state (to prevent writes)
-	loc.RLock()
-	defer loc.RUnlock()
-
-	// Bitwise trick to switch between up and down, or left and right
-	if loc.dir < 4 {
-		return loc.dir ^ 2
-	}
-	return loc.dir
-}
-
-// Create a new location state as the neighbor of an existing one
-func (loc *locationState) getNeighborCoords(dir int8) (int8, int8) {
-
-	// Lock the states for thread safety
-	loc.RLock()
-	defer loc.RUnlock()
-
-	// Add the deltas to the coordinates and return the pair
-	return (loc.row + dRow[dir]),
-		(loc.col + dCol[dir])
 }

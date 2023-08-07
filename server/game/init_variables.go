@@ -49,8 +49,8 @@ var ghostScatterTargets [4]*locationState = [...]*locationState{
 var ghostTrappedCycles [4]uint8 = [...]uint8{
 	0,  // red
 	5,  // pink
-	32, // cyan
-	64, // orange
+	16, // cyan
+	32, // orange
 }
 
 // Column-wise, this may look backwards; column 0 is at bit 0 on the right

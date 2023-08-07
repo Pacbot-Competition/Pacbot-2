@@ -82,10 +82,11 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	var targetRow, targetCol int8
 
 	/*
-		If the ghost is spawning, choose red's spawn location as the target
-		to encourage it to leave the ghost house
+		If the ghost is spawning in the ghost house, choose red's spawn
+		location as the target to encourage it to leave the ghost house
 	*/
-	if g.spawning && !g.nextLoc.collidesWith(ghostSpawnLocs[red]) {
+	if g.spawning && !g.loc.collidesWith(ghostSpawnLocs[red]) &&
+		!g.nextLoc.collidesWith(ghostSpawnLocs[red]) {
 		targetRow, targetCol = ghostSpawnLocs[red].row, ghostSpawnLocs[red].col
 	} else if g.game.mode == chase { // Chase mode targets
 		switch g.color {
@@ -168,10 +169,6 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 			// Update the count of valid moves so far
 			count++
 		}
-
-		// Debug, in case for some reason the control gets here without returning
-		fmt.Println("\033[35mWARN: This statement should not print\033[0m", g.color, ghostNames[g.color])
-		return
 	}
 
 	// Otherwise, choose the best direction to reach the target

@@ -23,8 +23,7 @@ type GameEngine struct {
 	webInputCh  <-chan []byte
 	hasQuit     bool
 	state       *gameState
-	ticker      *time.Ticker   // serves as the game clock
-	hrticker    *HighResTicker // serves as the game clock (unused, but available)
+	ticker      *time.Ticker // serves as the game clock
 }
 
 // Create a new game engine, casting input and output channels to be uni-directional
@@ -36,7 +35,6 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, clockR
 		webInputCh:  _webInputCh,
 		hasQuit:     false,
 		state:       newGameState(),
-		hrticker:    NewHighResTicker(_tickTime),
 		ticker:      time.NewTicker(_tickTime),
 	}
 	return &ge
@@ -76,9 +74,6 @@ func (ge *GameEngine) RunLoop() {
 		fmt.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more than one game engine. Quitting...\033[0m")
 		return
 	}
-
-	// Start the high-res game clock
-	// ge.hrticker.Start()
 
 	// Output buffer to store the serialized output
 	outputBuf := make([]byte, 256)

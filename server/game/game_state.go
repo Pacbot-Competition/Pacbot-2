@@ -31,8 +31,8 @@ type gameState struct {
 	/* Game information - 4 bytes */
 
 	currScore uint16 // Current score
-	currLevel uint8  // Current level number (by default, starts at 1)
-	currLives uint8  // Current lives        (by default, starts at 3)
+	currLevel uint8  // Current level (by default, starts at 1)
+	currLives uint8  // Current lives (by default, starts at 3)
 
 	/* Pacman location - 2 bytes */
 
