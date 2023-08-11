@@ -1,4 +1,4 @@
-To compile this server, you will need the Go language installed.
+To compile this server, you will need the Go language (v1.21) installed.
 
 Steps to build and run the server (must be re-built after ever code change):
 * `go build` in this directory
