@@ -63,7 +63,7 @@ func serUint32(num uint32, outputBuf []byte, startIdx int) int {
 // Serialize a location (no getByte calls, serialized manually)
 func serLocation(loc *locationState, outputBuf []byte, startIdx int) int {
 
-	// Lock the location state (so no writes can be done simultaneously)
+	// (Read) lock the location state
 	loc.RLock()
 	defer loc.RUnlock()
 
@@ -78,12 +78,20 @@ func serLocation(loc *locationState, outputBuf []byte, startIdx int) int {
 // Serialize the current number of ticks (2 bytes)
 func (gs *gameState) serCurrTicks(outputBuf []byte, startIdx int) int {
 
+	// (Read) lock the current ticks
+	gs.muTicks.RLock()
+	defer gs.muTicks.RUnlock()
+
 	// Serialize the field, and return the new start index
 	return serUint16(gs.currTicks, outputBuf, startIdx)
 }
 
-// Serialize the update ticks (1 byte)
+// Serialize the update period (1 byte)
 func (gs *gameState) serUpdatePeriod(outputBuf []byte, startIdx int) int {
+
+	// (Read) lock the update period
+	gs.muPeriod.RLock()
+	defer gs.muPeriod.RUnlock()
 
 	// Serialize the field, and return the new start index
 	return serUint8(gs.updatePeriod, outputBuf, startIdx)
@@ -92,12 +100,53 @@ func (gs *gameState) serUpdatePeriod(outputBuf []byte, startIdx int) int {
 // Serialize the game mode (1 byte)
 func (gs *gameState) serGameMode(outputBuf []byte, startIdx int) int {
 
+	// (Read) lock the game mode
+	gs.muMode.RLock()
+	defer gs.muMode.RUnlock()
+
 	// Serialize the field, and return the new start index
 	return serUint8(gs.mode, outputBuf, startIdx)
 }
 
+// Serialize the current score (2 bytes)
+func (gs *gameState) serCurrScore(outputBuf []byte, startIdx int) int {
+
+	// (Read) lock the current score
+	gs.muScore.RLock()
+	defer gs.muScore.RUnlock()
+
+	// Serialize the field, and return the new start index
+	return serUint16(gs.currScore, outputBuf, startIdx)
+}
+
+// Serialize the current level (1 byte)
+func (gs *gameState) serCurrLevel(outputBuf []byte, startIdx int) int {
+
+	// (Read) lock the current level
+	gs.muLevel.RLock()
+	defer gs.muLevel.RUnlock()
+
+	// Serialize the field, and return the new start index
+	return serUint8(gs.currLevel, outputBuf, startIdx)
+}
+
+// Serialize the current lives (1 byte)
+func (gs *gameState) serCurrLives(outputBuf []byte, startIdx int) int {
+
+	// (Read) lock the current lives
+	gs.muLives.RLock()
+	defer gs.muLives.RUnlock()
+
+	// Serialize the field, and return the new start index
+	return serUint8(gs.currLives, outputBuf, startIdx)
+}
+
 // Serialize the pellets (4 * mazeRows bytes)
 func (gs *gameState) serPellets(outputBuf []byte, startIdx int) int {
+
+	// (Read) lock the pellets array
+	gs.muPellets.RLock()
+	defer gs.muPellets.RUnlock()
 
 	// Loop over each row
 	for row := 0; row < int(mazeRows); row++ {
@@ -123,28 +172,41 @@ func (gs *gameState) serPacman(outputBuf []byte, startIdx int) int {
 // Serialize the location of the fruit (2 bytes)
 func (gs *gameState) serFruit(outputBuf []byte, startIdx int) int {
 
-	if gs.fruitExists {
-		startIdx = serLocation(gs.fruitLoc, outputBuf, startIdx)
-	} else {
-		startIdx = serLocation(emptyLoc, outputBuf, startIdx)
+	// (Read) lock the fruit state
+	gs.muFruit.RLock()
+	{
+		if gs.fruitExists { // Serialize the fruit's location if it exists
+			startIdx = serLocation(gs.fruitLoc, outputBuf, startIdx)
+		} else { // Otherwise, give an empty (0x00 0x00) location
+			startIdx = serLocation(emptyLoc, outputBuf, startIdx)
+		}
 	}
+	gs.muFruit.RUnlock()
 
 	// Return the starting index of the next field
 	return startIdx
 }
 
 // Serialize a ghost's information (3 bytes) - TODO: implement spawn offset
-func (gs *gameState) serGhost(color int8, outputBuf []byte, startIdx int) int {
+func (gs *gameState) serGhost(color uint8, outputBuf []byte, startIdx int) int {
+
+	// Retrive this ghost's struct
+	g := gs.ghosts[color]
+
+	// Serialize the location information first
+	startIdx = serLocation(g.loc, outputBuf, startIdx)
+
+	// Lock the ghost's other state variables
+	g.muState.RLock()
+	defer g.muState.RUnlock()
 
 	// Add a flag at the 7th (highest) bit to indicate spawning
 	var spawnFlag uint8 = 0
-	g := gs.ghosts[color]
 	if g.spawning {
 		spawnFlag = 0x80
 	}
 
-	// Serialize the location information, followed by the fright cycles and spawn flag info
-	startIdx = serLocation(g.loc, outputBuf, startIdx)
+	// Serialize the fright cycles and spawn flag info next
 	startIdx = serUint8(g.frightCycles|spawnFlag, outputBuf, startIdx)
 
 	// Return the starting index of the next field
@@ -173,6 +235,11 @@ func (gs *gameState) serFull(outputBuf []byte, startIdx int) int {
 	startIdx = gs.serCurrTicks(outputBuf, startIdx)
 	startIdx = gs.serUpdatePeriod(outputBuf, startIdx)
 	startIdx = gs.serGameMode(outputBuf, startIdx)
+
+	// General game state information
+	startIdx = gs.serCurrScore(outputBuf, startIdx)
+	startIdx = gs.serCurrLevel(outputBuf, startIdx)
+	startIdx = gs.serCurrLives(outputBuf, startIdx)
 
 	// Ghosts - serializes the ghost states to the buffer
 	startIdx = gs.serGhosts(outputBuf, startIdx)

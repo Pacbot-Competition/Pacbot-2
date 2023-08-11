@@ -8,25 +8,25 @@ var dCol [5]int8 = [...]int8{-0, -1, +0, +1, +0}
 
 // Enum-like declaration to hold the direction indices from above
 const (
-	up    = 0
-	left  = 1
-	down  = 2
-	right = 3
-	none  = 4
+	up    uint8 = 0
+	left  uint8 = 1
+	down  uint8 = 2
+	right uint8 = 3
+	none  uint8 = 4
 )
 
 /*
 An object to keep track of the position and direction of an agent
 */
 type locationState struct {
-	row int8 // Row
-	col int8 // Col
-	dir int8 // Index of the direction, within the direction arrays
+	row int8  // Row
+	col int8  // Col
+	dir uint8 // Index of the direction, within the direction arrays
 	sync.RWMutex
 }
 
 // Create a new location state with given position and direction values
-func newLocationState(_row int8, _col int8, _dir int8) *locationState {
+func newLocationState(_row int8, _col int8, _dir uint8) *locationState {
 	return &locationState{
 		row: _row,
 		col: _col,
@@ -66,7 +66,7 @@ func (loc *locationState) collidesWith(loc2 *locationState) bool {
 	return ((loc.row == loc2.row) && (loc.col == loc2.col))
 }
 
-func (loc *locationState) getReversedDir() int8 {
+func (loc *locationState) getReversedDir() uint8 {
 
 	// (Read) the state (to prevent writes)
 	loc.RLock()
@@ -80,7 +80,7 @@ func (loc *locationState) getReversedDir() int8 {
 }
 
 // Create a new location state as the neighbor of an existing one
-func (loc *locationState) getNeighborCoords(dir int8) (int8, int8) {
+func (loc *locationState) getNeighborCoords(dir uint8) (int8, int8) {
 
 	// Lock the states for thread safety
 	loc.RLock()
@@ -133,7 +133,7 @@ func (loc *locationState) advanceFrom(loc2 *locationState) {
 }
 
 // Copy all the variables from another location state into the given location
-func (loc *locationState) updateDir(dir int8) {
+func (loc *locationState) updateDir(dir uint8) {
 
 	// Lock the state for thread safety
 	loc.Lock()

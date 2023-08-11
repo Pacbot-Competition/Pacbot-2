@@ -7,10 +7,10 @@ import (
 
 // Enum-like declaration to hold the ghost colors
 const (
-	red    = 0
-	pink   = 1
-	cyan   = 2
-	orange = 3
+	red    uint8 = 0
+	pink   uint8 = 1
+	cyan   uint8 = 2
+	orange uint8 = 3
 )
 
 // Names of the ghosts (not the nicknames, just the colors, for debugging)
@@ -29,15 +29,16 @@ type ghostState struct {
 	nextLoc       *locationState // Planned location (for next update)
 	scatterTarget *locationState // Position of Ifixed) scatter target
 	game          *gameState     // The game state tied to the ghost
-	color         int8
+	color         uint8
 	trappedCycles uint8
 	frightCycles  uint8
-	spawning      bool // Flag set when spawning
-	wasEaten      bool // Flag set when eaten and returning to ghost house
+	spawning      bool         // Flag set when spawning
+	wasEaten      bool         // Flag set when eaten and returning to ghost house
+	muState       sync.RWMutex // Mutex to lock general state parameters
 }
 
 // Create a new ghost state with given location and color values
-func newGhostState(_gameState *gameState, _color int8) *ghostState {
+func newGhostState(_gameState *gameState, _color uint8) *ghostState {
 	return &ghostState{
 		loc:           newLocationStateCopy(emptyLoc),
 		nextLoc:       newLocationStateCopy(ghostSpawnLocs[_color]),
@@ -51,13 +52,34 @@ func newGhostState(_gameState *gameState, _color int8) *ghostState {
 	}
 }
 
+// Frighten the ghost
+func (g *ghostState) frighten() {
+
+	// (Write) lock the ghost state
+	g.muState.Lock()
+	{
+		g.frightCycles = ghostFrightCycles
+	}
+	g.muState.Unlock()
+}
+
 // Update the ghost's position: copy the location from the next location state
 func (g *ghostState) update() {
 
-	// If we were just at the red spawn point, the ghost is done spawning
-	if g.loc.collidesWith(ghostSpawnLocs[red]) {
-		g.spawning = false
+	// (Write) lock the ghost state
+	g.muState.Lock()
+	{
+		// If we were just at the red spawn point, the ghost is done spawning
+		if g.loc.collidesWith(ghostSpawnLocs[red]) {
+			g.spawning = false
+		}
+
+		// Decrement the ghost's fright cycles count if necessary
+		if g.frightCycles > 0 {
+			g.frightCycles--
+		}
 	}
+	g.muState.Unlock()
 
 	// Copy the next location into the current location
 	g.loc.copyFrom(g.nextLoc)
@@ -78,6 +100,16 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 		return
 	}
 
+	// Keep local copies of the fright cycles and spawning variables
+	var spawning bool
+	var frightCycles uint8
+	g.muState.RLock()
+	{
+		spawning = g.spawning
+		frightCycles = g.frightCycles
+	}
+	g.muState.RUnlock()
+
 	// Decide on a target for this ghost, depending on the game mode
 	var targetRow, targetCol int8
 
@@ -85,7 +117,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 		If the ghost is spawning in the ghost house, choose red's spawn
 		location as the target to encourage it to leave the ghost house
 	*/
-	if g.spawning && !g.loc.collidesWith(ghostSpawnLocs[red]) &&
+	if spawning && !g.loc.collidesWith(ghostSpawnLocs[red]) &&
 		!g.nextLoc.collidesWith(ghostSpawnLocs[red]) {
 		targetRow, targetCol = ghostSpawnLocs[red].row, ghostSpawnLocs[red].col
 	} else if g.game.mode == chase { // Chase mode targets
@@ -110,7 +142,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	numValidMoves := 0
 	var moveValid [4]bool
 	var moveDistSq [4]int
-	for dir := int8(0); dir < 4; dir++ {
+	for dir := uint8(0); dir < 4; dir++ {
 
 		// If this move would make the ghost reverse, skip it
 		if dir == g.nextLoc.getReversedDir() {
@@ -130,7 +162,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 			Determine if the move would help the ghost escape the ghost house,
 			and make it a valid one if so
 		*/
-		if g.spawning && row == ghostHouseExitRow && col == ghostHouseExitCol {
+		if spawning && row == ghostHouseExitRow && col == ghostHouseExitCol {
 			moveValid[dir] = true
 		}
 
@@ -147,13 +179,13 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	}
 
 	// If frightened, immediately choose a random direction and return
-	if g.frightCycles > 0 {
+	if frightCycles > 0 {
 
 		// Generate a random index out of the valid moves
 		randomNum := g.game.rng.Intn(numValidMoves)
 
 		// Loop over all directions
-		for dir, count := int8(0), 0; dir < 4; dir++ {
+		for dir, count := uint8(0), 0; dir < 4; dir++ {
 
 			// Skip any invalid moves
 			if !moveValid[dir] {
@@ -174,7 +206,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	// Otherwise, choose the best direction to reach the target
 	bestDir := up
 	bestDist := 0xffffffff // Some arbitrarily high number
-	for dir := 0; dir < 4; dir++ {
+	for dir := uint8(0); dir < 4; dir++ {
 
 		// Skip any invalid moves
 		if !moveValid[dir] {
@@ -189,5 +221,5 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	}
 
 	// Once we have picked the best direction, update it
-	g.nextLoc.updateDir(int8(bestDir))
+	g.nextLoc.updateDir(bestDir)
 }

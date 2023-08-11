@@ -2,14 +2,15 @@ package game
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 )
 
 // Enum-like declaration to hold the game mode options
 const (
-	paused  = 0
-	scatter = 1
-	chase   = 2
+	paused  uint8 = 0
+	scatter uint8 = 1
+	chase   uint8 = 2
 )
 
 /*
@@ -29,15 +30,24 @@ type gameState struct {
 		increment the current tick amount)
 	*/
 	currTicks uint16
+	muTicks   sync.RWMutex // Associated mutex
 
-	updatePeriod uint8 // Ticks / update
-	mode         uint8 // Game mode, encoded using an enum (TODO)
+	updatePeriod uint8        // Ticks / update
+	muPeriod     sync.RWMutex // Associated mutex
+
+	mode   uint8        // Game mode, encoded using an enum (TODO)
+	muMode sync.RWMutex // Associated mutex
 
 	/* Game information - 4 bytes */
 
-	currScore uint16 // Current score
-	currLevel uint8  // Current level (by default, starts at 1)
-	currLives uint8  // Current lives (by default, starts at 3)
+	currScore uint16       // Current score
+	muScore   sync.RWMutex // Associated mutex
+
+	currLevel uint8        // Current level (by default, starts at 1)
+	muLevel   sync.RWMutex // Associated mutex
+
+	currLives uint8        // Current lives (by default, starts at 3)
+	muLives   sync.RWMutex // Associated mutex
 
 	/* Pacman location - 2 bytes */
 
@@ -47,6 +57,7 @@ type gameState struct {
 
 	fruitExists bool
 	fruitLoc    *locationState
+	muFruit     sync.RWMutex // Associated mutex
 
 	/* Ghosts - 4 * 3 = 12 bytes */
 
@@ -55,7 +66,9 @@ type gameState struct {
 	/* Pellet State - 31 * 4 = 124 bytes */
 
 	// Pellets encoded within an array, with each uint32 acting as a bit array
-	pellets [mazeRows]uint32
+	pellets    [mazeRows]uint32
+	numPellets uint16       // Number of pellets
+	muPellets  sync.RWMutex // Associated mutex
 
 	/* Auxiliary (non-serialized) state information */
 
@@ -97,7 +110,7 @@ func newGameState() *gameState {
 	gs.fruitLoc = newLocationStateCopy(fruitSpawnLoc)
 
 	// Initialize the ghosts
-	for color := int8(0); color < 4; color++ {
+	for color := uint8(0); color < 4; color++ {
 		gs.ghosts[color] = newGhostState(&gs, color)
 	}
 

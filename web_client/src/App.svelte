@@ -78,6 +78,15 @@
   /* TODO: Make use of game mode for changing the ticker color */
   let gameMode = 0;
 
+  // Keep track of the current score (from the server)
+  let currScore = 0;
+
+  // Keep track of the current level (from the server)
+  let currLevel = 0;
+
+  // Keep track of the current lives (from the server)
+  let currLives = 0;
+
   // Local object to encode the starting states
   const Flags = {
     Up:       0b11000000,
@@ -147,13 +156,22 @@
         let byteIdx = 0;
 
         // Get the current ticks from the server
-        currTicks = view.getUint16(byteIdx, false); byteIdx += 2;
+        currTicks         = view.getUint16(byteIdx, false); byteIdx += 2;
 
         // Get the update ticks from the server
         updatePeriod      = view.getUint8(byteIdx++, false);
 
         // Get the game mode from the server
         gameMode          = view.getUint8(byteIdx++, false);
+
+        // Get the current score from the server
+        currScore         = view.getUint16(byteIdx, false); byteIdx += 2;
+
+        // Get the current level from the server
+        currLevel         = view.getUint8(byteIdx++, false);
+
+        // Get the current lives from the server
+        currLives         = view.getUint8(byteIdx++, false);
 
         // Parse ghost data
         redRowState       = view.getUint8(byteIdx++, false);
@@ -216,7 +234,6 @@
   <Pellets {pelletGrid} {gridSize} />
   <Pacman {gridSize} {pacmanRowState} {pacmanColState} />
 
-  <!-- SVG Ghost Sprites -->
   <Ghost {gridSize}
          {modTicks}
          {updatePeriod} 

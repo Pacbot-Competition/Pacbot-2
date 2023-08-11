@@ -53,6 +53,9 @@ var ghostTrappedCycles [4]uint8 = [...]uint8{
 	32, // orange
 }
 
+// The number of cycles that the ghosts stay in the frightened state for
+const ghostFrightCycles uint8 = 10
+
 // Column-wise, this may look backwards; column 0 is at bit 0 on the right
 // (Tip: Ctrl+F '1' to see the initial pellet locations)
 var initPellets [mazeRows]uint32 = [...]uint32{

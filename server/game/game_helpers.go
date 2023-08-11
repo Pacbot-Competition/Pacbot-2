@@ -36,6 +36,26 @@ func (gs *gameState) updateReady() bool {
 	return (gs.currTicks%uint16(gs.updatePeriod) == 0)
 }
 
+/************************** General Helper Functions **************************/
+
+// Helper function to frighten all the ghosts
+func (gs *gameState) frightenGhosts() {
+	for color := uint8(0); color < 4; color++ {
+		gs.ghosts[color].frighten()
+	}
+}
+
+// Helper function to increment the current score of the game
+func (gs *gameState) incrementScore(change uint16) {
+
+	// (Write) lock the current score
+	gs.muScore.Lock()
+	defer gs.muScore.Unlock()
+
+	// Add the change to the score
+	gs.currScore += change
+}
+
 /**************************** Positional Functions ****************************/
 
 // Determines if a position is within the bounds of the maze
@@ -49,30 +69,51 @@ func (gs *gameState) pelletAt(row int8, col int8) bool {
 		return false
 	}
 
+	// (Read) lock the pellets array
+	gs.muPellets.RLock()
+	defer gs.muPellets.RUnlock()
+
 	// Returns the bit of the pellet row corresponding to the column
 	return getBit(gs.pellets[row], col)
 }
 
-// Determines if a super pellet is at a location (based on row or column)
-func (gs *gameState) superPelletAt(row int8, col int8) bool {
+/*
+Collects a pellet if it is at a given location
+Returns the number of pellets that are left
+*/
+func (gs *gameState) collectPellet(row int8, col int8) uint16 {
 	if !gs.pelletAt(row, col) {
-		return false
+
+		// (Read) lock the number of pellets, then return
+		gs.muPellets.RLock()
+		defer gs.muPellets.RUnlock()
+		return gs.numPellets
 	}
 
-	// If the we are in particular rows and columns, the condition is met
-	return ((row == 3) || (row == 23)) && ((col == 1) || (col == 26))
-}
+	// If the we are in particular rows and columns, it is a super pellet
+	superPellet := ((row == 3) || (row == 23)) && ((col == 1) || (col == 26))
 
-// Collects a pellet if it is at a given location
-func (gs *gameState) collectPellet(row int8, col int8) {
-	if !gs.inBounds(row, col) || !gs.pelletAt(row, col) {
-		return
+	// Make all the ghosts frightened if a super pellet is collected
+	if superPellet {
+		gs.frightenGhosts()
 	}
 
-	/* TODO: Update score */
+	// Update the score, depending on the pellet type
+	if superPellet {
+		gs.currScore += 50 // Super pellet = 50 pts
+	} else {
+		gs.currScore += 10 // Normal pellet = 10 pts
+	}
 
-	// Clears the bit of the pellet row
+	// (Write) lock the pellets array, then clear the pellet's bit
+	gs.muPellets.Lock()
+	gs.muPellets.Unlock()
+
+	// Clear the pellet's bit and decrement the number of pellets
 	modifyBit(&(gs.pellets[row]), col, false)
+	gs.numPellets--
+
+	return gs.numPellets
 }
 
 // Determines if a wall is at a given location
