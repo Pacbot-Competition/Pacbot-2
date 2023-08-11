@@ -171,21 +171,25 @@ Returns the chase location of the cyan ghost
 */
 func (gs *gameState) getChaseTargetCyan() (int8, int8) {
 
-	// (Read) lock the pacman location
+	// (Read) lock the pacman location and red ghost location
 	gs.pacmanLoc.RLock()
-	defer gs.pacmanLoc.RUnlock()
+	gs.ghosts[red].loc.RLock()
+	defer func() {
+		gs.pacmanLoc.RUnlock()
+		gs.ghosts[red].loc.RUnlock()
+	}()
+
+	// Shorthands to make computation simpler
+	pLoc := gs.pacmanLoc       // Pacman location
+	rLoc := gs.ghosts[red].loc // Red location
 
 	// Calculate the position of the 'pivot' square (2 ahead of Pacman)
-	pivotRow := gs.pacmanLoc.row + 2*dRow[gs.pacmanLoc.dir]
-	pivotCol := gs.pacmanLoc.col + 2*dCol[gs.pacmanLoc.dir]
-
-	// (Read) lock the red ghost's location
-	gs.ghosts[red].loc.RLock()
-	defer gs.ghosts[red].loc.RUnlock()
+	pivotRow := pLoc.row + 2*dRow[pLoc.dir]
+	pivotCol := pLoc.col + 2*dCol[pLoc.dir]
 
 	// Return the pair of coordinates of the calculated target
-	return (2*pivotRow - gs.ghosts[red].loc.row),
-		(2*pivotCol - gs.ghosts[red].loc.col)
+	return (2*pivotRow - rLoc.row),
+		(2*pivotCol - rLoc.col)
 }
 
 /*
@@ -195,7 +199,7 @@ Though, if close enough to Pacman, it should choose its scatter target
 */
 func (gs *gameState) getChaseTargetOrange() (int8, int8) {
 
-	// (Read) lock the pacman location
+	// (Read) lock the pacman location and orange ghost location
 	gs.pacmanLoc.RLock()
 	gs.ghosts[orange].loc.RLock()
 	defer func() {
@@ -203,7 +207,7 @@ func (gs *gameState) getChaseTargetOrange() (int8, int8) {
 		gs.ghosts[orange].loc.RUnlock()
 	}()
 
-	// Shorthands to make return values simpler easier
+	// Shorthands to make computation simpler
 	pLoc := gs.pacmanLoc                        // Pacman location
 	oLoc := gs.ghosts[orange].loc               // Orange location
 	oScatter := gs.ghosts[orange].scatterTarget // Orange scatter target

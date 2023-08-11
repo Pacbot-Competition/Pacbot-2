@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"pacbot_server/game"
-	"pacbot_server/tcpserver"
 	"pacbot_server/webserver"
 	"sync"
 )
@@ -31,11 +30,6 @@ func main() {
 	http.HandleFunc("/", webserver.WebSocketHandler)
 	go http.ListenAndServe(fmt.Sprintf(":%d", conf.WebSocketPort), nil)
 
-	// TCP setup (package tcpserver)
-	ts := tcpserver.NewTcpServer(fmt.Sprintf(":%d", conf.TcpPort))
-	go ts.Printer()
-	go ts.TcpStart(&wgQuit) // Start the TCP server asynchronously
-
 	// Game engine setup (package game)
 	ge := game.NewGameEngine(webBroadcastCh, webResponseCh, &wgQuit, conf.GameFPS)
 	go ge.RunLoop() // Run the game engine loop asynchronously
@@ -52,7 +46,6 @@ func main() {
 	// Quit the web server and game engine once complete
 	wb.Quit()
 	ge.Quit()
-	ts.Quit()
 
 	// Synchronize to allow all processes to end safely
 	wgQuit.Wait()

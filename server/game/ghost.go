@@ -96,19 +96,22 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	// If the ghost is trapped, reverse the current direction and return
 	if g.trappedCycles > 0 {
 		g.nextLoc.reverseDir()
-		g.trappedCycles-- // Decrement the counter
+		g.trappedCycles-- // Decrement the trapped cycles counter (no lock needed)
 		return
 	}
 
 	// Keep local copies of the fright cycles and spawning variables
 	var spawning bool
 	var frightCycles uint8
-	g.muState.RLock()
+	g.muState.Lock()
 	{
-		spawning = g.spawning
-		frightCycles = g.frightCycles
+		spawning = g.spawning   // Copy the spawning flag
+		if g.frightCycles > 0 { // Decrement the fright cycles
+			g.frightCycles--
+		}
+		frightCycles = g.frightCycles // Copy the fright cycles
 	}
-	g.muState.RUnlock()
+	g.muState.Unlock()
 
 	// Decide on a target for this ghost, depending on the game mode
 	var targetRow, targetCol int8

@@ -57,7 +57,7 @@ type gameState struct {
 
 	fruitExists bool
 	fruitLoc    *locationState
-	muFruit     sync.RWMutex // Associated mutex
+	muFruit     sync.RWMutex // Associated mutex (for fruitExists)
 
 	/* Ghosts - 4 * 3 = 12 bytes */
 
