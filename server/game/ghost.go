@@ -161,6 +161,11 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 		// Determine if that move is valid
 		moveValid[dir] = !g.game.wallAt(row, col)
 
+		// Determine if the move would be within the ghost house
+		if spawning {
+			moveValid[dir] = moveValid[dir] || g.game.ghostSpawnAt(row, col)
+		}
+
 		/*
 			Determine if the move would help the ghost escape the ghost house,
 			and make it a valid one if so

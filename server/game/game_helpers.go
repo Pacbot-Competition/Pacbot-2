@@ -107,7 +107,7 @@ func (gs *gameState) collectPellet(row int8, col int8) uint16 {
 
 	// (Write) lock the pellets array, then clear the pellet's bit
 	gs.muPellets.Lock()
-	gs.muPellets.Unlock()
+	defer gs.muPellets.Unlock()
 
 	// Clear the pellet's bit and decrement the number of pellets
 	modifyBit(&(gs.pellets[row]), col, false)
@@ -124,6 +124,16 @@ func (gs *gameState) wallAt(row int8, col int8) bool {
 
 	// Returns the bit of the wall row corresponding to the column
 	return getBit(gs.walls[row], col)
+}
+
+// Determines if the ghost house is at a given location
+func (gs *gameState) ghostSpawnAt(row int8, col int8) bool {
+	if !gs.inBounds(row, col) {
+		return false
+	}
+
+	// Returns the bit of the wall row corresponding to the column
+	return ((row >= 13) && (row <= 14)) && ((col >= 11) && (col <= 15))
 }
 
 // Calculates the squared Euclidean distance between two points

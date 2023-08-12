@@ -56,6 +56,9 @@ var ghostTrappedCycles [4]uint8 = [...]uint8{
 // The number of cycles that the ghosts stay in the frightened state for
 const ghostFrightCycles uint8 = 10
 
+// The number of pellets in a typical game of Pacman
+const initPelletCount uint16 = 244
+
 // Column-wise, this may look backwards; column 0 is at bit 0 on the right
 // (Tip: Ctrl+F '1' to see the initial pellet locations)
 var initPellets [mazeRows]uint32 = [...]uint32{
@@ -96,7 +99,7 @@ var initPellets [mazeRows]uint32 = [...]uint32{
 
 // Column-wise, this may look backwards; column 0 is at bit 0 on the right
 // (Tip: Ctrl+F '0' to see the valid Pacman locations)
-var initWalls [31]uint32 = [...]uint32{
+var initWalls [mazeRows]uint32 = [...]uint32{
 	//                middle
 	// col:             vv    8 6 4 2 0
 	0b0000_1111111111111111111111111111, // row 0
@@ -112,8 +115,8 @@ var initWalls [31]uint32 = [...]uint32{
 	0b0000_1111110111110110111110111111, // row 10
 	0b0000_1111110110000000000110111111, // row 11
 	0b0000_1111110110111111110110111111, // row 12
-	0b0000_1111110110110000010110111111, // row 13
-	0b0000_1111110000110000010000111111, // row 14
+	0b0000_1111110110111111110110111111, // row 13
+	0b0000_1111110000111111110000111111, // row 14
 	0b0000_1111110110111111110110111111, // row 15
 	0b0000_1111110110111111110110111111, // row 16
 	0b0000_1111110110000000000110111111, // row 17

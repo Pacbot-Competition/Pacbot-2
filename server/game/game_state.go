@@ -103,6 +103,9 @@ func newGameState() *gameState {
 
 		// RNG source
 		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
+
+		// Pellet count at the start
+		numPellets: initPelletCount,
 	}
 
 	// Declare the initial locations of Pacman and the fruit
