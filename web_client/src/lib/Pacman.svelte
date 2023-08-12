@@ -1,12 +1,19 @@
 <style>
 
   .pacman {
+
+    /* Positioning */
     position: absolute;
-    top: 0;
-    left: 0;
-    background-color: yellow;
+
+    /* Formatting */
     clip-path: polygon(-100% -100%, -100% 200%, 200% 200%, 100% 80%, 45% 50%, 100% 20%, 200% -100%);
+    background-color: yellow;
     border-radius: 50%;
+
+    /* Grid-size related CSS */
+    width: var(--grid-size);
+    height: var(--grid-size);
+    transform: scale(1.5);
   }
 
   .eating {
@@ -23,16 +30,15 @@
 
 <script>
   export let gridSize;
-  export let pacmanRow;
-  export let pacmanCol;
+  export let pacmanRowState;
+  export let pacmanColState;
 
-  $: posX = gridSize * pacmanCol;
-  $: posY = gridSize * pacmanRow;
+  $: posX = pacmanColState & 0b11111;
+  $: posY = pacmanRowState & 0b11111;
 
 </script>
 
 <div class="pacman eating" 
-     style:width="{gridSize}px" 
-     style:height="{gridSize}px" 
-     style:left="{posX}px"
-     style:top="{posY}px"/>
+     style:--grid-size="{gridSize}px"
+     style:left="{gridSize * posX}px"
+     style:top="{gridSize * posY}px"/>

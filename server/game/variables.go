@@ -1,7 +1,67 @@
 package game
 
-// Encoded in little endian form (column 0 would be at bit 0)
-var Pellets [31]uint32 = [...]uint32{
+// The number of rows in the pellets and walls states
+const mazeRows int8 = 31
+
+// The number of columns in the pellets and walls states
+const mazeCols int8 = 28
+
+// The number of update ticks that the game starts with
+const initUpdatePeriod uint8 = 12
+
+// The mode that the game starts on by default (mainly for testing purposes)
+const initMode uint8 = chase
+
+// The level that Pacman starts on by default (mainly for testing purposes)
+const initLevel uint8 = 1
+
+// The number of lives that Pacman starts with
+const initLives uint8 = 3
+
+// The coordinates where the ghost house exit is located
+const ghostHouseExitRow int8 = 12
+const ghostHouseExitCol int8 = 13
+
+// Spawn position for Pacman
+var pacmanSpawnLoc = newLocationState(23, 13, right)
+
+// Spawn position for the fruit
+var fruitSpawnLoc = newLocationState(17, 13, none)
+var emptyLoc = newLocationState(63, 63, none) // serializes to 0x0 0x00
+
+// Spawn positions for the ghosts
+var ghostSpawnLocs [4]*locationState = [...]*locationState{
+	newLocationState(11, 13, left), // red
+	newLocationState(13, 13, down), // pink
+	newLocationState(14, 11, up),   // cyan
+	newLocationState(14, 15, up),   // orange
+}
+
+// Scatter targets for the ghosts - should remain constant
+var ghostScatterTargets [4]*locationState = [...]*locationState{
+	newLocationState(-3, 25, none), // red
+	newLocationState(-3, 2, none),  // pink
+	newLocationState(31, 27, none), // cyan
+	newLocationState(31, 0, none),  // orange
+}
+
+// The number of cycles that the ghosts stay in the trapped state for
+var ghostTrappedCycles [4]uint8 = [...]uint8{
+	0,  // red
+	5,  // pink
+	16, // cyan
+	32, // orange
+}
+
+// The number of cycles that the ghosts stay in the frightened state for
+const ghostFrightCycles uint8 = 10
+
+// The number of pellets in a typical game of Pacman
+const initPelletCount uint16 = 244
+
+// Column-wise, this may look backwards; column 0 is at bit 0 on the right
+// (Tip: Ctrl+F '1' to see the initial pellet locations)
+var initPellets [mazeRows]uint32 = [...]uint32{
 	//                middle
 	// col:             vv    8 6 4 2 0
 	0b0000_0000000000000000000000000000, // row 0
@@ -37,8 +97,9 @@ var Pellets [31]uint32 = [...]uint32{
 	0b0000_0000000000000000000000000000, // row 30
 }
 
-// Encoded in little endian form (column 0 would be at bit 0)
-var Walls [31]uint32 = [...]uint32{
+// Column-wise, this may look backwards; column 0 is at bit 0 on the right
+// (Tip: Ctrl+F '0' to see the valid Pacman locations)
+var initWalls [mazeRows]uint32 = [...]uint32{
 	//                middle
 	// col:             vv    8 6 4 2 0
 	0b0000_1111111111111111111111111111, // row 0
@@ -72,15 +133,4 @@ var Walls [31]uint32 = [...]uint32{
 	0b0000_1011111111110110111111111101, // row 28
 	0b0000_1000000000000000000000000001, // row 29
 	0b0000_1111111111111111111111111111, // row 30
-}
-
-// Serializes in big-endian form (most significant byte first)
-func SerializePellets(_pellets [31]uint32) []byte {
-	ret := make([]byte, 124)
-	for row := 0; row < 31; row++ {
-		for byte_num := 0; byte_num < 4; byte_num++ {
-			ret[row*4+byte_num] = byte((_pellets[row] >> (8 * (3 - byte_num))) & 0xff)
-		}
-	}
-	return ret
 }

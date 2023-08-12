@@ -2,68 +2,51 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"pacbot_server/clock"
 	"pacbot_server/game"
-	"pacbot_server/tcpserver"
 	"pacbot_server/webserver"
-	"time"
-
-	"github.com/loov/hrtime"
+	"sync"
 )
 
 func main() {
 
 	// Get the configuration info (config.go)
 	conf := GetConfig()
-	OneBrowserPerIP := conf.OneBrowserPerIP
 
-	// Websocket stuff (webserver)
-	webserver.ConfigOneBrowserPerIP(OneBrowserPerIP)
-	wb := webserver.NewWebBroker()
-	go wb.RunLoop()
+	// Use this configuration info to set up server subunits
+	webserver.ConfigOneBrowserPerIP(conf.OneBrowserPerIP)
+	webserver.ConfigTrustedBrowserIPs(conf.TrustedBrowserIPs)
+
+	// Make channels for communication between web broker and game engine
+	webBroadcastCh := make(chan []byte, 100)
+	webResponseCh := make(chan []byte, 10)
+
+	// A wait group for quitting synchronously (allowing go-routines to complete)
+	var wgQuit sync.WaitGroup
+
+	// Websocket setup (package webserver)
+	wb := webserver.NewWebBroker(webBroadcastCh, webResponseCh, &wgQuit)
+	go wb.RunLoop() // Run the web broker loop asynchronously
 	http.HandleFunc("/", webserver.WebSocketHandler)
 	go http.ListenAndServe(fmt.Sprintf(":%d", conf.WebSocketPort), nil)
 
-	// TCP stuff (tcp_server.go)
-	server := tcpserver.NewTcpServer(fmt.Sprintf(":%d", conf.TcpPort))
-	go server.Printer()
+	// Game engine setup (package game)
+	ge := game.NewGameEngine(webBroadcastCh, webResponseCh, &wgQuit, conf.GameFPS)
+	go ge.RunLoop() // Run the game engine loop asynchronously
 
-	// High-resolution ticker (for keeping the frame rate roughly constant)
-	hrt := clock.NewHighResTicker(24)
-
-	/*
-		Demo for high-resolution ticker - at the specified FPS, it updates the web
-		broker's send channel with the time (in seconds) and frames elapsed for
-		that second - suffers less lag compared to timer.Ticker() on Windows
-	*/
-	go func(wb *webserver.WebBroker) {
-		go hrt.Start()
-		for idx := 0; idx < 5000; idx++ {
-			select {
-			case wb.BroadcastCh <- game.SerializePellets(game.Pellets):
-				game.Pellets[0] += 1 // Test reactivity of Svelte frontend
-			case <-wb.QuitCh:
-				fmt.Println("fast:", hrt.Lifetime())
-				return
-			}
-			<-hrt.ReadyCh
+	// Keep the game engine alive until a user types 'q'
+	var input string
+	for {
+		fmt.Scanf("%s", &input) // Blocking I/O to keep the program alive
+		if input == "q" {
+			break
 		}
-	}(wb)
+	}
 
-	/*
-		Demo for time-keeping abilities: after 60s, all websockets will be killed through
-		quitting the broker, freezing the time received on the web client
-	*/
-	go func(wb *webserver.WebBroker) {
-		start := hrtime.Now()
-		time.Sleep(10 * time.Second)
-		wb.Quit()
-		fmt.Println("slow:", hrtime.Since(start))
-		wb.Quit()
-	}(wb)
+	// Quit the web server and game engine once complete
+	wb.Quit()
+	ge.Quit()
 
-	// Log TCP errors
-	log.Fatal(server.TcpStart())
+	// Synchronize to allow all processes to end safely
+	wgQuit.Wait()
 }
