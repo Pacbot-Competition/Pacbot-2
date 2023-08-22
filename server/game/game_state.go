@@ -99,7 +99,7 @@ func newGameState() *gameState {
 		fruitExists: false,
 
 		// Ghosts
-		ghosts: make([]*ghostState, 4),
+		ghosts: make([]*ghostState, numColors),
 
 		// RNG source
 		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
@@ -113,7 +113,7 @@ func newGameState() *gameState {
 	gs.fruitLoc = newLocationStateCopy(fruitSpawnLoc)
 
 	// Initialize the ghosts
-	for color := uint8(0); color < 4; color++ {
+	for color := uint8(0); color < numColors; color++ {
 		gs.ghosts[color] = newGhostState(&gs, color)
 	}
 
@@ -123,4 +123,52 @@ func newGameState() *gameState {
 
 	// Return the new game state
 	return &gs
+}
+
+/******************************* Mode Functions *******************************/
+
+// Helper function to set the game mode
+func (gs *gameState) setMode(mode uint8) {
+
+	// (Write) lock the game mode
+	gs.muMode.Lock()
+	{
+		gs.mode = mode // Update the game mode
+	}
+	gs.muMode.Unlock()
+}
+
+// Helper function to get the game mode
+func (gs *gameState) getMode() uint8 {
+
+	// (Read) lock the game mode
+	gs.muMode.RLock()
+	defer gs.muMode.RUnlock()
+
+	// Return the current game mode
+	return gs.mode
+}
+
+/**************************** Game Score Functions ****************************/
+
+// Helper function to increment the current score of the game
+func (gs *gameState) incrementScore(change uint16) {
+
+	// (Write) lock the current score
+	gs.muScore.Lock()
+	{
+		gs.currScore += change // Add the change to the score
+	}
+	gs.muScore.Unlock()
+}
+
+// Helper function to get the current score of the game
+func (gs *gameState) getScore() uint16 {
+
+	// (Read) lock the current score
+	gs.muScore.RLock()
+	defer gs.muScore.RUnlock()
+
+	// Return the current score
+	return gs.currScore
 }

@@ -21,7 +21,6 @@ type GameEngine struct {
 	quitCh      chan struct{}
 	webOutputCh chan<- []byte
 	webInputCh  <-chan []byte
-	hasQuit     bool
 	state       *gameState
 	ticker      *time.Ticker    // serves as the game clock
 	wgQuit      *sync.WaitGroup // wait group to make sure it quits safely
@@ -34,7 +33,6 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, _wgQui
 		quitCh:      make(chan struct{}),
 		webOutputCh: _webOutputCh,
 		webInputCh:  _webInputCh,
-		hasQuit:     false,
 		state:       newGameState(),
 		ticker:      time.NewTicker(_tickTime),
 		wgQuit:      _wgQuit,
@@ -55,7 +53,6 @@ func (ge *GameEngine) quit() {
 // Quit function exported to other packages
 func (ge *GameEngine) Quit() {
 	ge.quitCh <- struct{}{}
-	ge.hasQuit = true
 }
 
 // Start the game engine - should be launched as a go-routine
@@ -119,7 +116,7 @@ func (ge *GameEngine) RunLoop() {
 
 		// If we're ready for an update, plan the next ghost moves asynchronously
 		if ge.state.updateReady() {
-			wgPlans.Add(4)
+			wgPlans.Add(int(numColors))
 			for _, ghost := range ge.state.ghosts {
 				go ghost.plan(&wgPlans)
 			}

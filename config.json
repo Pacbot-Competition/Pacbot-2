@@ -1,6 +1,5 @@
 {
   "ServerIP": "localhost",
-  "TcpPort": 3001,
   "WebSocketPort": 3002,
   "OneBrowserPerIP": true,
 

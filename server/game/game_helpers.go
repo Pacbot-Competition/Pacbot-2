@@ -40,20 +40,9 @@ func (gs *gameState) updateReady() bool {
 
 // Helper function to frighten all the ghosts
 func (gs *gameState) frightenGhosts() {
-	for color := uint8(0); color < 4; color++ {
-		gs.ghosts[color].frighten()
+	for _, ghost := range gs.ghosts {
+		ghost.frighten()
 	}
-}
-
-// Helper function to increment the current score of the game
-func (gs *gameState) incrementScore(change uint16) {
-
-	// (Write) lock the current score
-	gs.muScore.Lock()
-	defer gs.muScore.Unlock()
-
-	// Add the change to the score
-	gs.currScore += change
 }
 
 /**************************** Positional Functions ****************************/
@@ -100,9 +89,9 @@ func (gs *gameState) collectPellet(row int8, col int8) uint16 {
 
 	// Update the score, depending on the pellet type
 	if superPellet {
-		gs.currScore += 50 // Super pellet = 50 pts
+		gs.incrementScore(50) // Super pellet = 50 pts
 	} else {
-		gs.currScore += 10 // Normal pellet = 10 pts
+		gs.incrementScore(10) // Normal pellet = 10 pts
 	}
 
 	// (Write) lock the pellets array, then clear the pellet's bit

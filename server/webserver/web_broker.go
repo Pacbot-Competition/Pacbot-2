@@ -27,7 +27,6 @@ type WebBroker struct {
 	quitCh      chan struct{}
 	broadcastCh <-chan []byte
 	responseCh  chan<- []byte
-	hasQuit     bool
 }
 
 // Create a new web broker, casting input and output channels to be uni-directional
@@ -36,7 +35,6 @@ func NewWebBroker(_broadcastCh <-chan []byte, _responseCh chan<- []byte, _wgQuit
 		quitCh:      make(chan struct{}),
 		broadcastCh: _broadcastCh,
 		responseCh:  _responseCh,
-		hasQuit:     false,
 	}
 	wgQuit = _wgQuit
 	return &wb
@@ -72,12 +70,6 @@ func (wb *WebBroker) quit() {
 // Quit function exported to other packages
 func (wb *WebBroker) Quit() {
 	wb.quitCh <- struct{}{}
-	wb.hasQuit = true
-}
-
-// Has Quit function exported to other packages
-func (wb *WebBroker) HasQuit() bool {
-	return wb.hasQuit
 }
 
 // Start the web-broker - should be launched as a go-routine

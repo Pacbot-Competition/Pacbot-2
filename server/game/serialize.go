@@ -100,23 +100,15 @@ func (gs *gameState) serUpdatePeriod(outputBuf []byte, startIdx int) int {
 // Serialize the game mode (1 byte)
 func (gs *gameState) serGameMode(outputBuf []byte, startIdx int) int {
 
-	// (Read) lock the game mode
-	gs.muMode.RLock()
-	defer gs.muMode.RUnlock()
-
-	// Serialize the field, and return the new start index
-	return serUint8(gs.mode, outputBuf, startIdx)
+	// Serialize the field (with internal locking), and return the new start index
+	return serUint8(gs.getMode(), outputBuf, startIdx)
 }
 
 // Serialize the current score (2 bytes)
 func (gs *gameState) serCurrScore(outputBuf []byte, startIdx int) int {
 
-	// (Read) lock the current score
-	gs.muScore.RLock()
-	defer gs.muScore.RUnlock()
-
-	// Serialize the field, and return the new start index
-	return serUint16(gs.currScore, outputBuf, startIdx)
+	// Serialize the field (with internal locking), and return the new start index
+	return serUint16(gs.getScore(), outputBuf, startIdx)
 }
 
 // Serialize the current level (1 byte)
@@ -203,7 +195,7 @@ func (gs *gameState) serGhost(color uint8, outputBuf []byte, startIdx int) int {
 	// Add a flag at the 7th (highest) bit to indicate spawning
 	var spawnFlag uint8 = 0
 	if g.spawning {
-		spawnFlag = 0x80
+		spawnFlag = 0b10000000
 	}
 
 	// Serialize the fright cycles and spawn flag info next

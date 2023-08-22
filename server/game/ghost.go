@@ -7,14 +7,15 @@ import (
 
 // Enum-like declaration to hold the ghost colors
 const (
-	red    uint8 = 0
-	pink   uint8 = 1
-	cyan   uint8 = 2
-	orange uint8 = 3
+	red       uint8 = 0
+	pink      uint8 = 1
+	cyan      uint8 = 2
+	orange    uint8 = 3
+	numColors uint8 = 4
 )
 
 // Names of the ghosts (not the nicknames, just the colors, for debugging)
-var ghostNames [4]string = [...]string{
+var ghostNames [numColors]string = [...]string{
 	"red",
 	"pink",
 	"cyan",
@@ -27,7 +28,7 @@ An object to keep track of the location and attributes of a ghost
 type ghostState struct {
 	loc           *locationState // Current location
 	nextLoc       *locationState // Planned location (for next update)
-	scatterTarget *locationState // Position of Ifixed) scatter target
+	scatterTarget *locationState // Position of (fixed) scatter target
 	game          *gameState     // The game state tied to the ghost
 	color         uint8
 	trappedCycles uint8
@@ -123,7 +124,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	if spawning && !g.loc.collidesWith(ghostSpawnLocs[red]) &&
 		!g.nextLoc.collidesWith(ghostSpawnLocs[red]) {
 		targetRow, targetCol = ghostSpawnLocs[red].row, ghostSpawnLocs[red].col
-	} else if g.game.mode == chase { // Chase mode targets
+	} else if g.game.getMode() == chase { // Chase mode targets
 		switch g.color {
 		case red:
 			targetRow, targetCol = g.game.getChaseTargetRed()
@@ -134,7 +135,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 		case orange:
 			targetRow, targetCol = g.game.getChaseTargetOrange()
 		}
-	} else if g.game.mode == scatter { // Scatter mode targets
+	} else if g.game.getMode() == scatter { // Scatter mode targets
 		targetRow, targetCol = g.scatterTarget.row, g.scatterTarget.col
 	}
 
