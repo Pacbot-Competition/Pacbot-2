@@ -59,6 +59,12 @@ const ghostFrightCycles uint8 = 10
 // The number of pellets in a typical game of Pacman
 const initPelletCount uint16 = 244
 
+// The points earned when collecting a pellet
+const pelletPoints uint16 = 10
+
+// The points earned when collecting a pellet
+const superPelletPoints uint16 = 50
+
 // Column-wise, this may look backwards; column 0 is at bit 0 on the right
 // (Tip: Ctrl+F '1' to see the initial pellet locations)
 var initPellets [mazeRows]uint32 = [...]uint32{

@@ -104,7 +104,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	// Keep local copies of the fright cycles and spawning variables
 	var spawning bool
 	var frightCycles uint8
-	g.muState.Lock()
+	g.muState.Lock() // (Maybe excessive) write lock due to one write
 	{
 		spawning = g.spawning   // Copy the spawning flag
 		if g.frightCycles > 0 { // Decrement the fright cycles

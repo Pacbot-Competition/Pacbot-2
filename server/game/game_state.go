@@ -121,8 +121,59 @@ func newGameState() *gameState {
 	copy(gs.pellets[:], initPellets[:])
 	copy(gs.walls[:], initWalls[:])
 
+	// Collect the first pellet (no lock necessary, as no other routine sees gs)
+	gs.collectPellet(gs.pacmanLoc.getCoords())
+
 	// Return the new game state
 	return &gs
+}
+
+/**************************** Curr Ticks Functions ****************************/
+
+// Helper function to set the current ticks
+func (gs *gameState) setCurrTicks(ticks uint16) {
+
+	// (Write) lock the current ticks
+	gs.muTicks.Lock()
+	{
+		gs.currTicks = ticks // Update the current ticks
+	}
+	gs.muTicks.Unlock()
+}
+
+// Helper function to get the update period
+func (gs *gameState) getCurrTicks() uint16 {
+
+	// (Read) lock the current ticks
+	gs.muTicks.RLock()
+	defer gs.muTicks.RUnlock()
+
+	// Return the current ticks
+	return gs.currTicks
+}
+
+/**************************** Upd Period Functions ****************************/
+
+// Helper function to set the update period
+func (gs *gameState) setUpdatePeriod(period uint8) {
+
+	// (Write) lock the update period
+	gs.muPeriod.Lock()
+	{
+		gs.updatePeriod = period // Update the update period
+	}
+	gs.muPeriod.Unlock()
+}
+
+// Helper function to get the update period
+func (gs *gameState) getUpdatePeriod() uint8 {
+
+	// (Read) lock the update period
+	gs.muPeriod.RLock()
+	defer gs.muPeriod.RUnlock()
+
+	// Return the update period
+	return gs.updatePeriod
 }
 
 /******************************* Mode Functions *******************************/
@@ -151,13 +202,24 @@ func (gs *gameState) getMode() uint8 {
 
 /**************************** Game Score Functions ****************************/
 
-// Helper function to increment the current score of the game
+// (For performance) helper function to increment the current score of the game
 func (gs *gameState) incrementScore(change uint16) {
 
 	// (Write) lock the current score
 	gs.muScore.Lock()
 	{
-		gs.currScore += change // Add the change to the score
+		gs.currScore += change // Add the delta to the score
+	}
+	gs.muScore.Unlock()
+}
+
+// Helper function to set the current score of the game
+func (gs *gameState) setScore(score uint16) {
+
+	// (Write) lock the current score
+	gs.muScore.Lock()
+	{
+		gs.currScore = score // Update the score
 	}
 	gs.muScore.Unlock()
 }
@@ -171,4 +233,52 @@ func (gs *gameState) getScore() uint16 {
 
 	// Return the current score
 	return gs.currScore
+}
+
+/**************************** Game Level Functions ****************************/
+
+// Helper function to set the current level of the game
+func (gs *gameState) setLevel(level uint8) {
+
+	// (Write) lock the current level
+	gs.muLevel.Lock()
+	{
+		gs.currLevel = level // Update the level
+	}
+	gs.muLevel.Unlock()
+}
+
+// Helper function to get the current level of the game
+func (gs *gameState) getLevel() uint8 {
+
+	// (Read) lock the current level
+	gs.muLevel.RLock()
+	defer gs.muLevel.RUnlock()
+
+	// Return the current level
+	return gs.currLevel
+}
+
+/**************************** Game Level Functions ****************************/
+
+// Helper function to increment the current score of the game
+func (gs *gameState) setLives(lives uint8) {
+
+	// (Write) lock the current lives
+	gs.muLives.Lock()
+	{
+		gs.currLives = lives // Update the lives
+	}
+	gs.muLives.Unlock()
+}
+
+// Helper function to get the current level of the game
+func (gs *gameState) getLives() uint8 {
+
+	// (Read) lock the current lives
+	gs.muLives.RLock()
+	defer gs.muLives.RUnlock()
+
+	// Return the current lives
+	return gs.currLives
 }

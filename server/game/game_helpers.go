@@ -89,9 +89,9 @@ func (gs *gameState) collectPellet(row int8, col int8) uint16 {
 
 	// Update the score, depending on the pellet type
 	if superPellet {
-		gs.incrementScore(50) // Super pellet = 50 pts
+		gs.incrementScore(superPelletPoints)
 	} else {
-		gs.incrementScore(10) // Normal pellet = 10 pts
+		gs.incrementScore(pelletPoints)
 	}
 
 	// (Write) lock the pellets array, then clear the pellet's bit
@@ -146,7 +146,7 @@ func (gs *gameState) getChaseTargetRed() (int8, int8) {
 
 	// Return the pacman location, as a row and column
 	return (gs.pacmanLoc.row),
-		(pacmanSpawnLoc.col)
+		(gs.pacmanLoc.col)
 }
 
 /*

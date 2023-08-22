@@ -78,59 +78,43 @@ func serLocation(loc *locationState, outputBuf []byte, startIdx int) int {
 // Serialize the current number of ticks (2 bytes)
 func (gs *gameState) serCurrTicks(outputBuf []byte, startIdx int) int {
 
-	// (Read) lock the current ticks
-	gs.muTicks.RLock()
-	defer gs.muTicks.RUnlock()
-
-	// Serialize the field, and return the new start index
-	return serUint16(gs.currTicks, outputBuf, startIdx)
+	// Serialize and return the starting index of the next field
+	return serUint16(gs.getCurrTicks(), outputBuf, startIdx)
 }
 
 // Serialize the update period (1 byte)
 func (gs *gameState) serUpdatePeriod(outputBuf []byte, startIdx int) int {
 
-	// (Read) lock the update period
-	gs.muPeriod.RLock()
-	defer gs.muPeriod.RUnlock()
-
-	// Serialize the field, and return the new start index
-	return serUint8(gs.updatePeriod, outputBuf, startIdx)
+	// Serialize and return the starting index of the next field
+	return serUint8(gs.getUpdatePeriod(), outputBuf, startIdx)
 }
 
 // Serialize the game mode (1 byte)
 func (gs *gameState) serGameMode(outputBuf []byte, startIdx int) int {
 
-	// Serialize the field (with internal locking), and return the new start index
+	// Serialize and return the starting index of the next field
 	return serUint8(gs.getMode(), outputBuf, startIdx)
 }
 
 // Serialize the current score (2 bytes)
 func (gs *gameState) serCurrScore(outputBuf []byte, startIdx int) int {
 
-	// Serialize the field (with internal locking), and return the new start index
+	// Serialize and return the starting index of the next field
 	return serUint16(gs.getScore(), outputBuf, startIdx)
 }
 
 // Serialize the current level (1 byte)
 func (gs *gameState) serCurrLevel(outputBuf []byte, startIdx int) int {
 
-	// (Read) lock the current level
-	gs.muLevel.RLock()
-	defer gs.muLevel.RUnlock()
-
-	// Serialize the field, and return the new start index
-	return serUint8(gs.currLevel, outputBuf, startIdx)
+	// Serialize and return the starting index of the next field
+	return serUint8(gs.getLevel(), outputBuf, startIdx)
 }
 
 // Serialize the current lives (1 byte)
 func (gs *gameState) serCurrLives(outputBuf []byte, startIdx int) int {
 
-	// (Read) lock the current lives
-	gs.muLives.RLock()
-	defer gs.muLives.RUnlock()
-
-	// Serialize the field, and return the new start index
-	return serUint8(gs.currLives, outputBuf, startIdx)
+	// Serialize and return the starting index of the next field
+	return serUint8(gs.getLives(), outputBuf, startIdx)
 }
 
 // Serialize the pellets (4 * mazeRows bytes)
@@ -143,7 +127,7 @@ func (gs *gameState) serPellets(outputBuf []byte, startIdx int) int {
 	// Loop over each row
 	for row := 0; row < int(mazeRows); row++ {
 
-		// Serialize the row from uint32 to 4 bytes
+		// Serialize each row from uint32 to 4 bytes
 		startIdx = serUint32(gs.pellets[row], outputBuf, startIdx)
 	}
 
