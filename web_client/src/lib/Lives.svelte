@@ -1,9 +1,6 @@
 <style>
 
-  h2.score-box {
-    margin: 0;
-  }
-  .score-box {
+  .lives-box {
 
     /* Positioning */
     position: absolute;
@@ -22,7 +19,7 @@
     width:       calc(5   * var(--grid-size));
     height:      calc(3   * var(--grid-size));
     line-height: calc(1.1 * var(--grid-size));
-    left:        calc(0   * var(--grid-size));
+    left:        calc(23   * var(--grid-size));
     top:         calc(16  * var(--grid-size));
     font-size:   calc(0.8 * var(--grid-size));
   }
@@ -30,12 +27,18 @@
 </style>
 
 <script>
+  import Pacman from "./Pacman.svelte";
+
   export let gridSize;
-  export let currScore;
+  export let currLives;
+  export let Flags;
 </script>
 
-<h2 class='score-box' style:--grid-size="{gridSize}px">
-  <div>
-    SCORE:<br/>{currScore}
-  </div>
-</h2>
+<div class='lives-box' style:--grid-size="{gridSize}px">
+  {#if currLives > 1}
+    <Pacman {gridSize} pacmanRowState={1} pacmanColState={1 | Flags.Right}/>
+  {/if}
+  {#if currLives > 2}
+    <Pacman {gridSize} pacmanRowState={1} pacmanColState={3 | Flags.Right}/>
+  {/if}
+</div>

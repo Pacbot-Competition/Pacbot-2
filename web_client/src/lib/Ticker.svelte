@@ -38,12 +38,12 @@
 
   circle {
     fill: transparent;
-    stroke: yellow;
+    stroke: var(--color);
     stroke-width: var(--pad);
   }
 
   path {
-    fill: yellow;
+    fill: var(--color);
   }
 
 </style>
@@ -60,6 +60,22 @@
     paused = !paused;
   }
 
+  // Decide the color of the ticker based on the game-mode
+  export let Modes;
+  export let gameMode;
+  let modeColor = 'yellow'
+  $: {
+    if (gameMode == Modes.Paused) {
+      modeColor = 'gray';
+    } else if (gameMode == Modes.Scatter) {
+      modeColor = 'green';
+    } else if (gameMode == Modes.Chase) {
+      modeColor = 'yellow';
+    } else { // The ticker should not be red ever - if it is, there's a bug
+      modeColor = 'red';
+    }
+  }
+
   // Math to calculate the degree measures, lengths, and flags for the ticker object
   export let modTicks;
   export let updatePeriod;
@@ -72,7 +88,7 @@
 </script>
 
 <button class='ticker-box' style:--grid-size='{gridSize}px' on:click={() => togglePause()}>
-  <svg class='ticker' style:--grid-size='{gridSize}px' style:--pad='{pad}px'>
+  <svg class='ticker' style:--grid-size='{gridSize}px' style:--pad='{pad}px' style:--color='{modeColor}'>
     <circle cx="{gridSize+pad}" cy="{gridSize+pad}" r="{gridSize}"/>
     <path d='M {gridSize+pad} {gridSize+pad} 
              L {gridSize+pad} {pad}

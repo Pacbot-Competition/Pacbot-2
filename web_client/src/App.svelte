@@ -34,6 +34,8 @@
   import Ghost from './lib/Ghost.svelte';
   import MpsCounter from './lib/MpsCounter.svelte';
   import Ticker from './lib/Ticker.svelte';
+  import Score from './lib/Score.svelte';
+  import Lives from './lib/Lives.svelte';
 
   // Creating a websocket client
   var socket = new WebSocket(`ws://${config.ServerIP}:${config.WebSocketPort}`);
@@ -75,8 +77,14 @@
   let updatePeriod = 12;
 
   // Keep track of the game mode (from the server)
-  /* TODO: Make use of game mode for changing the ticker color */
   let gameMode = 0;
+
+  // Local object to encode the possible modes
+  const Modes = {
+    Paused:   0,
+    Scatter:  1,
+    Chase:    2,
+  }
 
   // Keep track of the current score (from the server)
   let currScore = 0;
@@ -267,5 +275,7 @@
          color='orange'/>
 
   <MpsCounter {gridSize} {mpsAvg} />
-  <Ticker {gridSize} {modTicks} {updatePeriod} bind:paused/>
+  <Ticker {gridSize} {modTicks} {updatePeriod} {gameMode} {Modes} bind:paused/>
+  <Score {gridSize} {currScore} />
+  <Lives {gridSize} {currLives} {Flags} />
 </div>
