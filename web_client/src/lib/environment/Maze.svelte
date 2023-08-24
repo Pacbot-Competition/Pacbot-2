@@ -21,7 +21,7 @@
 </script>
 
 <img class="maze" 
-     src="maze.svg" 
+     src="maze.svg"
      alt='Pacman Maze' 
      style:--grid-size="{gridSize}px" 
      draggable="false"/>

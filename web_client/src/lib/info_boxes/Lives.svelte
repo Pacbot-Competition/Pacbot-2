@@ -10,7 +10,6 @@
     /* Formatting */
     background-color: rgba(0,0,0,0.3);
     border: none;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -27,18 +26,18 @@
 </style>
 
 <script>
-  import Pacman from "./Pacman.svelte";
+  import Pacman from "../agents/Pacman.svelte";
 
   export let gridSize;
   export let currLives;
-  export let Flags;
+  export let Directions;
 </script>
 
 <div class='lives-box' style:--grid-size="{gridSize}px">
   {#if currLives > 1}
-    <Pacman {gridSize} pacmanRowState={1} pacmanColState={1 | Flags.Right}/>
+    <Pacman {gridSize} pacmanRowState={1} pacmanColState={1 | Directions.Right}/>
   {/if}
   {#if currLives > 2}
-    <Pacman {gridSize} pacmanRowState={1} pacmanColState={3 | Flags.Right}/>
+    <Pacman {gridSize} pacmanRowState={1} pacmanColState={3 | Directions.Right}/>
   {/if}
 </div>

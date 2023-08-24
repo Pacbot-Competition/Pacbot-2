@@ -13,8 +13,8 @@
     /* Formatting */
     background-color: rgba(0,0,0,0.3);
     border: none;
-    cursor: pointer;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
 
@@ -32,10 +32,10 @@
 <script>
   export let gridSize;
   export let currScore;
+  export let currLevel;
 </script>
 
 <h2 class='score-box' style:--grid-size="{gridSize}px">
-  <div>
-    SCORE:<br/>{currScore}
-  </div>
+  <div>Level {currLevel}</div>
+  <div>{currScore}</div>
 </h2>

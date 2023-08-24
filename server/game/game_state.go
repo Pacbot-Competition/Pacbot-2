@@ -24,10 +24,10 @@ type gameState struct {
 	/*
 		Current ticks elapsed
 
-		NOTE: at 24 ticks/sec, this will have suffer an integer
-		overflow after about 45 minutes, so don't run it continuously
-		for too long (indefinite pausing is fine though, as it doesn't
-		increment the current tick amount)
+		NOTE: at 24 ticks/sec, this will experience an integer overflow
+		after about 45 minutes, so don't run it continuously for too
+		long (indefinite pausing is fine though, as it doesn't increment
+		the current tick amount)
 	*/
 	currTicks uint16
 	muTicks   sync.RWMutex // Associated mutex
@@ -35,7 +35,7 @@ type gameState struct {
 	updatePeriod uint8        // Ticks / update
 	muPeriod     sync.RWMutex // Associated mutex
 
-	mode   uint8        // Game mode, encoded using an enum (TODO)
+	mode   uint8        // Game mode
 	muMode sync.RWMutex // Associated mutex
 
 	/* Game information - 4 bytes */

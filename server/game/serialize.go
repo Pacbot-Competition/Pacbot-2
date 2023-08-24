@@ -163,7 +163,7 @@ func (gs *gameState) serFruit(outputBuf []byte, startIdx int) int {
 	return startIdx
 }
 
-// Serialize a ghost's information (3 bytes) - TODO: implement spawn offset
+// Serialize a ghost's information (3 bytes)
 func (gs *gameState) serGhost(color uint8, outputBuf []byte, startIdx int) int {
 
 	// Retrive this ghost's struct
