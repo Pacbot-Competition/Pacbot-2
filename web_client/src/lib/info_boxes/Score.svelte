@@ -1,8 +1,11 @@
 <style>
 
+  /* Control of header margins */
   h2.score-box {
     margin: 0;
   }
+
+  /* Information box for levels and score */
   .score-box {
 
     /* Positioning */
@@ -35,7 +38,10 @@
   export let currLevel;
 </script>
 
-<h2 class='score-box' style:--grid-size="{gridSize}px">
+<h2
+  class='score-box'
+  style:--grid-size="{gridSize}px"
+>
   <div>Level {currLevel}</div>
   <div>{currScore}</div>
 </h2>

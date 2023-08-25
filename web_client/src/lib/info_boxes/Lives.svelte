@@ -1,5 +1,6 @@
 <style>
 
+  /* Information box for remaining lives */
   .lives-box {
 
     /* Positioning */
@@ -35,9 +36,17 @@
 
 <div class='lives-box' style:--grid-size="{gridSize}px">
   {#if currLives > 1}
-    <Pacman {gridSize} pacmanRowState={1} pacmanColState={1 | Directions.Right}/>
+    <Pacman
+      {gridSize}
+      pacmanRowState={1}
+      pacmanColState={1 | Directions.Right}
+    />
   {/if}
   {#if currLives > 2}
-    <Pacman {gridSize} pacmanRowState={1} pacmanColState={3 | Directions.Right}/>
+    <Pacman
+      {gridSize}
+      pacmanRowState={1}
+      pacmanColState={3 | Directions.Right}
+    />
   {/if}
 </div>

@@ -1,5 +1,6 @@
 <style>
 
+  /* Ghost SVG Sprite */
   .ghost-svg {
     position: absolute;
     width:  calc(var(--grid-size) + 2 * var(--pad));
@@ -103,16 +104,28 @@
   $: dirX = ((colState >> 6) << 30) >> 30
   $: dirY = ((rowState >> 6) << 30) >> 30
 
-  // Using bitwise operations to unpack the spawning and frighten cycles 
-  // of ghosts
+  /* 
+    Using bitwise operations to unpack the spawning conditions and 
+    frighten cycles of ghosts
+  */
   $: spawning = (frightState >> 7)
   $: frightCycles = (frightState & 0b1111111)
 
-  // Visual effects, to make the ghosts appear as if they are between squares when spawning
-  $: spawnExitSquare1 = (colState === 13) && (rowState === (13 | 0xc0) /* up */)
-  $: spawnOffsetY = (spawning && (posY > 12)) ? (spawnExitSquare1 ? (updatePeriod - modTicks) / (updatePeriod) / 2 : 1/2) : 0
+  /*
+    Visual effects, to make the ghosts appear as if they are 
+    between squares when spawning
+  */
+  $: spawnExitSquare1 = (colState === 13) && 
+                        (rowState === (13 | 0xc0) /* up */)
+  $: spawnOffsetY = (spawning && (posY > 12)) ? 
+                      (spawnExitSquare1 ? 
+                        ((updatePeriod - modTicks) / (updatePeriod) / 2) : (1/2)
+                      ) : 0
   $: spawnExitSquare2 = (posX === 13) && (posY === 11)
-  $: spawnOffsetX = (spawning) ? (spawnExitSquare2 ? (updatePeriod - modTicks) / (updatePeriod) / 2 : 1/2) : 0
+  $: spawnOffsetX = (spawning) ? 
+                      (spawnExitSquare2 ? 
+                        ((updatePeriod - modTicks) / (updatePeriod) / 2) : (1/2)
+                      ) : 0
 
   // Determines if the ghost is frightened, using the frightened counter
   $: fr = (frightCycles > 0)
@@ -124,70 +137,90 @@
 </script>
 
 <!-- SVG Sprite of Ghost -->
-<svg class='ghost-svg' 
-     style:--grid-size='{~~gridSize+1}px'
-     style:--color={color}
-     style:--pad='{pad}px'
-     style:top= '{(posY + showMotion*(dirY*modTicks/updatePeriod) + spawnOffsetY) * gridSize - pad}px' 
-     style:left='{(posX + showMotion*(dirX*modTicks/updatePeriod) + spawnOffsetX) * gridSize - pad}px'>
+<svg
+  class='ghost-svg' 
+  style:--grid-size='{~~gridSize+1}px'
+  style:--color={color}
+  style:--pad='{pad}px'
+  style:top= '{(posY + showMotion*(dirY*modTicks/updatePeriod) + spawnOffsetY) *
+                        gridSize - pad}px' 
+  style:left='{(posX + showMotion*(dirX*modTicks/updatePeriod) + spawnOffsetX) * 
+                        gridSize - pad}px'
+>
 
   <!-- Body of ghost -->
   {#if spriteTwo}
-  <path d='M {pad} {pad + gridSize/2}
-           A {gridSize/2} {gridSize/2} 0 0 1 {pad + gridSize} {gridSize/2} 
-           L {pad + gridSize} {pad + gridSize}
-           L {pad + 0.72 * gridSize} {pad + 0.9 * gridSize}
-           L {pad + 0.50 * gridSize} {pad +       gridSize}
-           L {pad + 0.26 * gridSize} {pad + 0.9 * gridSize}
-           L {pad + 0    * gridSize} {pad +       gridSize}
-           z' class={fr ? (rc ? 'white outlined' : 'blue outlined') : color}/>
+    <path
+      d=' M {pad} {pad + gridSize/2}
+          A {gridSize/2} {gridSize/2} 0 0 1 {pad + gridSize} {gridSize/2} 
+          L {pad + gridSize} {pad + gridSize}
+          L {pad + 0.72 * gridSize} {pad + 0.9 * gridSize}
+          L {pad + 0.50 * gridSize} {pad +       gridSize}
+          L {pad + 0.26 * gridSize} {pad + 0.9 * gridSize}
+          L {pad + 0    * gridSize} {pad +       gridSize}
+          z' 
+      class={fr ? (rc ? 'white outlined' : 'blue outlined') : color}
+    />
   {:else}
-  <path d='M {pad} {pad + gridSize/2}
-           A {gridSize/2} {gridSize/2} 0 0 1 {pad + gridSize} {gridSize/2} 
-           L {pad + gridSize} {pad + gridSize}
-           L {pad + 0.82 * gridSize} {pad + 0.9 * gridSize}
-           L {pad + 0.67 * gridSize} {pad +       gridSize}
-           L {pad + 0.50 * gridSize} {pad + 0.9 * gridSize}
-           L {pad + 0.33 * gridSize} {pad +       gridSize}
-           L {pad + 0.18 * gridSize} {pad + 0.9 * gridSize}
-           L {pad + 0    * gridSize} {pad +       gridSize}
-           z' class={fr ? (rc ? 'white outlined' : 'blue outlined') : color}/>
+    <path 
+      d=' M {pad} {pad + gridSize/2}
+          A {gridSize/2} {gridSize/2} 0 0 1 {pad + gridSize} {gridSize/2} 
+          L {pad + gridSize} {pad + gridSize}
+          L {pad + 0.82 * gridSize} {pad + 0.9 * gridSize}
+          L {pad + 0.67 * gridSize} {pad +       gridSize}
+          L {pad + 0.50 * gridSize} {pad + 0.9 * gridSize}
+          L {pad + 0.33 * gridSize} {pad +       gridSize}
+          L {pad + 0.18 * gridSize} {pad + 0.9 * gridSize}
+          L {pad + 0    * gridSize} {pad +       gridSize}
+          z'
+      class={fr ? (rc ? 'white outlined' : 'blue outlined') : color}
+    />
   {/if}
 
   <!-- Left eye -->
-  <ellipse cx='{pad + (0.30 + 0.06*dirX) * gridSize}' 
-           cy='{pad + (0.40 + 0.09*dirY) * gridSize}' 
-           rx='{0.14 * gridSize}' 
-           ry='{0.20 * gridSize}' 
-           class={fr ? (rc ? 'transparent' : 'transparent') : 'white'}/>
+  <ellipse
+    cx='{pad + (0.30 + 0.06*dirX) * gridSize}' 
+    cy='{pad + (0.40 + 0.09*dirY) * gridSize}' 
+    rx='{0.14 * gridSize}' 
+    ry='{0.20 * gridSize}' 
+    class={fr ? (rc ? 'transparent' : 'transparent') : 'white'}
+  />
 
   <!-- Right eye -->
-  <ellipse cx='{pad + (0.70 + 0.06*dirX) * gridSize}' 
-           cy='{pad + (0.40 + 0.09*dirY) * gridSize}' 
-           rx='{0.14 * gridSize}' 
-           ry='{0.20 * gridSize}' 
-           class={fr ? (rc ? 'transparent' : 'transparent') : 'white'}/>
+  <ellipse
+    cx='{pad + (0.70 + 0.06*dirX) * gridSize}' 
+    cy='{pad + (0.40 + 0.09*dirY) * gridSize}' 
+    rx='{0.14 * gridSize}' 
+    ry='{0.20 * gridSize}' 
+    class={fr ? (rc ? 'transparent' : 'transparent') : 'white'}
+  />
   
   <!-- Left iris -->
-  <ellipse cx='{pad + (0.30 + 0.12*dirX) * gridSize}' 
-           cy='{pad + (0.40 + 0.18*dirY) * gridSize}' 
-           rx='{0.07 * gridSize}' 
-           ry='{0.10 * gridSize}' 
-           class={fr ? (rc ? 'red' : 'white') : 'blue'}/>
+  <ellipse 
+    cx='{pad + (0.30 + 0.12*dirX) * gridSize}' 
+    cy='{pad + (0.40 + 0.18*dirY) * gridSize}' 
+    rx='{0.07 * gridSize}' 
+    ry='{0.10 * gridSize}' 
+    class={fr ? (rc ? 'red' : 'white') : 'blue'}
+  />
 
   <!-- Right iris -->
-  <ellipse cx='{pad + (0.70 + 0.12*dirX) * gridSize}' 
-           cy='{pad + (0.40 + 0.18*dirY) * gridSize}' 
-           rx='{0.07 * gridSize}' 
-           ry='{0.10 * gridSize}' 
-           class={fr ? (rc ? 'red' : 'white') : 'blue'}/>
+  <ellipse 
+    cx='{pad + (0.70 + 0.12*dirX) * gridSize}' 
+    cy='{pad + (0.40 + 0.18*dirY) * gridSize}' 
+    rx='{0.07 * gridSize}' 
+    ry='{0.10 * gridSize}' 
+    class={fr ? (rc ? 'red' : 'white') : 'blue'}
+  />
 
   <!-- Mouth (when frightened) -->
-  <path d='M {pad + (0.30 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.38 + 0.38*dirY) : 0.72) * gridSize}
-           L {pad + (0.70 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.38 + 0.38*dirY) : 0.72) * gridSize}
-           L {pad + (0.70 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.42 + 0.38*dirY) : 0.76)  * gridSize}
-           L {pad + (0.30 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.42 + 0.38*dirY) : 0.76)  * gridSize}
-           z'
-        class={fr ? (rc ? 'red' : 'white') : 'transparent'}>
+  <path 
+    d=' M {pad + (0.30 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.38 + 0.38*dirY) : 0.72) * gridSize}
+        L {pad + (0.70 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.38 + 0.38*dirY) : 0.72) * gridSize}
+        L {pad + (0.70 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.42 + 0.38*dirY) : 0.76)  * gridSize}
+        L {pad + (0.30 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.42 + 0.38*dirY) : 0.76)  * gridSize}
+        z'
+    class={fr ? (rc ? 'red' : 'white') : 'transparent'}
+  />
   
 </svg>

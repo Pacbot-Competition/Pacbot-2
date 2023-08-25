@@ -61,11 +61,11 @@
   }
 
   /*
-    We use a circular queue (with a fixed max capacity to keep track of the times
-    of the most recent messages. For every message we receive, we should add this
-    time to the queue and remove all times longer than a millisecond ago. The 
-    length of this array will be the MPS (messages per second), which should be
-    synced with the frame rate of the game engine if there is no lag.
+    We use a circular queue (with a fixed max capacity to keep track of the 
+    times of the most recent messages. For every message we receive, we should
+    add this time to the queue and remove all times longer than 1ms ago. The 
+    length of this array will be the MPS (messages per second), which should 
+    be synced with the frame rate of the game engine if there is no lag.
   */
   const MPS_BUFFER_SIZE = 2 * config.GameFPS; // Allow double the specified FPS
   let mpsBuffer = new Array(MPS_BUFFER_SIZE);
@@ -210,8 +210,14 @@
         for (let row = 0; row < 31; row++) {
           const binRow = view.getUint32(byteIdx, false);
           for (let col = 0; col < 28; col++) {
-            let superPellet = ((row === 3) || (row === 23)) && ((col === 1) || (col === 26));
-            pelletGrid[row][col] = ((binRow >> col) & 1) ? (superPellet ? 2 : 1) : 0;
+
+            // Super pellet condition
+            let superPellet = ((row === 3) || (row === 23)) 
+                              && ((col === 1) || (col === 26));
+
+            // Update the pellet grid
+            pelletGrid[row][col] = ((binRow >> col) & 1) ? 
+                                    (superPellet ? 2 : 1) : 0;
           }
           byteIdx += 4;
         }
@@ -231,54 +237,107 @@
   // Track the size of the window, to determine the grid size
   let innerWidth = 0;
   let innerHeight = 0;
-  $: gridSize = 0.8 * ((innerHeight * 28 < innerWidth * 31) ? (innerHeight / 31) : (innerWidth / 28));
+  $: gridSize = 0.8 * ((innerHeight * 28 < innerWidth * 31) ? 
+    (innerHeight / 31) : (innerWidth / 28));
 
   // Calculate the remainder when currTicks is divided by updatePeriod
   $: modTicks = currTicks % updatePeriod
 
+  // Handle key presses, to send responses back to the server
+  const handleKeyDown = (event) => {
+    const key = event.key;
+    console.log(key);
+  }
+
 </script>
 
-<svelte:window bind:innerWidth bind:innerHeight />
+<svelte:window 
+  on:keydown={handleKeyDown} 
+  bind:innerWidth bind:innerHeight 
+/>
 
 <div class='maze-space' style:--grid-size="{gridSize}px">
-  <Maze {gridSize} />
-  <Pellets {pelletGrid} {gridSize} />
-  <Pacman {gridSize} {pacmanRowState} {pacmanColState} {Directions} />
-
-  <Ghost {gridSize}
-         {modTicks}
-         {updatePeriod} 
-         rowState={redRowState}
-         colState={redColState}
-         frightState={redFrightState}
-         color='red'/>
   
-  <Ghost {gridSize}
-         {modTicks}
-         {updatePeriod}
-         rowState={pinkRowState}
-         colState={pinkColState}
-         frightState={pinkFrightState}
-         color='pink'/>
+  <Maze 
+    {gridSize} 
+  />
 
-  <Ghost {gridSize}
-         {modTicks}
-         {updatePeriod}
-         rowState={cyanRowState}
-         colState={cyanColState}
-         frightState={cyanFrightState}
-         color='cyan'/>
+  <Pellets 
+    {pelletGrid}
+    {gridSize}
+  />
 
-  <Ghost {gridSize}
-         {modTicks}
-         {updatePeriod} 
-         rowState={orangeRowState} 
-         colState={orangeColState} 
-         frightState={orangeFrightState}
-         color='orange'/>
+  <Pacman 
+    {gridSize}
+    {pacmanRowState}
+    {pacmanColState}
+    {Directions} 
+  />
 
-  <Mps {gridSize} {mpsAvg} />
-  <Ticker {gridSize} {modTicks} {updatePeriod} {gameMode} {Modes} bind:paused/>
-  <Score {gridSize} {currLevel} {currScore} />
-  <Lives {gridSize} {currLives} {Directions} />
+  <Ghost 
+    {gridSize}
+    {modTicks}
+    {updatePeriod} 
+    rowState={redRowState}
+    colState={redColState}
+    frightState={redFrightState}
+    color='red'
+  />
+  
+  <Ghost 
+    {gridSize}
+    {modTicks}
+    {updatePeriod}
+    rowState={pinkRowState}
+    colState={pinkColState}
+    frightState={pinkFrightState}
+    color='pink'
+  />
+
+  <Ghost 
+    {gridSize}
+    {modTicks}
+    {updatePeriod}
+    rowState={cyanRowState}
+    colState={cyanColState}
+    frightState={cyanFrightState}
+    color='cyan'
+  />
+
+  <Ghost
+    {gridSize}
+    {modTicks}
+    {updatePeriod} 
+    rowState={orangeRowState} 
+    colState={orangeColState} 
+    frightState={orangeFrightState}
+    color='orange'
+  />
+
+  <Mps
+    {gridSize}
+    {mpsAvg}
+  />
+
+  <Ticker
+    {gridSize}
+    {modTicks}
+    {updatePeriod}
+    {gameMode}
+    {Modes}
+    bind:paused
+  />
+
+  <Score
+    {gridSize}
+    {currLevel}
+    {currScore}
+  />
+
+  <Lives
+    {gridSize}
+    {currLives}
+    {Directions} 
+  />
+
 </div>

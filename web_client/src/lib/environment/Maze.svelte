@@ -1,4 +1,6 @@
 <style>
+
+  /* Maze image */
   .maze {
 
     /* Positioning */
@@ -20,8 +22,10 @@
   export let gridSize;
 </script>
 
-<img class="maze" 
-     src="maze.svg"
-     alt='Pacman Maze' 
-     style:--grid-size="{gridSize}px" 
-     draggable="false"/>
+<img
+  class="maze" 
+  src="maze.svg"
+  alt='Pacman Maze' 
+  style:--grid-size="{gridSize}px" 
+  draggable="false"
+/>

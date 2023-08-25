@@ -1,5 +1,6 @@
 <style>
 
+  /* Pacman (yellow circle) */
   .pacman {
 
     /* Positioning */
@@ -15,17 +16,24 @@
     transform: scale(1.5) rotate(var(--dir-angle));
   }
 
+  /* Clip path (mouth of Pacman) */
   .clip {
-    clip-path: polygon(-100% -100%, -100% 200%, 200% 200%, 100% 80%, 45% 50%, 100% 20%, 200% -100%);
+    clip-path: polygon(-100% -100%, -100% 200%, 
+                        200% 200%, 100% 80%, 45% 50%, 
+                        100% 20%, 200% -100%);
   }
 
+  /* Pacman eating */
   .eating {
     animation: eat 0.5s ease 1;
   }
 
+  /* Pacman eating animation (clip path changes) */
   @keyframes eat {
     50% {
-      clip-path: polygon(-100% -100%, -100% 200%, 200% 200%, 100% 50%, 45% 50%, 100% 50%, 200% -100%);
+      clip-path: polygon(-100% -100%, -100% 200%, 
+                          200% 200%, 100% 50%, 45% 50%, 
+                          100% 50%, 200% -100%);
     }
   }
 
@@ -67,8 +75,10 @@
 
 </script>
 
-<div class="pacman {clip ? "clip" : ""} eating"
-     style:--grid-size="{gridSize}px"
-     style:--dir-angle="{rotation}deg"
-     style:left="{gridSize * posX}px"
-     style:top="{gridSize * posY}px"/>
+<div
+  class="pacman {clip ? "clip" : ""} eating"
+  style:--grid-size="{gridSize}px"
+  style:--dir-angle="{rotation}deg"
+  style:left="{gridSize * posX}px"
+  style:top="{gridSize * posY}px"
+/>
