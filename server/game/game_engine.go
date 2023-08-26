@@ -40,6 +40,11 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte,
 		ticker:      time.NewTicker(_tickTime),
 		wgQuit:      _wgQuit,
 	}
+
+	// Set the enable for command logging to be false by default
+	SetCommandLogEnable(false)
+
+	// Return the game engine
 	return &ge
 }
 
@@ -179,7 +184,7 @@ func (ge *GameEngine) RunLoop() {
 
 		// Increment the number of ticks
 		if !ge.state.isPaused() {
-			ge.state.currTicks++
+			ge.state.nextTick()
 		}
 
 		// Set the first update to be done

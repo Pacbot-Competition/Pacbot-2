@@ -270,7 +270,6 @@
     {gridSize}
     {pacmanRowState}
     {pacmanColState}
-    {Directions} 
   />
 
   <Ghost 

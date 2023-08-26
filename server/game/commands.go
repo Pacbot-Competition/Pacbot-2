@@ -6,7 +6,7 @@ import (
 
 /***************************** Interpret Commands *****************************/
 
-// Convert byte commands from clients into actions involving the game state
+// Convert byte messages from clients into commands to the game state
 func (gs *gameState) interpretCommand(msg []byte) {
 
 	// Log the command if necessary
@@ -27,5 +27,13 @@ func (gs *gameState) interpretCommand(msg []byte) {
 	case 'P':
 		fmt.Println("playing...")
 		gs.play()
+	case 'w':
+		fmt.Println("moving up...")
+	case 'a':
+		fmt.Println("moving left...")
+	case 's':
+		fmt.Println("moving down...")
+	case 'd':
+		fmt.Println("moving right...")
 	}
 }

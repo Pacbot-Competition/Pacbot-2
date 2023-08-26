@@ -16,7 +16,7 @@ func getCommandLogEnable() bool {
 }
 
 // Setter method for commandLogEnable
-func setCommandLogEnable(en bool) {
+func SetCommandLogEnable(en bool) {
 	muLC.Lock()
 	{
 		commandLogEnable = en

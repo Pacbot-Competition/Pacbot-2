@@ -22,6 +22,11 @@
     font-size:   calc(0.9 * var(--grid-size));
   }
   
+  /* Info box outline (clicked), should be none */
+  .ticker-box:focus-visible {
+    outline: none;
+  }
+  
   /* Ticker shape */
   .ticker {
     

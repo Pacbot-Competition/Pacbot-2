@@ -43,7 +43,6 @@
   export let gridSize;
   export let pacmanRowState;
   export let pacmanColState;
-  export let Directions;
   
   // Using the & operator to pick out the 5 lowest bits
   $: posX = pacmanColState & 0b11111
@@ -68,7 +67,6 @@
     } else if (dirY === -1 && dirX === 0) {
       rotation = 270;
     } else {
-      console.log(dirX, dirY, Directions.Left)
       clip = false;
     }
   }

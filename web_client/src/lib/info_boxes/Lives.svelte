@@ -40,7 +40,6 @@
       {gridSize}
       pacmanRowState={1}
       pacmanColState={1 | Directions.Right}
-      {Directions}
     />
   {/if}
   {#if currLives > 2}
@@ -48,7 +47,6 @@
       {gridSize}
       pacmanRowState={1}
       pacmanColState={3 | Directions.Right}
-      {Directions}
     />
   {/if}
 </div>
