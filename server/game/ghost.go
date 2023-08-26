@@ -183,7 +183,8 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 
 	// Debug statement, in case a ghost somehow is surrounded by all walls
 	if numValidMoves == 0 {
-		fmt.Printf("\033[35mWARN: Ghost #%d (%s) has nowhere to go\n\033[0m", g.color, ghostNames[g.color])
+		fmt.Printf("\033[35mWARN: Ghost #%d (%s) has nowhere to go\n\033[0m",
+			g.color, ghostNames[g.color])
 		return
 	}
 

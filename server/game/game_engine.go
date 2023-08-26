@@ -26,9 +26,12 @@ type GameEngine struct {
 	wgQuit      *sync.WaitGroup // wait group to make sure it quits safely
 }
 
-// Create a new game engine, casting input and output channels to be uni-directional
-func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, _wgQuit *sync.WaitGroup, clockRate int32) *GameEngine {
-	_tickTime := 1000000 * time.Microsecond / time.Duration(clockRate) // Time between ticks
+// Create a new game engine, casting channels to be uni-directional
+func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte,
+	_wgQuit *sync.WaitGroup, clockRate int32) *GameEngine {
+
+	// Time between ticks
+	_tickTime := 1000000 * time.Microsecond / time.Duration(clockRate)
 	ge := GameEngine{
 		quitCh:      make(chan struct{}),
 		webOutputCh: _webOutputCh,
@@ -78,7 +81,8 @@ func (ge *GameEngine) RunLoop() {
 
 	// If there was already a game engine, kill this one and throw an error
 	if _activeGameEngines > 1 {
-		fmt.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more than one game engine. Quitting...\033[0m")
+		fmt.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more" +
+			" than one game engine. Quitting...\033[0m")
 		return
 	}
 
@@ -115,7 +119,7 @@ func (ge *GameEngine) RunLoop() {
 		// Send the full state
 		idx = ge.state.serFull(outputBuf, idx)
 
-		/* STEP 3: Start planning the next ghost moves if an update just happened */
+		/* STEP 3: Start planning the next ghost moves if an update happened */
 
 		// If we're ready for an update, plan the next ghost moves asynchronously
 		if ge.state.updateReady() || !firstUpdate {
@@ -131,16 +135,20 @@ func (ge *GameEngine) RunLoop() {
 
 		/* STEP 4: Write the serialized game state to the output channel */
 
-		// Check if the write will be blocked, and try to write the serialized state
+		// Check if a write will be blocked, and try to write the serialized state
 		b := len(ge.webOutputCh) == cap(ge.webOutputCh)
 		start := time.Now()
 		ge.webOutputCh <- outputBuf[:idx]
 
-		// If the write was blocked for too long (> 1ms), send a warning to the terminal
+		/*
+			If the write was blocked for too long (> 1ms), send a warning
+			to the terminal
+		*/
 		if b {
 			wait := time.Since(start)
 			if wait > time.Millisecond {
-				fmt.Printf("\033[35mWARN: The game engine output channel was full (%s)\033[0m\n", wait)
+				fmt.Printf("\033[35mWARN: The game engine output channel was "+
+					"full (%s)\033[0m\n", wait)
 			}
 		}
 
@@ -156,8 +164,10 @@ func (ge *GameEngine) RunLoop() {
 			return
 
 		/*
-			If the web input channel hits full capacity, send a warning to the terminal
-			What this means: either the browsers are sending too much input, or the game loop can't keep up
+			If the web input channel hits full capacity, send a terminal warning
+
+			What this means: either the browsers are sending too much input,
+			or the game loop can't keep up
 		*/
 		default:
 			if len(ge.webInputCh) == cap(ge.webInputCh) {

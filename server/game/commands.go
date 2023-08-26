@@ -10,7 +10,7 @@ import (
 func (gs *gameState) interpretCommand(msg []byte) {
 
 	// Log the command if necessary
-	if commandLogEnable {
+	if getCommandLogEnable() {
 		fmt.Printf("\033[2m\033[36m| Response: %s`\033[0m\n", string(msg))
 	}
 
