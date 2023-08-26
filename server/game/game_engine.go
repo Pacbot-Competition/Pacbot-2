@@ -116,7 +116,11 @@ func (ge *GameEngine) RunLoop() {
 
 		// If we're ready for an update, plan the next ghost moves asynchronously
 		if ge.state.updateReady() {
+
+			// Add pending ghost plans
 			wgPlans.Add(int(numColors))
+
+			// Plan each ghost's next move concurrently
 			for _, ghost := range ge.state.ghosts {
 				go ghost.plan(&wgPlans)
 			}
@@ -142,7 +146,7 @@ func (ge *GameEngine) RunLoop() {
 
 		// If we get a message from the web broker, handle it
 		case msg := <-ge.webInputCh:
-			fmt.Printf("\033[2m\033[36m| Response: %s`\033[0m\n", string(msg))
+			ge.state.interpretCommand(msg)
 
 		// If we get a quit signal, quit this broker
 		case <-ge.quitCh:
@@ -161,7 +165,9 @@ func (ge *GameEngine) RunLoop() {
 		/* STEP 6: Update the game state for the next tick */
 
 		// Increment the number of ticks
-		ge.state.currTicks++
+		if !ge.state.isPaused() {
+			ge.state.currTicks++
+		}
 
 		/* STEP 5: Wait for the ticker to complete the current frame */
 		<-ge.ticker.C

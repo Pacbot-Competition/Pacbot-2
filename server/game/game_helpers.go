@@ -33,7 +33,7 @@ func modifyBit[T uint8 | uint16 | uint32](num *T, bitIdx int8, bitVal bool) {
 
 // Determines if the game state is ready to update
 func (gs *gameState) updateReady() bool {
-	return (gs.currTicks%uint16(gs.updatePeriod) == 0)
+	return (gs.currTicks%uint16(gs.updatePeriod) == 0) && !gs.isPaused()
 }
 
 /************************** General Helper Functions **************************/

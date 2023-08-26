@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -49,8 +50,10 @@ func getIP(conn *websocket.Conn) string {
 type webSession struct {
 	quitCh chan struct{}
 	sendCh chan []byte
-	readEn bool // read enabled
+	readEn bool // read enabled (allowed by IP whitelist)
+	readOk bool // read ready (rate limiting)
 	conn   *websocket.Conn
+	sync.Mutex
 }
 
 // Create a new web session object
@@ -59,6 +62,7 @@ func newWebSession(conn *websocket.Conn) *webSession {
 		quitCh: make(chan struct{}, 2),
 		sendCh: make(chan []byte, 10),
 		readEn: true,
+		readOk: false,
 		conn:   conn,
 	}
 }
@@ -157,10 +161,17 @@ func (ws *webSession) readLoop() {
 			return
 		}
 
-		// Save the message received into the read channel
-		if ws.readEn {
-			responseCh <- msg
+		// Save the message received into the read channel, if applicable
+		ws.Lock()
+		{
+			if ws.readEn && ws.readOk {
+				responseCh <- msg
+			}
+
+			// Rate limiting - discard all incoming messages until we send a message
+			ws.readOk = false
 		}
+		ws.Unlock()
 	}
 
 }
@@ -192,5 +203,12 @@ func (ws *webSession) sendLoop() {
 			fmt.Println("write error: ", err)
 			return
 		}
+
+		// Update the read ready state, to allow another read after this write
+		ws.Lock()
+		{
+			ws.readOk = true
+		}
+		ws.Unlock()
 	}
 }

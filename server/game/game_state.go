@@ -35,8 +35,9 @@ type gameState struct {
 	updatePeriod uint8        // Ticks / update
 	muPeriod     sync.RWMutex // Associated mutex
 
-	mode   uint8        // Game mode
-	muMode sync.RWMutex // Associated mutex
+	lastUnpausedMode uint8        // Last unpaused mode (for pausing purposes)
+	mode             uint8        // Game mode
+	muMode           sync.RWMutex // Associated mutex
 
 	/* Game information - 4 bytes */
 
@@ -198,6 +199,38 @@ func (gs *gameState) getMode() uint8 {
 
 	// Return the current game mode
 	return gs.mode
+}
+
+// Helper function to determine if the game is paused
+func (gs *gameState) isPaused() bool {
+	return gs.getMode() == paused
+}
+
+// Helper function to pause the game
+func (gs *gameState) pause() {
+
+	// If the game engine is already paused, there's no more to do
+	if gs.isPaused() {
+		return
+	}
+
+	// Otherwise, save the current mode
+	gs.lastUnpausedMode = gs.getMode()
+
+	// Set the mode to paused
+	gs.setMode(paused)
+}
+
+// Helper function to play the game
+func (gs *gameState) play() {
+
+	// If the game engine is already playing, there's no more to do
+	if !gs.isPaused() {
+		return
+	}
+
+	// Otherwise, set the current mode to the last unpaused mode
+	gs.setMode(gs.lastUnpausedMode)
 }
 
 /**************************** Game Score Functions ****************************/
