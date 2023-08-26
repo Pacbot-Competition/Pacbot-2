@@ -133,12 +133,11 @@
   // Handling a new connection
   socket.addEventListener('open', (_) => {
     console.log('WebSocket connection established');
-    socket.send('Hello, server!');
     socketOpen = true;
   });
 
   // When the ticker is clicked, send a message
-  let paused = false;
+  let paused = true;
   $: {if (socketOpen) {
     socket.send(paused ? 'p' : 'P');
   }}

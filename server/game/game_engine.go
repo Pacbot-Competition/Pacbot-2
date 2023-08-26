@@ -88,12 +88,15 @@ func (ge *GameEngine) RunLoop() {
 	// Create a wait group for synchronizing ghost plans
 	var wgPlans sync.WaitGroup
 
+	// Create a variable for the first update
+	firstUpdate := false
+
 	for {
 
 		/* STEP 1: Update the ghost positions if necessary */
 
 		// If the game state is ready to update, update the ghost positions
-		if ge.state.updateReady() {
+		if ge.state.updateReady() || !firstUpdate {
 
 			// Wait until all pending ghost plans are complete
 			wgPlans.Wait()
@@ -115,7 +118,7 @@ func (ge *GameEngine) RunLoop() {
 		/* STEP 3: Start planning the next ghost moves if an update just happened */
 
 		// If we're ready for an update, plan the next ghost moves asynchronously
-		if ge.state.updateReady() {
+		if ge.state.updateReady() || !firstUpdate {
 
 			// Add pending ghost plans
 			wgPlans.Add(int(numColors))
@@ -168,6 +171,9 @@ func (ge *GameEngine) RunLoop() {
 		if !ge.state.isPaused() {
 			ge.state.currTicks++
 		}
+
+		// Set the first update to be done
+		firstUpdate = true
 
 		/* STEP 5: Wait for the ticker to complete the current frame */
 		<-ge.ticker.C

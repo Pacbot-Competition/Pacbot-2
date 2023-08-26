@@ -141,6 +141,9 @@ func (ws *webSession) readLoop() {
 	// If we ever stop receiving messages (due to some error), kill the connection
 	defer func() { ws.quitCh <- struct{}{} }()
 
+	// Local variable, to keep track of whether a message is discarded
+	ignored := false
+
 	// "While" loop, keep reading until the connection closes
 	for {
 
@@ -164,16 +167,29 @@ func (ws *webSession) readLoop() {
 		// Save the message received into the read channel, if applicable
 		ws.Lock()
 		{
+			// Relay the message if applicable, otherwise ignore it
 			if ws.readEn && ws.readOk {
-				responseCh <- msg
+				ignored = false
+			} else {
+				ignored = true
 			}
 
 			// Rate limiting - discard all incoming messages until we send a message
 			ws.readOk = false
 		}
 		ws.Unlock()
-	}
 
+		// If the message shouldn't be ignored, relay it
+		if !ignored {
+			responseCh <- msg
+		}
+
+		// If the message was ignored due to rate limiting, warn the user
+		if ignored && ws.readEn {
+			fmt.Println("\033[35mWARN: An incoming message was ignored " +
+				"(reason: rate limiting)\033[0m")
+		}
+	}
 }
 
 // Sending websocket data (binary)

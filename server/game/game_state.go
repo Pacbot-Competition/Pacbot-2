@@ -87,9 +87,10 @@ func newGameState() *gameState {
 	gs := gameState{
 
 		// Message header
-		currTicks:    0,
-		updatePeriod: initUpdatePeriod,
-		mode:         initMode,
+		currTicks:        0,
+		updatePeriod:     initUpdatePeriod,
+		mode:             paused,
+		lastUnpausedMode: initMode,
 
 		// Game info
 		currScore: 0,
