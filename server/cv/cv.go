@@ -2,6 +2,7 @@ package cv
 
 import (
 	"image"
+	"log"
 	"sort"
 	"sync"
 
@@ -9,33 +10,22 @@ import (
 )
 
 type CVModule struct {
-	cam       gocv.VideoCapture
-	window    gocv.Window
-	muCV      sync.Mutex
-	m         gocv.Mat
-	maxDims   image.Point
-	showLocal bool
+	commands chan Command
+	results  chan Result
+	cam      *gocv.VideoCapture
+	muCV     sync.RWMutex
+	m        gocv.Mat
+	maxDims  image.Point
 }
 
 type Coords image.Point
-
-// type Coords struct {
-// 	x float32
-// 	y float32
-// }
-
-// type Corners struct {
-// 	c1 Coords
-// 	c2 Coords
-// 	c3 Coords
-// 	c4 Coords
-// }
 
 type Command int
 
 const (
 	f Command = iota
 	c
+	q
 )
 
 type Result struct {
@@ -89,6 +79,22 @@ func dist(i, j image.Point) int {
 	return dx*dx + dy*dy
 }
 
+func NewCVModule(commands chan Command, results chan Result, camId int) *CVModule {
+	cam, err := gocv.VideoCaptureDevice(camId)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cv := CVModule{
+		commands: commands,
+		results:  results,
+		cam:      cam,
+		muCV:     sync.RWMutex{},
+		m:        gocv.NewMat(),
+		maxDims:  image.Pt(0, 0),
+	}
+	return &cv
+}
+
 func (cv *CVModule) getDestRect(ordered gocv.PointVector) gocv.PointVector {
 	dst := gocv.NewPointVector()
 
@@ -109,7 +115,7 @@ func (cv *CVModule) getDestRect(ordered gocv.PointVector) gocv.PointVector {
 }
 
 func coordsToBytes(x, y float32) []byte {
-	return []byte{byte(x), byte(y)} // TODO update this
+	return []byte{byte(x), byte(y)}
 }
 
 func (cv *CVModule) SetCorners(c1, c2, c3, c4 Coords) {
@@ -120,9 +126,9 @@ func (cv *CVModule) SetCorners(c1, c2, c3, c4 Coords) {
 	cv.muCV.Unlock()
 }
 
-func (cv *CVModule) Process(commands chan Command, results chan Result) {
+func (cv *CVModule) RunLoop() {
 	for {
-		newCommand := <-commands
+		newCommand := <-cv.commands
 
 		img := gocv.NewMat()
 
@@ -130,16 +136,19 @@ func (cv *CVModule) Process(commands chan Command, results chan Result) {
 			return // can include error handling here
 		}
 
-		if newCommand == f {
-			results <- Result{newCommand, img.ToBytes()}
-		} else if newCommand == c {
+		switch newCommand {
+		case q:
+			return
+		case f:
+			cv.results <- Result{newCommand, img.ToBytes()}
+		case c:
 			warpedImg := gocv.NewMat()
 
-			cv.muCV.Lock()
+			cv.muCV.RLock()
 			gocv.WarpPerspective(img, &warpedImg, cv.m, cv.maxDims)
-			cv.muCV.Unlock()
+			cv.muCV.RUnlock()
 
-			// TODO figure out flipping logic
+			// TODO figure out flipping logic (if necessary)
 
 			// may have to tweak median blur radius
 			gocv.MedianBlur(warpedImg, &warpedImg, 5)
@@ -148,7 +157,7 @@ func (cv *CVModule) Process(commands chan Command, results chan Result) {
 			gocv.CvtColor(warpedImg, &img, gocv.ColorBGRToHSV)     // TODO see if this is the right conversion
 			gocv.InRange(img, gocv.NewMat(), gocv.NewMat(), &mask) // TODO add ranges
 			gocv.BitwiseAndWithMask(img, img, &img, mask)
-			grayscale := gocv.Split(img)[2]                                                      // TODO see if this is good conversion to grayscale, memory leaks?
+			grayscale := gocv.Split(img)[2]                                                      // TODO see if this is good conversion to grayscale
 			contours := gocv.FindContours(grayscale, gocv.RetrievalList, gocv.ChainApproxSimple) // TODO check enums
 
 			if contours.Size() == 0 {
@@ -168,10 +177,16 @@ func (cv *CVModule) Process(commands chan Command, results chan Result) {
 				x, y := float32(rect.Min.X), float32(rect.Min.Y)
 				w, h := float32(rect.Max.X)-x, float32(rect.Max.Y)-y
 				x_c, y_c := x+w*0.5, y+h*0.5
-				results <- Result{newCommand, coordsToBytes(x_c, y_c)} // TODO figure this out
-			}
 
-			contours.Close() // TODO see if this is necessary
+				// TODO currently gives pixel coordinate
+				// coordsToBytes will handle whatever coordinate scheme we decide
+				cv.results <- Result{newCommand, coordsToBytes(x_c, y_c)}
+			}
+			contours.Close()
 		}
 	}
+}
+
+func (cv *CVModule) Quit() {
+	cv.commands <- q
 }
