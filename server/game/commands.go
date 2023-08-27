@@ -22,18 +22,18 @@ func (gs *gameState) interpretCommand(msg []byte) {
 	// Decide the command type based on the first byte
 	switch msg[0] {
 	case 'p':
-		fmt.Println("pausing...")
 		gs.pause()
+		fmt.Printf("\033[32m\033[2mGame  paused (t = %d)\033[0m\n", gs.getCurrTicks())
 	case 'P':
-		fmt.Println("playing...")
 		gs.play()
+		fmt.Printf("\033[32mGame resumed (t = %d)\033[0m\n", gs.getCurrTicks())
 	case 'w':
-		fmt.Println("moving up...")
+		gs.movePacmanDir(up)
 	case 'a':
-		fmt.Println("moving left...")
+		gs.movePacmanDir(left)
 	case 's':
-		fmt.Println("moving down...")
+		gs.movePacmanDir(down)
 	case 'd':
-		fmt.Println("moving right...")
+		gs.movePacmanDir(right)
 	}
 }

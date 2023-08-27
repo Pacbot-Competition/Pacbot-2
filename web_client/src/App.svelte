@@ -136,12 +136,6 @@
     socketOpen = true;
   });
 
-  // When the ticker is clicked, send a message
-  let paused = true;
-  $: {if (socketOpen) {
-    socket.send(paused ? 'p' : 'P');
-  }}
-
   // Message events
   socket.addEventListener('message', (event) => {
     if (event.data instanceof ArrayBuffer) {
@@ -237,10 +231,29 @@
   let innerWidth = 0;
   let innerHeight = 0;
   $: gridSize = 0.8 * ((innerHeight * 28 < innerWidth * 31) ? 
-    (innerHeight / 31) : (innerWidth / 28));
+    (innerHeight / 31) : (innerWidth / 28))
 
   // Calculate the remainder when currTicks is divided by updatePeriod
-  $: modTicks = currTicks % updatePeriod;
+  $: modTicks = currTicks % updatePeriod
+
+  // Deal with control-related (pause, play) keys
+  let spaceHeld = false;
+  const controlCommand = (key) => {
+
+    /*
+      If control-related keys are pressed, reset the cooldown and
+      send the command back to the keydown handler
+    */
+    if (key === 'p' && gameMode !== Modes.Paused) {
+      return 'p';
+    } else if (key === 'P' && gameMode === Modes.Paused) {
+      return 'P';
+    } else if (key === ' ' && !spaceHeld) {
+      spaceHeld = true;
+      return (gameMode === Modes.Paused ? 'P' : 'p');
+    }
+    return null;
+  }
 
   // Deal with motion-related keys
   let lastMotionTicks = 0;
@@ -248,15 +261,16 @@
     
     /*
       If not enough ticks (with a threshold of 1/3 of the update period)
-      have elapsed since the last motion key, wait
+      have elapsed since the last motion key, or if we haven't waited a tick
+      since the last control key, ignore this key
     */
-    if (3 * (currTicks - lastMotionTicks) < updatePeriod) {
+    if ((4 * (currTicks - lastMotionTicks) < updatePeriod)) {
       return null;
     }
 
     /* 
       If motion-related keys are pressed, reset the cooldown and 
-      send the command back to the keypress handler
+      send the command back to the keydown handler
     */
     if (key === 'w' || key === 'ArrowUp') {
       lastMotionTicks = currTicks;
@@ -274,12 +288,47 @@
     return null;
   }
 
+  // Send message to websocket server (with error handling for closed sockets)
+  const sendToSocket = (message) => {
+    if (socketOpen) {
+      socket.send(message);
+    }
+  }
+
+  // Const toggle pause
+  const togglePause = () => {
+
+    // Send the command directly to the socket
+    sendToSocket(gameMode === Modes.Paused ? 'P' : 'p');
+  }
+
   // Handle key presses, to send responses back to the server
   const handleKeyDown = (event) => {
+
+    // Retrieve the key information
     const key = event.key;
-    const motion = motionCommand(key);;
+
+    // Check if it is a pause/play command
+    const control = controlCommand(key);
+    if (control) {
+      sendToSocket(control);
+    }
+    
+    // Check if it is a motion command
+    const motion = motionCommand(key);
     if (motion) {
-      socket.send(motion);
+      sendToSocket(motion);
+    }
+  }
+
+  // Handle key releases, for allowing toggle commands to be sent again
+  const handleKeyUp = (event) => {
+
+    // Retrieve the key information
+    const key = event.key;
+
+    if (key === ' ') {
+      spaceHeld = false;
     }
   }
 
@@ -287,7 +336,9 @@
 
 <svelte:window 
   on:keydown={handleKeyDown} 
-  bind:innerWidth bind:innerHeight 
+  on:keyup={handleKeyUp}
+  bind:innerWidth
+  bind:innerHeight 
 />
 
 <div class='maze-space' style:--grid-size="{gridSize}px">
@@ -358,7 +409,7 @@
     {updatePeriod}
     {gameMode}
     {Modes}
-    bind:paused
+    {togglePause}
   />
 
   <Score

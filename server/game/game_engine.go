@@ -42,7 +42,7 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte,
 	}
 
 	// Set the enable for command logging to be false by default
-	SetCommandLogEnable(true)
+	SetCommandLogEnable(false)
 
 	// Return the game engine
 	return &ge
@@ -94,47 +94,54 @@ func (ge *GameEngine) RunLoop() {
 	// Output buffer to store the serialized output
 	outputBuf := make([]byte, 256)
 
+	// Length of the serialized output
+	serLen := 0
+
 	// Create a wait group for synchronizing ghost plans
 	var wgPlans sync.WaitGroup
 
-	// Create a variable for the first update
-	firstUpdate := false
+	// Flag to keep track of whether the last iteration of the loop was a tick
+	justTicked := true
 
 	for {
 
-		/* STEP 1: Update the ghost positions if necessary */
+		/*
+			If the game did not just tick, we know it was paused, so we can skip
+			these steps as they were already done during the first paused tick
+		*/
+		if justTicked {
 
-		// If the game state is ready to update, update the ghost positions
-		if ge.state.updateReady() || !firstUpdate {
+			/* STEP 1: Update the ghost positions if necessary */
 
-			// Wait until all pending ghost plans are complete
-			wgPlans.Wait()
+			// If the game state is ready to update, update the ghost positions
+			if ge.state.updateReady() {
 
-			// Loop over the individual ghosts
-			for _, ghost := range ge.state.ghosts {
-				ghost.update()
+				// Wait until all pending ghost plans are complete
+				wgPlans.Wait()
+
+				// Loop over the individual ghosts
+				for _, ghost := range ge.state.ghosts {
+					ghost.update()
+				}
 			}
-		}
 
-		/* STEP 2: Serialize the current game state to the output buffer */
+			/* STEP 2: Serialize the current game state to the output buffer */
 
-		// Starting index for serialization
-		idx := 0
+			// Re-serialize the current state
+			serLen = ge.state.serFull(outputBuf, 0)
 
-		// Send the full state
-		idx = ge.state.serFull(outputBuf, idx)
+			/* STEP 3: Start planning the next ghost moves if an update happened */
 
-		/* STEP 3: Start planning the next ghost moves if an update happened */
+			// If we're ready for an update, plan the next ghost moves asynchronously
+			if ge.state.updateReady() {
 
-		// If we're ready for an update, plan the next ghost moves asynchronously
-		if ge.state.updateReady() || !firstUpdate {
+				// Add pending ghost plans
+				wgPlans.Add(int(numColors))
 
-			// Add pending ghost plans
-			wgPlans.Add(int(numColors))
-
-			// Plan each ghost's next move concurrently
-			for _, ghost := range ge.state.ghosts {
-				go ghost.plan(&wgPlans)
+				// Plan each ghost's next move concurrently
+				for _, ghost := range ge.state.ghosts {
+					go ghost.plan(&wgPlans)
+				}
 			}
 		}
 
@@ -143,7 +150,7 @@ func (ge *GameEngine) RunLoop() {
 		// Check if a write will be blocked, and try to write the serialized state
 		b := len(ge.webOutputCh) == cap(ge.webOutputCh)
 		start := time.Now()
-		ge.webOutputCh <- outputBuf[:idx]
+		ge.webOutputCh <- outputBuf[:serLen]
 
 		/*
 			If the write was blocked for too long (> 1ms), send a warning
@@ -162,7 +169,7 @@ func (ge *GameEngine) RunLoop() {
 
 		// If we get a message from the web broker, handle it
 		case msg := <-ge.webInputCh:
-			ge.state.interpretCommand(msg)
+			go ge.state.interpretCommand(msg)
 
 		// If we get a quit signal, quit this broker
 		case <-ge.quitCh:
@@ -184,11 +191,11 @@ func (ge *GameEngine) RunLoop() {
 
 		// Increment the number of ticks
 		if !ge.state.isPaused() {
+			justTicked = true
 			ge.state.nextTick()
+		} else {
+			justTicked = false
 		}
-
-		// Set the first update to be done
-		firstUpdate = true
 
 		/* STEP 5: Wait for the ticker to complete the current frame */
 		<-ge.ticker.C

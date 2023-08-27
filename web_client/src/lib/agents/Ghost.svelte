@@ -129,7 +129,7 @@
 
   // Determines if the ghost is frightened, using the frightened counter
   $: fr = (frightCycles > 0)
-  $: rc = (frightCycles <= 5) && (2 * modTicks >= updatePeriod)
+  $: rc = (frightCycles <= 10) && (2 * modTicks >= updatePeriod)
 
   // Allow "animated" sprites by toggling every 2 ticks
   $: spriteTwo = ((modTicks >> 1) & 1)

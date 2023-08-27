@@ -64,11 +64,8 @@
   export let gridSize;
   $: pad = gridSize/20;
 
-  // Pausing event when the ticker gets clicked
-  export let paused;
-  function togglePause() {
-    paused = !paused;
-  }
+  // Simulated key event (space, toggle pause) when clicking the ticker box
+  export let togglePause;
 
   // Decide the color of the ticker based on the game-mode
   export let Modes;

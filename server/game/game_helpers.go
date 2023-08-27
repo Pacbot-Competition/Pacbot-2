@@ -33,7 +33,15 @@ func modifyBit[T uint8 | uint16 | uint32](num *T, bitIdx int8, bitVal bool) {
 
 // Determines if the game state is ready to update
 func (gs *gameState) updateReady() bool {
-	return (gs.currTicks%uint16(gs.updatePeriod) == 0) && !gs.isPaused()
+
+	// Get the current ticks value
+	currTicks := gs.getCurrTicks()
+
+	// Get the update period (uint16 to match the type of current ticks)
+	updatePeriod := uint16(gs.getUpdatePeriod())
+
+	// Update if the update period divides the current ticks
+	return currTicks%updatePeriod == 0
 }
 
 /************************** General Helper Functions **************************/
@@ -130,6 +138,30 @@ func (gs *gameState) distSq(row1, col1, row2, col2 int8) int {
 	dx := int(row2 - row1)
 	dy := int(col2 - col1)
 	return dx*dx + dy*dy
+}
+
+/************************** Motion (Pacman Location) **************************/
+
+// Move Pacman one space in a given direction
+func (gs *gameState) movePacmanDir(dir uint8) {
+
+	// Shorthand to make computation simpler
+	pLoc := gs.pacmanLoc // Pacman location
+
+	// Calculate the next row and column
+	nextRow, nextCol := pLoc.getNeighborCoords(dir)
+
+	// Update Pacman's direction
+	pLoc.updateDir(dir)
+
+	// Check if there is a wall at the anticipated location, and return if so
+	if gs.wallAt(nextRow, nextCol) {
+		return
+	}
+
+	// Move Pacman the anticipated spot
+	pLoc.moveToCoords(nextRow, nextCol)
+	gs.collectPellet(nextRow, nextCol)
 }
 
 /************************ Ghost Targeting (Chase Mode) ************************/

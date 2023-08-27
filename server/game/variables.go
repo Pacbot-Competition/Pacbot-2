@@ -54,7 +54,7 @@ var ghostTrappedCycles [4]uint8 = [...]uint8{
 }
 
 // The number of cycles that the ghosts stay in the frightened state for
-const ghostFrightCycles uint8 = 10
+const ghostFrightCycles uint8 = 40
 
 // The number of pellets in a typical game of Pacman
 const initPelletCount uint16 = 244

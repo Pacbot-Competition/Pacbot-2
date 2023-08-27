@@ -191,6 +191,17 @@ func (gs *gameState) getMode() uint8 {
 	return gs.mode
 }
 
+// Helper function to get the last unpaused mode
+func (gs *gameState) getLastUnpausedMode() uint8 {
+
+	// (Read) lock the game mode
+	gs.muMode.RLock()
+	defer gs.muMode.RUnlock()
+
+	// Return the current game mode
+	return gs.lastUnpausedMode
+}
+
 // Helper function to determine if the game is paused
 func (gs *gameState) isPaused() bool {
 	return gs.getMode() == paused
@@ -207,6 +218,17 @@ func (gs *gameState) setMode(mode uint8) {
 	gs.muMode.Unlock()
 }
 
+// Helper function to set the game mode
+func (gs *gameState) setLastUnpausedMode(mode uint8) {
+
+	// (Write) lock the game mode
+	gs.muMode.Lock()
+	{
+		gs.lastUnpausedMode = mode // Update the game mode
+	}
+	gs.muMode.Unlock()
+}
+
 // Helper function to pause the game
 func (gs *gameState) pause() {
 
@@ -216,7 +238,7 @@ func (gs *gameState) pause() {
 	}
 
 	// Otherwise, save the current mode
-	gs.lastUnpausedMode = gs.getMode()
+	gs.setLastUnpausedMode(gs.getMode())
 
 	// Set the mode to paused
 	gs.setMode(paused)
@@ -231,7 +253,7 @@ func (gs *gameState) play() {
 	}
 
 	// Otherwise, set the current mode to the last unpaused mode
-	gs.setMode(gs.lastUnpausedMode)
+	gs.setMode(gs.getLastUnpausedMode())
 }
 
 /**************************** Game Score Functions ****************************/

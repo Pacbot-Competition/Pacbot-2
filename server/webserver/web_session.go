@@ -159,6 +159,11 @@ func (ws *webSession) readLoop() {
 	// "While" loop, keep reading until the connection closes
 	for {
 
+		// Block indefinitely if we should not be reading from this client
+		if !ws.readEn {
+			select {}
+		}
+
 		// Read a message (discard the type since we don't need it)
 		_, msg, err := ws.conn.ReadMessage()
 		if err != nil {
@@ -176,28 +181,32 @@ func (ws *webSession) readLoop() {
 			return
 		}
 
-		// Save the message received into the read channel, if applicable
+		// Skip this message if it is empty or we should not read from this client
+		if len(msg) == 0 {
+			continue
+		}
+
+		// Relay the message immediately if it was a pause or play command
+		if msg[0] == 'p' || msg[0] == 'P' {
+			responseCh <- msg
+			continue
+		}
+
+		// Determine whether this message should be ignored
 		ws.Lock()
 		{
-			// Relay the message if applicable, otherwise ignore it
-			if ws.readEn && ws.readOk {
-				ignored = false
-			} else {
-				ignored = true
-			}
+			// Ignore the message if rate limiting applies
+			ignored = !ws.readOk
 
 			// Rate limiting - discard all incoming messages until we send a message
 			ws.readOk = false
 		}
 		ws.Unlock()
 
-		// If the message shouldn't be ignored, relay it
+		// If the message shouldn't be ignored, relay it, otherwise warn the user
 		if !ignored {
 			responseCh <- msg
-		}
-
-		// If the message was ignored due to rate limiting, warn the user
-		if ignored && ws.readEn {
+		} else {
 			fmt.Println("\033[35mWARN: An incoming message was ignored " +
 				"(reason: rate limiting)\033[0m")
 		}

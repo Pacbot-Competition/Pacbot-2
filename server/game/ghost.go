@@ -117,6 +117,12 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	// Decide on a target for this ghost, depending on the game mode
 	var targetRow, targetCol int8
 
+	// Capture the current game mode (or last unpaused game mode)
+	mode := g.game.getMode()
+	if mode == paused {
+		mode = g.game.getLastUnpausedMode()
+	}
+
 	/*
 		If the ghost is spawning in the ghost house, choose red's spawn
 		location as the target to encourage it to leave the ghost house
@@ -124,7 +130,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	if spawning && !g.loc.collidesWith(ghostSpawnLocs[red]) &&
 		!g.nextLoc.collidesWith(ghostSpawnLocs[red]) {
 		targetRow, targetCol = ghostSpawnLocs[red].row, ghostSpawnLocs[red].col
-	} else if g.game.getMode() == chase { // Chase mode targets
+	} else if mode == chase { // Chase mode targets
 		switch g.color {
 		case red:
 			targetRow, targetCol = g.game.getChaseTargetRed()
@@ -135,7 +141,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 		case orange:
 			targetRow, targetCol = g.game.getChaseTargetOrange()
 		}
-	} else if g.game.getMode() == scatter { // Scatter mode targets
+	} else if mode == scatter { // Scatter mode targets
 		targetRow, targetCol = g.scatterTarget.row, g.scatterTarget.col
 	}
 
@@ -147,11 +153,6 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	var moveValid [4]bool
 	var moveDistSq [4]int
 	for dir := uint8(0); dir < 4; dir++ {
-
-		// If this move would make the ghost reverse, skip it
-		if dir == g.nextLoc.getReversedDir() {
-			continue
-		}
 
 		// Get the neighboring cell in that location
 		row, col := g.nextLoc.getNeighborCoords(dir)
@@ -173,6 +174,11 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 		*/
 		if spawning && row == ghostHouseExitRow && col == ghostHouseExitCol {
 			moveValid[dir] = true
+		}
+
+		// If this move would make the ghost reverse, skip it
+		if dir == g.nextLoc.getReversedDir() {
+			moveValid[dir] = false
 		}
 
 		// Increment the valid moves counter if necessary

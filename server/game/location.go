@@ -155,9 +155,10 @@ func (loc *locationState) updateDir(dir uint8) {
 	loc.dir = dir
 }
 
+// Reverse the direction of a given location state
 func (loc *locationState) reverseDir() {
 
-	// (Write) lock the state (to prevent other reads or writes)
+	// Lock the state for thread safety
 	loc.Lock()
 	defer loc.Unlock()
 
@@ -165,4 +166,16 @@ func (loc *locationState) reverseDir() {
 	if loc.dir < 4 {
 		loc.dir ^= 2
 	}
+}
+
+// Move a given location state to specified coordinates
+func (loc *locationState) moveToCoords(row int8, col int8) {
+
+	// Lock the state for thread safety
+	loc.Lock()
+	defer loc.Unlock()
+
+	// Update the values
+	loc.row = row
+	loc.col = col
 }
