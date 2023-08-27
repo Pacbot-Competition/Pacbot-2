@@ -19,28 +19,34 @@
     /* Positioning */
     position: absolute;
     top: 5vh;
-    left: 5vw;
+    left: 10vw;
   }
 
 </style>
 
 <script>
 
-  // Imports
+  /* Config */
   import config from '../../config.json';
-  import Maze from './lib/Maze.svelte';
-  import Pellets from './lib/Pellets.svelte';
-  import Pacman from './lib/Pacman.svelte';
-  import Ghost from './lib/Ghost.svelte';
-  import MpsCounter from './lib/MpsCounter.svelte';
-  import Ticker from './lib/Ticker.svelte';
+
+  /* Agents */
+  import Ghost from './lib/agents/Ghost.svelte';
+  import Pacman from './lib/agents/Pacman.svelte';
+
+  /* Environment */
+  import Maze from './lib/environment/Maze.svelte';
+  import Pellets from './lib/environment/Pellets.svelte';
+  
+  /* Info Boxes */
+  import Lives from './lib/info_boxes/Lives.svelte';
+  import Mps from './lib/info_boxes/Mps.svelte';
+  import Score from './lib/info_boxes/Score.svelte';
+  import Ticker from './lib/info_boxes/Ticker.svelte';
 
   // Creating a websocket client
   var socket = new WebSocket(`ws://${config.ServerIP}:${config.WebSocketPort}`);
   socket.binaryType = 'arraybuffer';
   let socketOpen = false;
-
-  /* TODO - Add error handling for when the websocket client is not open, to avoid console errors */
 
   /* 
     This generates an empty array of pellet states 
@@ -55,11 +61,11 @@
   }
 
   /*
-    We use a circular queue (with a fixed max capacity to keep track of the times
-    of the most recent messages. For every message we receive, we should add this
-    time to the queue and remove all times longer than a millisecond ago. The 
-    length of this array will be the MPS (messages per second), which should be
-    synced with the frame rate of the game engine if there is no lag.
+    We use a circular queue (with a fixed max capacity to keep track of the 
+    times of the most recent messages. For every message we receive, we should
+    add this time to the queue and remove all times longer than 1ms ago. The 
+    length of this array will be the MPS (messages per second), which should 
+    be synced with the frame rate of the game engine if there is no lag.
   */
   const MPS_BUFFER_SIZE = 2 * config.GameFPS; // Allow double the specified FPS
   let mpsBuffer = new Array(MPS_BUFFER_SIZE);
@@ -75,8 +81,14 @@
   let updatePeriod = 12;
 
   // Keep track of the game mode (from the server)
-  /* TODO: Make use of game mode for changing the ticker color */
   let gameMode = 0;
+
+  // Local object to encode the possible modes
+  const Modes = {
+    Paused:   0,
+    Scatter:  1,
+    Chase:    2,
+  }
 
   // Keep track of the current score (from the server)
   let currScore = 0;
@@ -85,49 +97,47 @@
   let currLevel = 0;
 
   // Keep track of the current lives (from the server)
-  let currLives = 0;
+  let currLives = 1;
 
   // Local object to encode the starting states
-  const Flags = {
+  const Directions = {
     Up:       0b11000000,
     Left:     0b11000000,
     Down:     0b01000000,
     Right:    0b01000000,
-    Spawning: 0b10000000,
   }
 
   // Initial states for all the agents
   let pacmanRowState = 23;
-  let pacmanColState = 13;
+  let pacmanColState = 13 | Directions.Right;
 
   let fruitRowState = 0;
   let fruitColState = 0;
 
   let redRowState = 11;
-  let redColState = 13 | Flags.Left; // left
+  let redColState = 13 | Directions.Left; // left
   let redFrightState = 0 | 128;
 
-  let pinkRowState = 13 | Flags.Down; // down
+  let pinkRowState = 13 | Directions.Down; // down
   let pinkColState = 13;
   let pinkFrightState = 0 | 128;
 
-  let cyanRowState = 14 | Flags.Up; // up
+  let cyanRowState = 14 | Directions.Up; // up
   let cyanColState = 11;
   let cyanFrightState = 0 | 128;
 
-  let orangeRowState = 14 | Flags.Up; // up
+  let orangeRowState = 14 | Directions.Up; // up
   let orangeColState = 15;
   let orangeFrightState = 0 | 128;
 
   // Handling a new connection
   socket.addEventListener('open', (_) => {
     console.log('WebSocket connection established');
-    socket.send('Hello, server!');
     socketOpen = true;
   });
 
   // When the ticker is clicked, send a message
-  let paused = false;
+  let paused = true;
   $: {if (socketOpen) {
     socket.send(paused ? 'p' : 'P');
   }}
@@ -199,8 +209,14 @@
         for (let row = 0; row < 31; row++) {
           const binRow = view.getUint32(byteIdx, false);
           for (let col = 0; col < 28; col++) {
-            let superPellet = ((row === 3) || (row === 23)) && ((col === 1) || (col === 26));
-            pelletGrid[row][col] = ((binRow >> col) & 1) ? (superPellet ? 2 : 1) : 0;
+
+            // Super pellet condition
+            let superPellet = ((row === 3) || (row === 23)) 
+                              && ((col === 1) || (col === 26));
+
+            // Update the pellet grid
+            pelletGrid[row][col] = ((binRow >> col) & 1) ? 
+                                    (superPellet ? 2 : 1) : 0;
           }
           byteIdx += 4;
         }
@@ -220,52 +236,141 @@
   // Track the size of the window, to determine the grid size
   let innerWidth = 0;
   let innerHeight = 0;
-  $: gridSize = 0.9 * ((innerHeight * 28 < innerWidth * 31) ? (innerHeight / 31) : (innerWidth / 28));
+  $: gridSize = 0.8 * ((innerHeight * 28 < innerWidth * 31) ? 
+    (innerHeight / 31) : (innerWidth / 28));
 
   // Calculate the remainder when currTicks is divided by updatePeriod
-  $: modTicks = currTicks % updatePeriod
+  $: modTicks = currTicks % updatePeriod;
+
+  // Deal with motion-related keys
+  let lastMotionTicks = 0;
+  const motionCommand = (key) => {
+    
+    /*
+      If not enough ticks (with a threshold of 1/3 of the update period)
+      have elapsed since the last motion key, wait
+    */
+    if (3 * (currTicks - lastMotionTicks) < updatePeriod) {
+      return null;
+    }
+
+    /* 
+      If motion-related keys are pressed, reset the cooldown and 
+      send the command back to the keypress handler
+    */
+    if (key === 'w' || key === 'ArrowUp') {
+      lastMotionTicks = currTicks;
+      return 'w';
+    } else if (key === 'a' || key === 'ArrowLeft') {
+      lastMotionTicks = currTicks;
+      return 'a';
+    } else if (key === 's' || key === 'ArrowDown') {
+      lastMotionTicks = currTicks;
+      return 's';
+    } else if (key === 'd' || key === 'ArrowRight') {
+      lastMotionTicks = currTicks;
+      return 'd';
+    }
+    return null;
+  }
+
+  // Handle key presses, to send responses back to the server
+  const handleKeyDown = (event) => {
+    const key = event.key;
+    const motion = motionCommand(key);;
+    if (motion) {
+      socket.send(motion);
+    }
+  }
 
 </script>
 
-<svelte:window bind:innerWidth bind:innerHeight />
+<svelte:window 
+  on:keydown={handleKeyDown} 
+  bind:innerWidth bind:innerHeight 
+/>
 
-<div class='maze-space'>
-  <Maze {gridSize} />
-  <Pellets {pelletGrid} {gridSize} />
-  <Pacman {gridSize} {pacmanRowState} {pacmanColState} />
-
-  <Ghost {gridSize}
-         {modTicks}
-         {updatePeriod} 
-         rowState={redRowState}
-         colState={redColState}
-         frightState={redFrightState}
-         color='red'/>
+<div class='maze-space' style:--grid-size="{gridSize}px">
   
-  <Ghost {gridSize}
-         {modTicks}
-         {updatePeriod}
-         rowState={pinkRowState}
-         colState={pinkColState}
-         frightState={pinkFrightState}
-         color='pink'/>
+  <Maze 
+    {gridSize} 
+  />
 
-  <Ghost {gridSize}
-         {modTicks}
-         {updatePeriod}
-         rowState={cyanRowState}
-         colState={cyanColState}
-         frightState={cyanFrightState}
-         color='cyan'/>
+  <Pellets 
+    {pelletGrid}
+    {gridSize}
+  />
 
-  <Ghost {gridSize}
-         {modTicks}
-         {updatePeriod} 
-         rowState={orangeRowState} 
-         colState={orangeColState} 
-         frightState={orangeFrightState}
-         color='orange'/>
+  <Pacman 
+    {gridSize}
+    {pacmanRowState}
+    {pacmanColState}
+  />
 
-  <MpsCounter {gridSize} {mpsAvg} />
-  <Ticker {gridSize} {modTicks} {updatePeriod} bind:paused/>
+  <Ghost 
+    {gridSize}
+    {modTicks}
+    {updatePeriod} 
+    rowState={redRowState}
+    colState={redColState}
+    frightState={redFrightState}
+    color='red'
+  />
+  
+  <Ghost 
+    {gridSize}
+    {modTicks}
+    {updatePeriod}
+    rowState={pinkRowState}
+    colState={pinkColState}
+    frightState={pinkFrightState}
+    color='pink'
+  />
+
+  <Ghost 
+    {gridSize}
+    {modTicks}
+    {updatePeriod}
+    rowState={cyanRowState}
+    colState={cyanColState}
+    frightState={cyanFrightState}
+    color='cyan'
+  />
+
+  <Ghost
+    {gridSize}
+    {modTicks}
+    {updatePeriod} 
+    rowState={orangeRowState} 
+    colState={orangeColState} 
+    frightState={orangeFrightState}
+    color='orange'
+  />
+
+  <Mps
+    {gridSize}
+    {mpsAvg}
+  />
+
+  <Ticker
+    {gridSize}
+    {modTicks}
+    {updatePeriod}
+    {gameMode}
+    {Modes}
+    bind:paused
+  />
+
+  <Score
+    {gridSize}
+    {currLevel}
+    {currScore}
+  />
+
+  <Lives
+    {gridSize}
+    {currLives}
+    {Directions} 
+  />
+
 </div>

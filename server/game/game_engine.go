@@ -21,24 +21,30 @@ type GameEngine struct {
 	quitCh      chan struct{}
 	webOutputCh chan<- []byte
 	webInputCh  <-chan []byte
-	hasQuit     bool
 	state       *gameState
 	ticker      *time.Ticker    // serves as the game clock
 	wgQuit      *sync.WaitGroup // wait group to make sure it quits safely
 }
 
-// Create a new game engine, casting input and output channels to be uni-directional
-func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte, _wgQuit *sync.WaitGroup, clockRate int32) *GameEngine {
-	_tickTime := 1000000 * time.Microsecond / time.Duration(clockRate) // Time between ticks
+// Create a new game engine, casting channels to be uni-directional
+func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte,
+	_wgQuit *sync.WaitGroup, clockRate int32) *GameEngine {
+
+	// Time between ticks
+	_tickTime := 1000000 * time.Microsecond / time.Duration(clockRate)
 	ge := GameEngine{
 		quitCh:      make(chan struct{}),
 		webOutputCh: _webOutputCh,
 		webInputCh:  _webInputCh,
-		hasQuit:     false,
 		state:       newGameState(),
 		ticker:      time.NewTicker(_tickTime),
 		wgQuit:      _wgQuit,
 	}
+
+	// Set the enable for command logging to be false by default
+	SetCommandLogEnable(true)
+
+	// Return the game engine
 	return &ge
 }
 
@@ -55,7 +61,6 @@ func (ge *GameEngine) quit() {
 // Quit function exported to other packages
 func (ge *GameEngine) Quit() {
 	ge.quitCh <- struct{}{}
-	ge.hasQuit = true
 }
 
 // Start the game engine - should be launched as a go-routine
@@ -81,7 +86,8 @@ func (ge *GameEngine) RunLoop() {
 
 	// If there was already a game engine, kill this one and throw an error
 	if _activeGameEngines > 1 {
-		fmt.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more than one game engine. Quitting...\033[0m")
+		fmt.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more" +
+			" than one game engine. Quitting...\033[0m")
 		return
 	}
 
@@ -91,12 +97,15 @@ func (ge *GameEngine) RunLoop() {
 	// Create a wait group for synchronizing ghost plans
 	var wgPlans sync.WaitGroup
 
+	// Create a variable for the first update
+	firstUpdate := false
+
 	for {
 
 		/* STEP 1: Update the ghost positions if necessary */
 
 		// If the game state is ready to update, update the ghost positions
-		if ge.state.updateReady() {
+		if ge.state.updateReady() || !firstUpdate {
 
 			// Wait until all pending ghost plans are complete
 			wgPlans.Wait()
@@ -115,11 +124,15 @@ func (ge *GameEngine) RunLoop() {
 		// Send the full state
 		idx = ge.state.serFull(outputBuf, idx)
 
-		/* STEP 3: Start planning the next ghost moves if an update just happened */
+		/* STEP 3: Start planning the next ghost moves if an update happened */
 
 		// If we're ready for an update, plan the next ghost moves asynchronously
-		if ge.state.updateReady() {
-			wgPlans.Add(4)
+		if ge.state.updateReady() || !firstUpdate {
+
+			// Add pending ghost plans
+			wgPlans.Add(int(numColors))
+
+			// Plan each ghost's next move concurrently
 			for _, ghost := range ge.state.ghosts {
 				go ghost.plan(&wgPlans)
 			}
@@ -127,16 +140,20 @@ func (ge *GameEngine) RunLoop() {
 
 		/* STEP 4: Write the serialized game state to the output channel */
 
-		// Check if the write will be blocked, and try to write the serialized state
+		// Check if a write will be blocked, and try to write the serialized state
 		b := len(ge.webOutputCh) == cap(ge.webOutputCh)
 		start := time.Now()
 		ge.webOutputCh <- outputBuf[:idx]
 
-		// If the write was blocked for too long (> 1ms), send a warning to the terminal
+		/*
+			If the write was blocked for too long (> 1ms), send a warning
+			to the terminal
+		*/
 		if b {
 			wait := time.Since(start)
 			if wait > time.Millisecond {
-				fmt.Printf("\033[35mWARN: The game engine output channel was full (%s)\033[0m\n", wait)
+				fmt.Printf("\033[35mWARN: The game engine output channel was "+
+					"full (%s)\033[0m\n", wait)
 			}
 		}
 
@@ -145,15 +162,17 @@ func (ge *GameEngine) RunLoop() {
 
 		// If we get a message from the web broker, handle it
 		case msg := <-ge.webInputCh:
-			fmt.Printf("\033[2m\033[36m| Response: %s`\033[0m\n", string(msg))
+			ge.state.interpretCommand(msg)
 
 		// If we get a quit signal, quit this broker
 		case <-ge.quitCh:
 			return
 
 		/*
-			If the web input channel hits full capacity, send a warning to the terminal
-			What this means: either the browsers are sending too much input, or the game loop can't keep up
+			If the web input channel hits full capacity, send a terminal warning
+
+			What this means: either the browsers are sending too much input,
+			or the game loop can't keep up
 		*/
 		default:
 			if len(ge.webInputCh) == cap(ge.webInputCh) {
@@ -164,7 +183,12 @@ func (ge *GameEngine) RunLoop() {
 		/* STEP 6: Update the game state for the next tick */
 
 		// Increment the number of ticks
-		ge.state.currTicks++
+		if !ge.state.isPaused() {
+			ge.state.nextTick()
+		}
+
+		// Set the first update to be done
+		firstUpdate = true
 
 		/* STEP 5: Wait for the ticker to complete the current frame */
 		<-ge.ticker.C

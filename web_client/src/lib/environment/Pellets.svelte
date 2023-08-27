@@ -1,9 +1,11 @@
 <style>
 
+  /* Maze row */
   .row {
     display: flex;
   }
 
+  /* Grid square */
   .grid-element {
 
     /* Formatting */
@@ -21,6 +23,7 @@
     height: var(--grid-size);
   }
 
+  /* Grid square outline (hover) */
   .grid-element:hover {
     cursor: pointer;
     border: 2px solid rgba(255, 255, 0, 0.4);
@@ -28,19 +31,24 @@
     box-shadow: none;
   }
 
+  /* Grid square outline (clicked), should be none */
   .grid-element:focus-visible {
     outline: none;
   }
 
+  /* Hidden element (grid cell or pellet) */
   .hidden:hover {
     cursor: auto;
   }
 
+  /* Pellet object */
   .pellet {
     background-color: #fff;
     display: block;
     color: black;
   }
+
+  /* Hidden pellet */
 
   .grid-element .hidden {
     opacity: 0;
@@ -52,6 +60,8 @@
     cursor: auto;
   }
 
+  /* Super pellet */
+  
   .grid-element .super {
     border-radius: 40%;
     transform: scale(3);
@@ -90,8 +100,16 @@
   {#each {length:31} as _, i}
     <div class="row">
       {#each {length:28} as _, j}
-        <button on:click={() => hello(i, j)} class={"grid-element" + pelletMods[pelletGrid[i][j]]} style:--grid-size="{gridSize}px">
-          <span class={"pellet" + pelletMods[pelletGrid[i][j]]} style:width="{pellet_size}px" style:height="{pellet_size}px"/>
+        <button 
+          on:click={() => hello(i, j)} 
+          class={"grid-element" + pelletMods[pelletGrid[i][j]]}
+          style:--grid-size="{gridSize}px"
+        >
+          <span 
+            class={"pellet" + pelletMods[pelletGrid[i][j]]}
+            style:width="{pellet_size}px"
+            style:height="{pellet_size}px"
+          />
         </button>
       {/each}
     </div>

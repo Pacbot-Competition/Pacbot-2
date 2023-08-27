@@ -2,9 +2,12 @@
 
 <style>
 
+  /* Control of header margins */
   h2 {
     margin: 0;
   }
+
+  /* Information box for MPS Counter */
   .mps-counter {
 
     /* Positioning */
@@ -30,6 +33,9 @@
   export let mpsAvg;
 </script>
 
-<h2 class='mps-counter' style:--grid-size="{gridSize}px">
+<h2
+  class='mps-counter'
+  style:--grid-size="{gridSize}px"
+>
   MPS: {mpsAvg}
 </h2>

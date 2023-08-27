@@ -79,7 +79,19 @@ func (loc *locationState) getReversedDir() uint8 {
 	return loc.dir
 }
 
-// Create a new location state as the neighbor of an existing one
+// Return a set of coordinates corresponding to an existing location
+func (loc *locationState) getCoords() (int8, int8) {
+
+	// Lock the states for thread safety
+	loc.RLock()
+	defer loc.RUnlock()
+
+	// Add the deltas to the coordinates and return the pair
+	return (loc.row),
+		(loc.col)
+}
+
+// Create a new set of coordinates as the neighbor of an existing location
 func (loc *locationState) getNeighborCoords(dir uint8) (int8, int8) {
 
 	// Lock the states for thread safety

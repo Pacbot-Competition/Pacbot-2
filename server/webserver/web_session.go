@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -49,8 +50,10 @@ func getIP(conn *websocket.Conn) string {
 type webSession struct {
 	quitCh chan struct{}
 	sendCh chan []byte
-	readEn bool // read enabled
+	readEn bool // read enabled (allowed by IP whitelist)
+	readOk bool // read ready (rate limiting)
 	conn   *websocket.Conn
+	sync.Mutex
 }
 
 // Create a new web session object
@@ -59,6 +62,7 @@ func newWebSession(conn *websocket.Conn) *webSession {
 		quitCh: make(chan struct{}, 2),
 		sendCh: make(chan []byte, 10),
 		readEn: true,
+		readOk: false,
 		conn:   conn,
 	}
 }
@@ -81,7 +85,10 @@ func (ws *webSession) register() {
 		oldQuitCh <- struct{}{}
 	}
 
-	// Determine if we trust this new connection, by checking against configured trusted connections
+	/*
+		Determine if we trust this new connection, by checking against configured
+		trusted connections
+	*/
 	_, trusted := trustedBrowserIPs[ip]
 	if !trusted {
 		ws.readEn = false
@@ -96,9 +103,11 @@ func (ws *webSession) register() {
 		// Add this web session to the web sessions set
 		openWebSessions[ws] = struct{}{}
 		if trusted {
-			fmt.Printf("\033[34m[%d -> %d] trusted browser connected\033[0m\n", len(openWebSessions)-1, len(openWebSessions))
+			fmt.Printf("\033[34m[%d -> %d] trusted browser connected\033[0m\n",
+				len(openWebSessions)-1, len(openWebSessions))
 		} else {
-			fmt.Printf("\033[34m[%d -> %d] browser connected\033[0m\n", len(openWebSessions)-1, len(openWebSessions))
+			fmt.Printf("\033[34m[%d -> %d] browser connected\033[0m\n",
+				len(openWebSessions)-1, len(openWebSessions))
 		}
 	}
 	muOWS.Unlock()
@@ -112,12 +121,16 @@ func (ws *webSession) unregister() {
 	ws.conn.Close()
 	close(ws.sendCh)
 
-	// Lock the mutex so that other channels will not read the open web sessions map until this is complete
+	/*
+		Lock the mutex so that other channels will not read the open web
+		sessions map until this is complete
+	*/
 	muOWS.Lock()
 	{
 		// Print information regarding the disconnect
 		if newConnectionsAllowed || (len(openWebSessions) > 0) {
-			fmt.Printf("\033[33m[%d -> %d] browser disconnected\033[0m\n", len(openWebSessions), len(openWebSessions)-1)
+			fmt.Printf("\033[33m[%d -> %d] browser disconnected\033[0m\n",
+				len(openWebSessions), len(openWebSessions)-1)
 		} else {
 			fmt.Printf("\033[33m[X -> X] browser(s) blocked\033[0m\n")
 		}
@@ -131,11 +144,17 @@ func (ws *webSession) unregister() {
 	wgQuit.Done()
 }
 
-// Run a read-loop go-routine to keep track of the incoming messages for a session
+/*
+Run a read-loop go-routine to keep track of the incoming messages
+for a given session
+*/
 func (ws *webSession) readLoop() {
 
 	// If we ever stop receiving messages (due to some error), kill the connection
 	defer func() { ws.quitCh <- struct{}{} }()
+
+	// Local variable, to keep track of whether a message is discarded
+	ignored := false
 
 	// "While" loop, keep reading until the connection closes
 	for {
@@ -157,12 +176,32 @@ func (ws *webSession) readLoop() {
 			return
 		}
 
-		// Save the message received into the read channel
-		if ws.readEn {
+		// Save the message received into the read channel, if applicable
+		ws.Lock()
+		{
+			// Relay the message if applicable, otherwise ignore it
+			if ws.readEn && ws.readOk {
+				ignored = false
+			} else {
+				ignored = true
+			}
+
+			// Rate limiting - discard all incoming messages until we send a message
+			ws.readOk = false
+		}
+		ws.Unlock()
+
+		// If the message shouldn't be ignored, relay it
+		if !ignored {
 			responseCh <- msg
 		}
-	}
 
+		// If the message was ignored due to rate limiting, warn the user
+		if ignored && ws.readEn {
+			fmt.Println("\033[35mWARN: An incoming message was ignored " +
+				"(reason: rate limiting)\033[0m")
+		}
+	}
 }
 
 // Sending websocket data (binary)
@@ -192,5 +231,12 @@ func (ws *webSession) sendLoop() {
 			fmt.Println("write error: ", err)
 			return
 		}
+
+		// Update the read ready state, to allow another read after this write
+		ws.Lock()
+		{
+			ws.readOk = true
+		}
+		ws.Unlock()
 	}
 }
