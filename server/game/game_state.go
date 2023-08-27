@@ -258,17 +258,6 @@ func (gs *gameState) incrementScore(change uint16) {
 	gs.muScore.Unlock()
 }
 
-// Helper function to set the current score of the game
-func (gs *gameState) setScore(score uint16) {
-
-	// (Write) lock the current score
-	gs.muScore.Lock()
-	{
-		gs.currScore = score // Update the score
-	}
-	gs.muScore.Unlock()
-}
-
 /**************************** Game Level Functions ****************************/
 
 // Helper function to get the current level of the game

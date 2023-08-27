@@ -240,12 +240,47 @@
     (innerHeight / 31) : (innerWidth / 28));
 
   // Calculate the remainder when currTicks is divided by updatePeriod
-  $: modTicks = currTicks % updatePeriod
+  $: modTicks = currTicks % updatePeriod;
+
+  // Deal with motion-related keys
+  let lastMotionTicks = 0;
+  const motionCommand = (key) => {
+    
+    /*
+      If not enough ticks (with a threshold of 1/3 of the update period)
+      have elapsed since the last motion key, wait
+    */
+    if (3 * (currTicks - lastMotionTicks) < updatePeriod) {
+      return null;
+    }
+
+    /* 
+      If motion-related keys are pressed, reset the cooldown and 
+      send the command back to the keypress handler
+    */
+    if (key === 'w' || key === 'ArrowUp') {
+      lastMotionTicks = currTicks;
+      return 'w';
+    } else if (key === 'a' || key === 'ArrowLeft') {
+      lastMotionTicks = currTicks;
+      return 'a';
+    } else if (key === 's' || key === 'ArrowDown') {
+      lastMotionTicks = currTicks;
+      return 's';
+    } else if (key === 'd' || key === 'ArrowRight') {
+      lastMotionTicks = currTicks;
+      return 'd';
+    }
+    return null;
+  }
 
   // Handle key presses, to send responses back to the server
   const handleKeyDown = (event) => {
     const key = event.key;
-    console.log(key);
+    const motion = motionCommand(key);;
+    if (motion) {
+      socket.send(motion);
+    }
   }
 
 </script>

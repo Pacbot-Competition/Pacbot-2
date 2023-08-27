@@ -6,13 +6,13 @@ const mazeRows int8 = 31
 // The number of columns in the pellets and walls states
 const mazeCols int8 = 28
 
-// The number of update ticks that the game starts with
+// The update period that the game starts with by default
 const initUpdatePeriod uint8 = 12
 
-// The mode that the game starts on by default (mainly for testing purposes)
+// The mode that the game starts on by default
 const initMode uint8 = chase
 
-// The level that Pacman starts on by default (mainly for testing purposes)
+// The level that Pacman starts on by default
 const initLevel uint8 = 1
 
 // The number of lives that Pacman starts with
@@ -27,7 +27,7 @@ var pacmanSpawnLoc = newLocationState(23, 13, right)
 
 // Spawn position for the fruit
 var fruitSpawnLoc = newLocationState(17, 13, none)
-var emptyLoc = newLocationState(63, 63, none) // serializes to 0x0 0x00
+var emptyLoc = newLocationState(63, 63, none) // serializes to 0x3f 0x3f
 
 // Spawn positions for the ghosts
 var ghostSpawnLocs [4]*locationState = [...]*locationState{
