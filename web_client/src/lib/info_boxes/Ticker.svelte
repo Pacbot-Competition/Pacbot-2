@@ -72,12 +72,14 @@
   export let gameMode;
   let modeColor = 'yellow'
   $: {
-    if (gameMode == Modes.Paused) {
+    if (gameMode === Modes.Paused) {
       modeColor = 'gray';
-    } else if (gameMode == Modes.Scatter) {
+    } else if (gameMode === Modes.Scatter) {
       modeColor = 'green';
-    } else if (gameMode == Modes.Chase) {
+    } else if (gameMode === Modes.Chase) {
       modeColor = 'yellow';
+    } else if (gameMode === Modes.Offline) {
+      modeColor = '#333';
     } else { // The ticker should not be red ever - if it is, there's a bug
       modeColor = 'red';
     }

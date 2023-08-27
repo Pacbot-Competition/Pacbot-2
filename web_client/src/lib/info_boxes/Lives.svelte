@@ -19,7 +19,7 @@
     width:       calc(5   * var(--grid-size));
     height:      calc(3   * var(--grid-size));
     line-height: calc(1.1 * var(--grid-size));
-    left:        calc(23   * var(--grid-size));
+    left:        calc(23  * var(--grid-size));
     top:         calc(16  * var(--grid-size));
     font-size:   calc(0.8 * var(--grid-size));
   }
@@ -36,6 +36,7 @@
 
 <div class='lives-box' style:--grid-size="{gridSize}px">
   {#if currLives > 1}
+    <!-- Second Pacman life -->
     <Pacman
       {gridSize}
       pacmanRowState={1}
@@ -43,6 +44,7 @@
     />
   {/if}
   {#if currLives > 2}
+    <!-- Third Pacman life -->
     <Pacman
       {gridSize}
       pacmanRowState={1}

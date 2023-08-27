@@ -64,6 +64,17 @@ func (g *ghostState) frighten() {
 	g.muState.Unlock()
 }
 
+// Check if a ghost is frightened
+func (g *ghostState) isFrightened() bool {
+
+	// (Read) lock the ghost state
+	g.muState.RLock()
+	defer g.muState.RUnlock()
+
+	// Return whether there is at least one fright cycle left
+	return g.frightCycles > 0
+}
+
 // Update the ghost's position: copy the location from the next location state
 func (g *ghostState) update() {
 
@@ -104,15 +115,12 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	// Keep local copies of the fright cycles and spawning variables
 	var spawning bool
 	var frightCycles uint8
-	g.muState.Lock() // (Maybe excessive) write lock due to one write
+	g.muState.RLock()
 	{
-		spawning = g.spawning   // Copy the spawning flag
-		if g.frightCycles > 0 { // Decrement the fright cycles
-			g.frightCycles--
-		}
+		spawning = g.spawning         // Copy the spawning flag
 		frightCycles = g.frightCycles // Copy the fright cycles
 	}
-	g.muState.Unlock()
+	g.muState.RUnlock()
 
 	// Decide on a target for this ghost, depending on the game mode
 	var targetRow, targetCol int8
@@ -142,7 +150,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 			targetRow, targetCol = g.game.getChaseTargetOrange()
 		}
 	} else if mode == scatter { // Scatter mode targets
-		targetRow, targetCol = g.scatterTarget.row, g.scatterTarget.col
+		targetRow, targetCol = g.scatterTarget.getCoords()
 	}
 
 	/*
@@ -194,8 +202,11 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 		return
 	}
 
-	// If frightened, immediately choose a random direction and return
-	if frightCycles > 0 {
+	/*
+		 	If the ghost will still frightened one tick later, immediately choose
+			a random valid direction and return
+	*/
+	if frightCycles > 1 {
 
 		// Generate a random index out of the valid moves
 		randomNum := g.game.rng.Intn(numValidMoves)

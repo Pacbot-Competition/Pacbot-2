@@ -88,6 +88,7 @@
     Paused:   0,
     Scatter:  1,
     Chase:    2,
+    Offline:  10,
   }
 
   // Keep track of the current score (from the server)
@@ -224,6 +225,7 @@
   // Event on close
   socket.addEventListener('close', (_) => {
     socketOpen = false;
+    gameMode = Modes.Offline;
     console.log('WebSocket connection closed');
   });
 
@@ -237,7 +239,7 @@
   $: modTicks = currTicks % updatePeriod
 
   // Deal with control-related (pause, play) keys
-  let spaceHeld = false;
+  let controlKeyHeld = false;
   const controlCommand = (key) => {
 
     /*
@@ -245,11 +247,13 @@
       send the command back to the keydown handler
     */
     if (key === 'p' && gameMode !== Modes.Paused) {
+      controlKeyHeld = true;
       return 'p';
     } else if (key === 'P' && gameMode === Modes.Paused) {
+      controlKeyHeld = true;
       return 'P';
-    } else if (key === ' ' && !spaceHeld) {
-      spaceHeld = true;
+    } else if (key === ' ' && !controlKeyHeld) {
+      controlKeyHeld = true;
       return (gameMode === Modes.Paused ? 'P' : 'p');
     }
     return null;
@@ -327,8 +331,8 @@
     // Retrieve the key information
     const key = event.key;
 
-    if (key === ' ') {
-      spaceHeld = false;
+    if (key === 'p' || key === 'P' || key === ' ') {
+      controlKeyHeld = false;
     }
   }
 

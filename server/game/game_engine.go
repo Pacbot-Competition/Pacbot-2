@@ -41,9 +41,6 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte,
 		wgQuit:      _wgQuit,
 	}
 
-	// Set the enable for command logging to be false by default
-	SetCommandLogEnable(false)
-
 	// Return the game engine
 	return &ge
 }

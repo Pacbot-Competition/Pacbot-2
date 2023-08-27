@@ -166,7 +166,7 @@ func (gs *gameState) serFruit(outputBuf []byte, startIdx int) int {
 // Serialize a ghost's information (3 bytes)
 func (gs *gameState) serGhost(color uint8, outputBuf []byte, startIdx int) int {
 
-	// Retrive this ghost's struct
+	// Retrieve this ghost's struct
 	g := gs.ghosts[color]
 
 	// Serialize the location information first

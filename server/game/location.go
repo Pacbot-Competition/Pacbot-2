@@ -103,6 +103,21 @@ func (loc *locationState) getNeighborCoords(dir uint8) (int8, int8) {
 		(loc.col + dCol[dir])
 }
 
+/*
+Return a set of coordinates a few steps ahead (in the direction it is facing)
+of a given location state
+*/
+func (loc *locationState) getAheadCoords(spaces int8) (int8, int8) {
+
+	// Lock the states for thread safety
+	loc.RLock()
+	defer loc.RUnlock()
+
+	// Add the deltas to the coordinates and return the pair
+	return (loc.row + dRow[loc.dir]*spaces),
+		(loc.col + dCol[loc.dir]*spaces)
+}
+
 /******************************* Update Location ******************************/
 
 // Copy all the variables from another location state into the given location

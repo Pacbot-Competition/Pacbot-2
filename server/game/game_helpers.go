@@ -1,5 +1,7 @@
 package game
 
+import "fmt"
+
 /***************************** Bitwise Operations *****************************/
 
 /*
@@ -161,7 +163,14 @@ func (gs *gameState) movePacmanDir(dir uint8) {
 
 	// Move Pacman the anticipated spot
 	pLoc.moveToCoords(nextRow, nextCol)
-	gs.collectPellet(nextRow, nextCol)
+	pelletsLeft := gs.collectPellet(nextRow, nextCol)
+
+	// Spawn fruit if 70 or 170 pellets are eaten
+	if pelletsLeft == initPelletCount-70 {
+		fmt.Println("Fruit should spawn")
+	} else if pelletsLeft == initPelletCount-170 {
+		fmt.Println("Fruit should spawn")
+	}
 }
 
 /************************ Ghost Targeting (Chase Mode) ************************/
@@ -172,13 +181,8 @@ Returns the chase location of the red ghost
 */
 func (gs *gameState) getChaseTargetRed() (int8, int8) {
 
-	// (Read) lock the pacman location
-	gs.pacmanLoc.RLock()
-	defer gs.pacmanLoc.RUnlock()
-
-	// Return the pacman location, as a row and column
-	return (gs.pacmanLoc.row),
-		(gs.pacmanLoc.col)
+	// Return Pacman's current location
+	return gs.pacmanLoc.getCoords()
 }
 
 /*
@@ -187,13 +191,8 @@ Returns the chase location of the pink ghost
 */
 func (gs *gameState) getChaseTargetPink() (int8, int8) {
 
-	// (Read) lock the pacman location
-	gs.pacmanLoc.RLock()
-	defer gs.pacmanLoc.RUnlock()
-
-	// Return the red ghost's target
-	return (gs.pacmanLoc.row + 4*dRow[gs.pacmanLoc.dir]),
-		(gs.pacmanLoc.col + 4*dCol[gs.pacmanLoc.dir])
+	// Return the red pink's target (4 spaces ahead of Pacman)
+	return gs.pacmanLoc.getAheadCoords(4)
 }
 
 /*
@@ -202,25 +201,15 @@ Returns the chase location of the cyan ghost
 */
 func (gs *gameState) getChaseTargetCyan() (int8, int8) {
 
-	// (Read) lock the pacman location and red ghost location
-	gs.pacmanLoc.RLock()
-	gs.ghosts[red].loc.RLock()
-	defer func() {
-		gs.pacmanLoc.RUnlock()
-		gs.ghosts[red].loc.RUnlock()
-	}()
+	// Get the 'pivot' square, 2 steps ahead of Pacman
+	pivotRow, pivotCol := gs.pacmanLoc.getAheadCoords(2)
 
-	// Shorthands to make computation simpler
-	pLoc := gs.pacmanLoc       // Pacman location
-	rLoc := gs.ghosts[red].loc // Red location
-
-	// Calculate the position of the 'pivot' square (2 ahead of Pacman)
-	pivotRow := pLoc.row + 2*dRow[pLoc.dir]
-	pivotCol := pLoc.col + 2*dCol[pLoc.dir]
+	// Get the current location of the red ghost
+	redRow, redCol := gs.ghosts[red].loc.getCoords()
 
 	// Return the pair of coordinates of the calculated target
-	return (2*pivotRow - rLoc.row),
-		(2*pivotCol - rLoc.col)
+	return (2*pivotRow - redRow),
+		(2*pivotCol - redCol)
 }
 
 /*
@@ -230,28 +219,21 @@ Though, if close enough to Pacman, it should choose its scatter target
 */
 func (gs *gameState) getChaseTargetOrange() (int8, int8) {
 
-	// (Read) lock the pacman location and orange ghost location
-	gs.pacmanLoc.RLock()
-	gs.ghosts[orange].loc.RLock()
-	defer func() {
-		gs.pacmanLoc.RUnlock()
-		gs.ghosts[orange].loc.RUnlock()
-	}()
+	// Get Pacman's current location
+	pacmanRow, pacmanCol := gs.pacmanLoc.getCoords()
 
-	// Shorthands to make computation simpler
-	pLoc := gs.pacmanLoc                        // Pacman location
-	oLoc := gs.ghosts[orange].loc               // Orange location
-	oScatter := gs.ghosts[orange].scatterTarget // Orange scatter target
+	// Get the orange ghost's current location
+	orangeRow, orangeCol := gs.ghosts[orange].loc.getCoords()
 
-	distSq := gs.distSq(oLoc.row, oLoc.col, pLoc.row, pLoc.col)
+	// Calculate the squared distance to Pacman's location
+	distSq := gs.distSq(orangeRow, orangeCol, pacmanRow, pacmanCol)
 
 	// If Pacman is far enough, return Pacman's location
 	if distSq >= 64 {
-		return (pLoc.row),
-			(pLoc.col)
+		return (pacmanRow),
+			(pacmanCol)
 	}
 
 	// Otherwise, return the scatter location of orange
-	return (oScatter.row),
-		(oScatter.col)
+	return gs.ghosts[orange].scatterTarget.getCoords()
 }
