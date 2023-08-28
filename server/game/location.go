@@ -66,6 +66,17 @@ func (loc *locationState) collidesWith(loc2 *locationState) bool {
 	return ((loc.row == loc2.row) && (loc.col == loc2.col))
 }
 
+// Return a direction corresponding to an existing location
+func (loc *locationState) getDir() uint8 {
+
+	// Lock the states for thread safety
+	loc.RLock()
+	defer loc.RUnlock()
+
+	// Return the direction
+	return loc.dir
+}
+
 func (loc *locationState) getReversedDir() uint8 {
 
 	// (Read) the state (to prevent writes)
@@ -86,7 +97,7 @@ func (loc *locationState) getCoords() (int8, int8) {
 	loc.RLock()
 	defer loc.RUnlock()
 
-	// Add the deltas to the coordinates and return the pair
+	// Return the pair of coordinates
 	return (loc.row),
 		(loc.col)
 }

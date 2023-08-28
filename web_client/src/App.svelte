@@ -163,7 +163,7 @@
         // Get the current ticks from the server
         currTicks         = view.getUint16(byteIdx, false); byteIdx += 2;
 
-        // Get the update ticks from the server
+        // Get the update period from the server
         updatePeriod      = view.getUint8(byteIdx++, false);
 
         // Get the game mode from the server

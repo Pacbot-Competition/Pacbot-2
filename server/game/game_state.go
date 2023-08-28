@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -105,7 +106,7 @@ func newGameState() *gameState {
 		// Ghosts
 		ghosts: make([]*ghostState, numColors),
 
-		// RNG source
+		// RNG (random number generation) source
 		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
 
 		// Pellet count at the start
@@ -172,6 +173,10 @@ func (gs *gameState) getUpdatePeriod() uint8 {
 // Helper function to set the update period
 func (gs *gameState) setUpdatePeriod(period uint8) {
 
+	// Send a message to the terminal
+	fmt.Printf("\033[36mGAME: Update period changed (%d -> %d)\033[0m\n",
+		gs.getUpdatePeriod(), period)
+
 	// (Write) lock the update period
 	gs.muPeriod.Lock()
 	{
@@ -200,7 +205,12 @@ func (gs *gameState) getLastUnpausedMode() uint8 {
 	gs.muMode.RLock()
 	defer gs.muMode.RUnlock()
 
-	// Return the current game mode
+	// If the current mode is not paused, return it
+	if gs.mode != paused {
+		return gs.mode
+	}
+
+	// Return the last unpaused game mode
 	return gs.lastUnpausedMode
 }
 

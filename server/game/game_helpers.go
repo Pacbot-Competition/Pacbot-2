@@ -90,13 +90,9 @@ func (gs *gameState) pelletAt(row int8, col int8) bool {
 Collects a pellet if it is at a given location
 Returns the number of pellets that are left
 */
-func (gs *gameState) collectPellet(row int8, col int8) uint16 {
+func (gs *gameState) collectPellet(row int8, col int8) {
 	if !gs.pelletAt(row, col) {
-
-		// (Read) lock the number of pellets, then return
-		gs.muPellets.RLock()
-		defer gs.muPellets.RUnlock()
-		return gs.numPellets
+		return
 	}
 
 	// If the we are in particular rows and columns, it is a super pellet
@@ -116,13 +112,40 @@ func (gs *gameState) collectPellet(row int8, col int8) uint16 {
 
 	// (Write) lock the pellets array, then clear the pellet's bit
 	gs.muPellets.Lock()
-	defer gs.muPellets.Unlock()
+	{
+		// Clear the pellet's bit and decrement the number of pellets
+		modifyBit(&(gs.pellets[row]), col, false)
+		gs.numPellets--
+	}
+	gs.muPellets.Unlock()
 
-	// Clear the pellet's bit and decrement the number of pellets
-	modifyBit(&(gs.pellets[row]), col, false)
-	gs.numPellets--
+	// Act depending on the number of pellets left over
+	gs.muPellets.RLock()
+	defer gs.muPellets.RUnlock()
 
-	return gs.numPellets
+	// Spawn fruit, if applicable
+	gs.muFruit.Lock()
+	{
+		if gs.numPellets == fruitThreshold1 && !gs.fruitSpawned1 {
+			fmt.Println("Fruit 1 should spawn")
+			gs.fruitSpawned1 = true
+		} else if gs.numPellets == fruitThreshold2 && !gs.fruitSpawned2 {
+			fmt.Println("Fruit 2 should spawn")
+			gs.fruitSpawned2 = true
+		}
+	}
+	gs.muFruit.Unlock()
+
+	// Other pellet-related events
+	if gs.numPellets == 20 {
+		fmt.Println("Ghosts are angry...")
+		gs.setUpdatePeriod(gs.getUpdatePeriod() - 2)
+	} else if gs.numPellets == 10 {
+		fmt.Println("Ghosts are angrier...")
+		gs.setUpdatePeriod(gs.getUpdatePeriod() - 2)
+	} else if gs.numPellets == 0 {
+		fmt.Println("Pacman won!")
+	}
 }
 
 // Determines if a wall is at a given location
@@ -202,20 +225,7 @@ func (gs *gameState) movePacmanDir(dir uint8) {
 
 	// Move Pacman the anticipated spot
 	pLoc.moveToCoords(nextRow, nextCol)
-	pelletsLeft := gs.collectPellet(nextRow, nextCol)
-
-	// Spawn the fruit if applicable
-	gs.muFruit.Lock()
-	{
-		if pelletsLeft == fruitThreshold1 && !gs.fruitSpawned1 {
-			fmt.Println("Fruit 1 should spawn")
-			gs.fruitSpawned1 = true
-		} else if pelletsLeft == fruitThreshold2 && !gs.fruitSpawned2 {
-			fmt.Println("Fruit 2 should spawn")
-			gs.fruitSpawned2 = true
-		}
-	}
-	gs.muFruit.Unlock()
+	gs.collectPellet(nextRow, nextCol)
 }
 
 /************************ Ghost Targeting (Chase Mode) ************************/
@@ -278,4 +288,19 @@ func (gs *gameState) getChaseTargetOrange() (int8, int8) {
 
 	// Otherwise, return the scatter location of orange
 	return gs.ghosts[orange].scatterTarget.getCoords()
+}
+
+// Returns the chase location of an arbitrary ghost color
+func (gs *gameState) getChaseTarget(color uint8) (int8, int8) {
+	switch color {
+	case red:
+		return gs.getChaseTargetRed()
+	case pink:
+		return gs.getChaseTargetPink()
+	case cyan:
+		return gs.getChaseTargetCyan()
+	case orange:
+		return gs.getChaseTargetOrange()
+	}
+	return emptyLoc.getCoords()
 }

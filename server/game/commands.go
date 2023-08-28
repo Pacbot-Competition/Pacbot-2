@@ -20,7 +20,7 @@ func (gs *gameState) interpretCommand(msg []byte) {
 	// Pause command
 	case 'p':
 		gs.pause()
-		fmt.Printf("\033[32m\033[2mGame  paused (t = %d)\033[0m\n",
+		fmt.Printf("\033[32m\033[2mGame paused  (t = %d)\033[0m\n",
 			gs.getCurrTicks())
 
 	// Play command
