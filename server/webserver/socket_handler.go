@@ -1,7 +1,7 @@
 package webserver
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"sync"
 
@@ -38,7 +38,7 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	// Upgrades the connection, and quits if it didn't work out.
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println(err)
+		log.Println("websocket err:", err)
 		return
 	}
 

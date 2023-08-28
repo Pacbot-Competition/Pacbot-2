@@ -1,7 +1,7 @@
 package webserver
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"strings"
 	"sync"
@@ -103,10 +103,10 @@ func (ws *webSession) register() {
 		// Add this web session to the web sessions set
 		openWebSessions[ws] = struct{}{}
 		if trusted {
-			fmt.Printf("\033[34m[%d -> %d] trusted browser connected\033[0m\n",
+			log.Printf("\033[34m[%d -> %d] trusted browser connected\033[0m\n",
 				len(openWebSessions)-1, len(openWebSessions))
 		} else {
-			fmt.Printf("\033[34m[%d -> %d] browser connected\033[0m\n",
+			log.Printf("\033[34m[%d -> %d] browser connected\033[0m\n",
 				len(openWebSessions)-1, len(openWebSessions))
 		}
 	}
@@ -129,10 +129,10 @@ func (ws *webSession) unregister() {
 	{
 		// Print information regarding the disconnect
 		if newConnectionsAllowed || (len(openWebSessions) > 0) {
-			fmt.Printf("\033[33m[%d -> %d] browser disconnected\033[0m\n",
+			log.Printf("\033[33m[%d -> %d] browser disconnected\033[0m\n",
 				len(openWebSessions), len(openWebSessions)-1)
 		} else {
-			fmt.Printf("\033[33m[X -> X] browser(s) blocked\033[0m\n")
+			log.Printf("\033[33m[X -> X] browser(s) blocked\033[0m\n")
 		}
 
 		// Remove this websession from the open web sessions set
@@ -177,7 +177,7 @@ func (ws *webSession) readLoop() {
 			}
 
 			// For all other unspecified errors, log them and quit
-			fmt.Println("read error: ", err)
+			log.Println("read error:", err)
 			return
 		}
 
@@ -207,7 +207,7 @@ func (ws *webSession) readLoop() {
 		if !ignored {
 			responseCh <- msg
 		} else {
-			fmt.Println("\033[35mWARN: An incoming message was ignored " +
+			log.Println("\033[35mWARN: An incoming message was ignored " +
 				"(reason: rate limiting)\033[0m")
 		}
 	}
@@ -237,7 +237,7 @@ func (ws *webSession) sendLoop() {
 			}
 
 			// For all other unspecified errors, log them and quit
-			fmt.Println("write error: ", err)
+			log.Println("write error:", err)
 			return
 		}
 

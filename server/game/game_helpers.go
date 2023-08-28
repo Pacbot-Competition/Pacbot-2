@@ -1,6 +1,8 @@
 package game
 
-import "fmt"
+import (
+	"log"
+)
 
 /***************************** Bitwise Operations *****************************/
 
@@ -127,24 +129,22 @@ func (gs *gameState) collectPellet(row int8, col int8) {
 	gs.muFruit.Lock()
 	{
 		if gs.numPellets == fruitThreshold1 && !gs.fruitSpawned1 {
-			fmt.Println("Fruit 1 should spawn")
+			log.Println("Fruit 1 should spawn")
 			gs.fruitSpawned1 = true
 		} else if gs.numPellets == fruitThreshold2 && !gs.fruitSpawned2 {
-			fmt.Println("Fruit 2 should spawn")
+			log.Println("Fruit 2 should spawn")
 			gs.fruitSpawned2 = true
 		}
 	}
 	gs.muFruit.Unlock()
 
 	// Other pellet-related events
-	if gs.numPellets == 20 {
-		fmt.Println("Ghosts are angry...")
+	if gs.numPellets == angerThreshold1 { // Ghosts get angry (speeding up)
 		gs.setUpdatePeriod(gs.getUpdatePeriod() - 2)
-	} else if gs.numPellets == 10 {
-		fmt.Println("Ghosts are angrier...")
+	} else if gs.numPellets == angerThreshold2 { // Ghosts get angrier
 		gs.setUpdatePeriod(gs.getUpdatePeriod() - 2)
 	} else if gs.numPellets == 0 {
-		fmt.Println("Pacman won!")
+		log.Println("Pacman won!")
 	}
 }
 
@@ -195,7 +195,7 @@ func (gs *gameState) checkCollisions() {
 			if ghost.isFrightened() {
 				ghost.respawn()
 			} else {
-				fmt.Println("Pacman caught")
+				log.Println("Pacman caught")
 			}
 		}
 	}

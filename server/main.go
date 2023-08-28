@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"pacbot_server/game"
 	"pacbot_server/webserver"
@@ -9,6 +10,9 @@ import (
 )
 
 func main() {
+
+	// Disable logging timestamps
+	log.SetFlags(0)
 
 	// Get the configuration info (config.go)
 	conf := GetConfig()

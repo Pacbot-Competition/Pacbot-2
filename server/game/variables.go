@@ -67,6 +67,12 @@ const fruitThreshold1 uint16 = 174
 // The number of pellets at which to spawn the second fruit
 const fruitThreshold2 uint16 = 74
 
+// The number of pellets at which to make the ghosts angry
+const angerThreshold1 uint16 = 20
+
+// The number of pellets at which to make the ghosts angrier
+const angerThreshold2 uint16 = 10
+
 // The points earned when collecting a pellet
 const pelletPoints uint16 = 10
 

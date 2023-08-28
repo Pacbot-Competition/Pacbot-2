@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"os"
 )
 
@@ -27,7 +27,7 @@ func GetConfig() Configuration {
 	config := Configuration{}
 	err := decoder.Decode(&config)
 	if err != nil {
-		fmt.Println("JSON read error:", err)
+		log.Println("JSON read error:", err)
 	}
 
 	// Return the configuration when done

@@ -1,7 +1,7 @@
 package game
 
 import (
-	"fmt"
+	"log"
 	"math/rand"
 	"sync"
 	"time"
@@ -174,7 +174,7 @@ func (gs *gameState) getUpdatePeriod() uint8 {
 func (gs *gameState) setUpdatePeriod(period uint8) {
 
 	// Send a message to the terminal
-	fmt.Printf("\033[36mGAME: Update period changed (%d -> %d)\033[0m\n",
+	log.Printf("\033[36mGAME: Update period changed (%d -> %d)\033[0m\n",
 		gs.getUpdatePeriod(), period)
 
 	// (Write) lock the update period

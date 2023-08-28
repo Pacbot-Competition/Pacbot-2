@@ -1,7 +1,7 @@
 package game
 
 import (
-	"fmt"
+	"log"
 )
 
 /***************************** Interpret Commands *****************************/
@@ -11,7 +11,7 @@ func (gs *gameState) interpretCommand(msg []byte) {
 
 	// Log the command if necessary
 	if getCommandLogEnable() {
-		fmt.Printf("\033[2m\033[36m| Response: %s`\033[0m\n", string(msg))
+		log.Printf("\033[2m\033[36m| Response: %s`\033[0m\n", string(msg))
 	}
 
 	// Decide the command type based on the first byte
@@ -20,13 +20,13 @@ func (gs *gameState) interpretCommand(msg []byte) {
 	// Pause command
 	case 'p':
 		gs.pause()
-		fmt.Printf("\033[32m\033[2mGame paused  (t = %d)\033[0m\n",
+		log.Printf("\033[32m\033[2mGame paused  (t = %d)\033[0m\n",
 			gs.getCurrTicks())
 
 	// Play command
 	case 'P':
 		gs.play()
-		fmt.Printf("\033[32mGame resumed (t = %d)\033[0m\n",
+		log.Printf("\033[32mGame resumed (t = %d)\033[0m\n",
 			gs.getCurrTicks())
 
 	// Move up (decrease row index)

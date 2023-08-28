@@ -1,7 +1,7 @@
 package game
 
 import (
-	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -49,7 +49,7 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte,
 func (ge *GameEngine) quit() {
 
 	// Log that the game engine successfully quit
-	fmt.Println("\033[35mLOG:  Game engine successfully quit\033[0m")
+	log.Println("\033[35mLOG:  Game engine successfully quit\033[0m")
 
 	// Decrement the quit wait group counter
 	ge.wgQuit.Done()
@@ -83,7 +83,7 @@ func (ge *GameEngine) RunLoop() {
 
 	// If there was already a game engine, kill this one and throw an error
 	if _activeGameEngines > 1 {
-		fmt.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more" +
+		log.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more" +
 			" than one game engine. Quitting...\033[0m")
 		return
 	}
@@ -159,7 +159,7 @@ func (ge *GameEngine) RunLoop() {
 		if b {
 			wait := time.Since(start)
 			if wait > time.Millisecond {
-				fmt.Printf("\033[35mWARN: The game engine output channel was "+
+				log.Printf("\033[35mWARN: The game engine output channel was "+
 					"full (%s)\033[0m\n", wait)
 			}
 		}
@@ -183,7 +183,7 @@ func (ge *GameEngine) RunLoop() {
 		*/
 		default:
 			if len(ge.webInputCh) == cap(ge.webInputCh) {
-				fmt.Println("\033[35mWARN: Game engine input channel full\033[0m")
+				log.Println("\033[35mWARN: Game engine input channel full\033[0m")
 			}
 		}
 

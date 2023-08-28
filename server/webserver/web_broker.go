@@ -1,7 +1,7 @@
 package webserver
 
 import (
-	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -44,8 +44,8 @@ func NewWebBroker(_broadcastCh <-chan []byte, _responseCh chan<- []byte, _wgQuit
 func (wb *WebBroker) quit() {
 
 	// Log that all websocket connections are closed upon broker exit, then close them individually
-	fmt.Println("\033[35m\033[1mLOG:  Web broker exit: killing all websocket connections")
-	fmt.Println("      No new connections allowed\033[0m")
+	log.Println("\033[35m\033[1mLOG:  Web broker exit: killing all websocket connections")
+	log.Println("      No new connections allowed\033[0m")
 	newConnectionsAllowed = false // Doesn't need a mutex since we can't ever make it true again
 	muOWS.RLock()
 	{
@@ -64,7 +64,7 @@ func (wb *WebBroker) quit() {
 	muOWS.RUnlock()
 
 	// Log that the web broker has quit (if this message doesn't get sent, we are blocked by some mutex)
-	fmt.Println("\033[35mLOG:  Web server successfully quit\033[0m")
+	log.Println("\033[35mLOG:  Web server successfully quit\033[0m")
 }
 
 // Quit function exported to other packages
@@ -94,7 +94,7 @@ func (wb *WebBroker) RunLoop() {
 
 	// If there was already a web broker, kill this one and throw an error
 	if _activeWebBrokerLoops > 1 {
-		fmt.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more " +
+		log.Println("\033[35m\033[1mERR:  Cannot simultaneously dispatch more " +
 			"than one web broker loop. Quitting...\033[0m")
 		return
 	}
@@ -127,7 +127,7 @@ func (wb *WebBroker) RunLoop() {
 					if b {
 						wait := time.Since(start)
 						if wait > time.Millisecond {
-							fmt.Printf("\033[35mWARN: A web-session send channel was full"+
+							log.Printf("\033[35mWARN: A web-session send channel was full"+
 								" (%s, client = %s)\033[0m\n", wait, getIP(ws.conn))
 						}
 					}
@@ -145,7 +145,7 @@ func (wb *WebBroker) RunLoop() {
 		*/
 		default:
 			if len(wb.broadcastCh) == cap(wb.broadcastCh) {
-				fmt.Println("\033[35mWARN: Web broker broadcast channel full\033[0m")
+				log.Println("\033[35mWARN: Web broker broadcast channel full\033[0m")
 			}
 		}
 	}

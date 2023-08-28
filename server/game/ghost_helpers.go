@@ -1,7 +1,7 @@
 package game
 
 import (
-	"fmt"
+	"log"
 	"sync"
 )
 
@@ -153,7 +153,7 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	// Debug statement, in case a ghost somehow is surrounded by all walls
 	if numValidMoves == 0 {
 		row, col := g.nextLoc.getCoords()
-		fmt.Printf("\033[35mWARN: %s has nowhere to go "+
+		log.Printf("\033[35mWARN: %s has nowhere to go "+
 			"(row = %d, col = %d, spawning = %t)\n\033[0m",
 			ghostNames[g.color], row, col, spawning)
 		return
