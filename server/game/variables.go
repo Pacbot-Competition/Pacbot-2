@@ -27,7 +27,9 @@ var pacmanSpawnLoc = newLocationState(23, 13, right)
 
 // Spawn position for the fruit
 var fruitSpawnLoc = newLocationState(17, 13, none)
-var emptyLoc = newLocationState(63, 63, none) // serializes to 0x3f 0x3f
+
+// "Invalid" location - serializes to 0x00100000 0x00100000
+var emptyLoc = newLocationState(32, 32, none)
 
 // Spawn positions for the ghosts
 var ghostSpawnLocs [4]*locationState = [...]*locationState{

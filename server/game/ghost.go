@@ -34,7 +34,7 @@ type ghostState struct {
 	trappedCycles uint8
 	frightCycles  uint8
 	spawning      bool         // Flag set when spawning
-	wasEaten      bool         // Flag set when eaten and returning to ghost house
+	eaten         bool         // Flag set when eaten and returning to ghost house
 	muState       sync.RWMutex // Mutex to lock general state parameters
 }
 
@@ -49,17 +49,17 @@ func newGhostState(_gameState *gameState, _color uint8) *ghostState {
 		trappedCycles: ghostTrappedCycles[_color],
 		frightCycles:  0,
 		spawning:      true,
-		wasEaten:      false,
+		eaten:         false,
 	}
 }
 
 // Frighten the ghost
-func (g *ghostState) frighten() {
+func (g *ghostState) setFrightCycles(cycles uint8) {
 
 	// (Write) lock the ghost state
 	g.muState.Lock()
 	{
-		g.frightCycles = ghostFrightCycles
+		g.frightCycles = cycles
 	}
 	g.muState.Unlock()
 }
@@ -75,6 +75,45 @@ func (g *ghostState) isFrightened() bool {
 	return g.frightCycles > 0
 }
 
+// Respawn the ghost
+func (g *ghostState) respawn() {
+
+	// (Write) lock the ghost state
+	g.muState.Lock()
+	{
+		// Set the ghost to be eaten
+		g.eaten = true
+
+		// Set the ghost to be spawning
+		g.spawning = true
+	}
+	g.muState.Unlock()
+
+	// Set the current ghost to be at an empty location
+	g.loc.copyFrom(emptyLoc)
+
+	/*
+		Set the current location of the ghost to be its spawn point
+		(or pink's spawn location, in the case of red)
+	*/
+	if g.color == red {
+		g.nextLoc.copyFrom(ghostSpawnLocs[pink])
+	} else {
+		g.nextLoc.copyFrom(ghostSpawnLocs[g.color])
+	}
+}
+
+// Check if a ghost is eaten
+func (g *ghostState) isEaten() bool {
+
+	// (Read) lock the ghost state
+	g.muState.RLock()
+	defer g.muState.RUnlock()
+
+	// Return whether there is at least one fright cycle left
+	return g.eaten
+}
+
 // Update the ghost's position: copy the location from the next location state
 func (g *ghostState) update() {
 
@@ -84,6 +123,12 @@ func (g *ghostState) update() {
 		// If we were just at the red spawn point, the ghost is done spawning
 		if g.loc.collidesWith(ghostSpawnLocs[red]) {
 			g.spawning = false
+		}
+
+		// Set the ghost to be no longer eaten, if applicable
+		if g.eaten {
+			g.eaten = false
+			g.frightCycles = 0
 		}
 
 		// Decrement the ghost's fright cycles count if necessary
@@ -99,8 +144,13 @@ func (g *ghostState) update() {
 
 func (g *ghostState) plan(wg *sync.WaitGroup) {
 
-	// Return that this go-routine has completed
+	// Return that this go-routine has completed, if applicable
 	defer wg.Done()
+
+	// If the current location is empty, return, as we can't plan anything
+	if g.loc.collidesWith(emptyLoc) {
+		return
+	}
 
 	// Determine the next position based on the current direction
 	g.nextLoc.advanceFrom(g.loc)

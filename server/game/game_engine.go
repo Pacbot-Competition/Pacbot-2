@@ -120,6 +120,9 @@ func (ge *GameEngine) RunLoop() {
 				for _, ghost := range ge.state.ghosts {
 					ghost.update()
 				}
+
+				// Check for collisions
+				ge.state.checkCollisions()
 			}
 
 			/* STEP 2: Serialize the current game state to the output buffer */

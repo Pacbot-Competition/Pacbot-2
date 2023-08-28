@@ -50,8 +50,12 @@ func (gs *gameState) updateReady() bool {
 
 // Helper function to frighten all the ghosts
 func (gs *gameState) frightenGhosts() {
+
+	// Loop over all the ghosts
 	for _, ghost := range gs.ghosts {
-		ghost.frighten()
+
+		// To frighten a ghost, set its fright cycles to a specified value
+		ghost.setFrightCycles(ghostFrightCycles)
 	}
 }
 
@@ -142,6 +146,33 @@ func (gs *gameState) distSq(row1, col1, row2, col2 int8) int {
 	return dx*dx + dy*dy
 }
 
+/***************************** Collision Checking *****************************/
+
+// Check collisions between Pacman and all the ghosts
+func (gs *gameState) checkCollisions() {
+
+	// Loop over all the ghosts
+	for _, ghost := range gs.ghosts {
+
+		// Check each collision individually
+		if gs.pacmanLoc.collidesWith(ghost.loc) {
+
+			// If the ghost was already eaten, skip it
+			if ghost.isEaten() {
+				continue
+			}
+
+			// If the ghost is frightened, Pacman eats it, otherwise Pacman dies
+			if ghost.isFrightened() {
+				fmt.Println("ghost caught")
+				ghost.respawn()
+			} else {
+				fmt.Println("Pacman caught")
+			}
+		}
+	}
+}
+
 /************************** Motion (Pacman Location) **************************/
 
 // Move Pacman one space in a given direction
@@ -155,6 +186,9 @@ func (gs *gameState) movePacmanDir(dir uint8) {
 
 	// Update Pacman's direction
 	pLoc.updateDir(dir)
+
+	// Check collisions with all the ghosts
+	gs.checkCollisions()
 
 	// Check if there is a wall at the anticipated location, and return if so
 	if gs.wallAt(nextRow, nextCol) {

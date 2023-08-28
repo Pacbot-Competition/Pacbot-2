@@ -90,6 +90,9 @@
   // Control whether ghosts look like they are fluidly moving
   const showMotion = true;
 
+  // Hide the ghost if bit 5 (32) of either coordinate is set
+  $: showGhost = ((colState | rowState) & 0b100000) ? false : true;
+
   /* 
     The last 5 bits of each state byte are the position, 
     while the first 2 bits of are the signed direction
@@ -137,90 +140,92 @@
 </script>
 
 <!-- SVG Sprite of Ghost -->
-<svg
-  class='ghost-svg' 
-  style:--grid-size='{~~gridSize+1}px'
-  style:--color={color}
-  style:--pad='{pad}px'
-  style:top= '{(posY + showMotion*(dirY*modTicks/updatePeriod) + spawnOffsetY) *
-                        gridSize - pad}px' 
-  style:left='{(posX + showMotion*(dirX*modTicks/updatePeriod) + spawnOffsetX) * 
-                        gridSize - pad}px'
->
+{#if showGhost}
+  <svg
+    class='ghost-svg' 
+    style:--grid-size='{~~gridSize+1}px'
+    style:--color={color}
+    style:--pad='{pad}px'
+    style:top='{(posY + showMotion*(dirY*modTicks/updatePeriod) + spawnOffsetY) *
+                          gridSize - pad}px' 
+    style:left='{(posX + showMotion*(dirX*modTicks/updatePeriod) + spawnOffsetX) * 
+                          gridSize - pad}px'
+  >
 
-  <!-- Body of ghost -->
-  {#if spriteTwo}
-    <path
-      d=' M {pad} {pad + gridSize/2}
-          A {gridSize/2} {gridSize/2} 0 0 1 {pad + gridSize} {gridSize/2} 
-          L {pad + gridSize} {pad + gridSize}
-          L {pad + 0.72 * gridSize} {pad + 0.9 * gridSize}
-          L {pad + 0.50 * gridSize} {pad +       gridSize}
-          L {pad + 0.26 * gridSize} {pad + 0.9 * gridSize}
-          L {pad + 0    * gridSize} {pad +       gridSize}
-          z' 
-      class={fr ? (rc ? 'white outlined' : 'blue outlined') : color}
+    <!-- Body of ghost -->
+    {#if spriteTwo}
+      <path
+        d=' M {pad} {pad + gridSize/2}
+            A {gridSize/2} {gridSize/2} 0 0 1 {pad + gridSize} {gridSize/2} 
+            L {pad + gridSize} {pad + gridSize}
+            L {pad + 0.72 * gridSize} {pad + 0.9 * gridSize}
+            L {pad + 0.50 * gridSize} {pad +       gridSize}
+            L {pad + 0.26 * gridSize} {pad + 0.9 * gridSize}
+            L {pad + 0    * gridSize} {pad +       gridSize}
+            z' 
+        class={fr ? (rc ? 'white outlined' : 'blue outlined') : color}
+      />
+    {:else}
+      <path 
+        d=' M {pad} {pad + gridSize/2}
+            A {gridSize/2} {gridSize/2} 0 0 1 {pad + gridSize} {gridSize/2} 
+            L {pad + gridSize} {pad + gridSize}
+            L {pad + 0.82 * gridSize} {pad + 0.9 * gridSize}
+            L {pad + 0.67 * gridSize} {pad +       gridSize}
+            L {pad + 0.50 * gridSize} {pad + 0.9 * gridSize}
+            L {pad + 0.33 * gridSize} {pad +       gridSize}
+            L {pad + 0.18 * gridSize} {pad + 0.9 * gridSize}
+            L {pad + 0    * gridSize} {pad +       gridSize}
+            z'
+        class={fr ? (rc ? 'white outlined' : 'blue outlined') : color}
+      />
+    {/if}
+
+    <!-- Left eye -->
+    <ellipse
+      cx='{pad + (0.30 + 0.06*dirX) * gridSize}' 
+      cy='{pad + (0.40 + 0.09*dirY) * gridSize}' 
+      rx='{0.14 * gridSize}' 
+      ry='{0.20 * gridSize}' 
+      class={fr ? (rc ? 'transparent' : 'transparent') : 'white'}
     />
-  {:else}
+
+    <!-- Right eye -->
+    <ellipse
+      cx='{pad + (0.70 + 0.06*dirX) * gridSize}' 
+      cy='{pad + (0.40 + 0.09*dirY) * gridSize}' 
+      rx='{0.14 * gridSize}' 
+      ry='{0.20 * gridSize}' 
+      class={fr ? (rc ? 'transparent' : 'transparent') : 'white'}
+    />
+    
+    <!-- Left iris -->
+    <ellipse 
+      cx='{pad + (0.30 + 0.12*dirX) * gridSize}' 
+      cy='{pad + (0.40 + 0.18*dirY) * gridSize}' 
+      rx='{0.07 * gridSize}' 
+      ry='{0.10 * gridSize}' 
+      class={fr ? (rc ? 'red' : 'white') : 'blue'}
+    />
+
+    <!-- Right iris -->
+    <ellipse 
+      cx='{pad + (0.70 + 0.12*dirX) * gridSize}' 
+      cy='{pad + (0.40 + 0.18*dirY) * gridSize}' 
+      rx='{0.07 * gridSize}' 
+      ry='{0.10 * gridSize}' 
+      class={fr ? (rc ? 'red' : 'white') : 'blue'}
+    />
+
+    <!-- Mouth (when frightened) -->
     <path 
-      d=' M {pad} {pad + gridSize/2}
-          A {gridSize/2} {gridSize/2} 0 0 1 {pad + gridSize} {gridSize/2} 
-          L {pad + gridSize} {pad + gridSize}
-          L {pad + 0.82 * gridSize} {pad + 0.9 * gridSize}
-          L {pad + 0.67 * gridSize} {pad +       gridSize}
-          L {pad + 0.50 * gridSize} {pad + 0.9 * gridSize}
-          L {pad + 0.33 * gridSize} {pad +       gridSize}
-          L {pad + 0.18 * gridSize} {pad + 0.9 * gridSize}
-          L {pad + 0    * gridSize} {pad +       gridSize}
+      d=' M {pad + (0.30 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.38 + 0.38*dirY) : 0.72) * gridSize}
+          L {pad + (0.70 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.38 + 0.38*dirY) : 0.72) * gridSize}
+          L {pad + (0.70 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.42 + 0.38*dirY) : 0.76)  * gridSize}
+          L {pad + (0.30 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.42 + 0.38*dirY) : 0.76)  * gridSize}
           z'
-      class={fr ? (rc ? 'white outlined' : 'blue outlined') : color}
+      class={fr ? (rc ? 'red' : 'white') : 'transparent'}
     />
-  {/if}
-
-  <!-- Left eye -->
-  <ellipse
-    cx='{pad + (0.30 + 0.06*dirX) * gridSize}' 
-    cy='{pad + (0.40 + 0.09*dirY) * gridSize}' 
-    rx='{0.14 * gridSize}' 
-    ry='{0.20 * gridSize}' 
-    class={fr ? (rc ? 'transparent' : 'transparent') : 'white'}
-  />
-
-  <!-- Right eye -->
-  <ellipse
-    cx='{pad + (0.70 + 0.06*dirX) * gridSize}' 
-    cy='{pad + (0.40 + 0.09*dirY) * gridSize}' 
-    rx='{0.14 * gridSize}' 
-    ry='{0.20 * gridSize}' 
-    class={fr ? (rc ? 'transparent' : 'transparent') : 'white'}
-  />
-  
-  <!-- Left iris -->
-  <ellipse 
-    cx='{pad + (0.30 + 0.12*dirX) * gridSize}' 
-    cy='{pad + (0.40 + 0.18*dirY) * gridSize}' 
-    rx='{0.07 * gridSize}' 
-    ry='{0.10 * gridSize}' 
-    class={fr ? (rc ? 'red' : 'white') : 'blue'}
-  />
-
-  <!-- Right iris -->
-  <ellipse 
-    cx='{pad + (0.70 + 0.12*dirX) * gridSize}' 
-    cy='{pad + (0.40 + 0.18*dirY) * gridSize}' 
-    rx='{0.07 * gridSize}' 
-    ry='{0.10 * gridSize}' 
-    class={fr ? (rc ? 'red' : 'white') : 'blue'}
-  />
-
-  <!-- Mouth (when frightened) -->
-  <path 
-    d=' M {pad + (0.30 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.38 + 0.38*dirY) : 0.72) * gridSize}
-        L {pad + (0.70 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.38 + 0.38*dirY) : 0.72) * gridSize}
-        L {pad + (0.70 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.42 + 0.38*dirY) : 0.76)  * gridSize}
-        L {pad + (0.30 + 0.06*dirX) * gridSize} {pad + (dirY ? (0.42 + 0.38*dirY) : 0.76)  * gridSize}
-        z'
-    class={fr ? (rc ? 'red' : 'white') : 'transparent'}
-  />
-  
-</svg>
+    
+  </svg>
+{/if}
