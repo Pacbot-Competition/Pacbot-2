@@ -54,8 +54,14 @@ func (gs *gameState) frightenGhosts() {
 	// Loop over all the ghosts
 	for _, ghost := range gs.ghosts {
 
-		// To frighten a ghost, set its fright cycles to a specified value
+		/*
+			To frighten a ghost, set its fright cycles to a specified value
+			and trap it for one cycle (to force the direction to reverse)
+		*/
 		ghost.setFrightCycles(ghostFrightCycles)
+		if !ghost.isTrapped() {
+			ghost.setTrappedCycles(1)
+		}
 	}
 }
 
@@ -164,7 +170,6 @@ func (gs *gameState) checkCollisions() {
 
 			// If the ghost is frightened, Pacman eats it, otherwise Pacman dies
 			if ghost.isFrightened() {
-				fmt.Println("ghost caught")
 				ghost.respawn()
 			} else {
 				fmt.Println("Pacman caught")
@@ -179,7 +184,7 @@ func (gs *gameState) checkCollisions() {
 func (gs *gameState) movePacmanDir(dir uint8) {
 
 	// Shorthand to make computation simpler
-	pLoc := gs.pacmanLoc // Pacman location
+	pLoc := gs.pacmanLoc
 
 	// Calculate the next row and column
 	nextRow, nextCol := pLoc.getNeighborCoords(dir)
@@ -199,12 +204,18 @@ func (gs *gameState) movePacmanDir(dir uint8) {
 	pLoc.moveToCoords(nextRow, nextCol)
 	pelletsLeft := gs.collectPellet(nextRow, nextCol)
 
-	// Spawn fruit if 70 or 170 pellets are eaten
-	if pelletsLeft == initPelletCount-70 {
-		fmt.Println("Fruit should spawn")
-	} else if pelletsLeft == initPelletCount-170 {
-		fmt.Println("Fruit should spawn")
+	// Spawn the fruit if applicable
+	gs.muFruit.Lock()
+	{
+		if pelletsLeft == fruitThreshold1 && !gs.fruitSpawned1 {
+			fmt.Println("Fruit 1 should spawn")
+			gs.fruitSpawned1 = true
+		} else if pelletsLeft == fruitThreshold2 && !gs.fruitSpawned2 {
+			fmt.Println("Fruit 2 should spawn")
+			gs.fruitSpawned2 = true
+		}
 	}
+	gs.muFruit.Unlock()
 }
 
 /************************ Ghost Targeting (Chase Mode) ************************/
@@ -259,11 +270,8 @@ func (gs *gameState) getChaseTargetOrange() (int8, int8) {
 	// Get the orange ghost's current location
 	orangeRow, orangeCol := gs.ghosts[orange].loc.getCoords()
 
-	// Calculate the squared distance to Pacman's location
-	distSq := gs.distSq(orangeRow, orangeCol, pacmanRow, pacmanCol)
-
-	// If Pacman is far enough, return Pacman's location
-	if distSq >= 64 {
+	// If Pacman is far enough from the ghost, return Pacman's location
+	if gs.distSq(orangeRow, orangeCol, pacmanRow, pacmanCol) >= 64 {
 		return (pacmanRow),
 			(pacmanCol)
 	}

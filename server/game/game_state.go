@@ -14,6 +14,12 @@ const (
 )
 
 /*
+	NOTE: at 24 ticks/sec, currTicks will experience an integer overflow after
+	about 45 minutes, so don't run it continuously for too long (indefinite
+	pausing is fine though, as it doesn't increment the current tick amount)
+*/
+
+/*
 A game state object, to hold the internal game state and provide
 helper methods that can be accessed by the game engine
 */
@@ -21,15 +27,7 @@ type gameState struct {
 
 	/* Message header - 4 bytes */
 
-	/*
-		Current ticks elapsed
-
-		NOTE: at 24 ticks/sec, this will experience an integer overflow
-		after about 45 minutes, so don't run it continuously for too
-		long (indefinite pausing is fine though, as it doesn't increment
-		the current tick amount)
-	*/
-	currTicks uint16
+	currTicks uint16       // Current ticks (see note above)
 	muTicks   sync.RWMutex // Associated mutex
 
 	updatePeriod uint8        // Ticks / update
@@ -56,9 +54,11 @@ type gameState struct {
 
 	/* Fruit location - 2 bytes */
 
-	fruitExists bool
-	fruitLoc    *locationState
-	muFruit     sync.RWMutex // Associated mutex (for fruitExists)
+	fruitExists   bool
+	fruitLoc      *locationState
+	fruitSpawned1 bool
+	fruitSpawned2 bool
+	muFruit       sync.RWMutex // Associated mutex (for fruitExists)
 
 	/* Ghosts - 4 * 3 = 12 bytes */
 
@@ -98,7 +98,9 @@ func newGameState() *gameState {
 		currLives: initLives,
 
 		// Fruit
-		fruitExists: false,
+		fruitExists:   false,
+		fruitSpawned1: false,
+		fruitSpawned2: false,
 
 		// Ghosts
 		ghosts: make([]*ghostState, numColors),

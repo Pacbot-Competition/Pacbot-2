@@ -125,7 +125,7 @@ func (gs *gameState) serPellets(outputBuf []byte, startIdx int) int {
 	defer gs.muPellets.RUnlock()
 
 	// Loop over each row
-	for row := 0; row < int(mazeRows); row++ {
+	for row := int8(0); row < mazeRows; row++ {
 
 		// Serialize each row from uint32 to 4 bytes
 		startIdx = serUint32(gs.pellets[row], outputBuf, startIdx)

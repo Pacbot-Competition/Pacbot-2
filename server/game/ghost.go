@@ -53,7 +53,7 @@ func newGhostState(_gameState *gameState, _color uint8) *ghostState {
 	}
 }
 
-// Frighten the ghost
+// Set the fright cycles of a ghost
 func (g *ghostState) setFrightCycles(cycles uint8) {
 
 	// (Write) lock the ghost state
@@ -73,6 +73,28 @@ func (g *ghostState) isFrightened() bool {
 
 	// Return whether there is at least one fright cycle left
 	return g.frightCycles > 0
+}
+
+// Set the trapped cycles of a ghost
+func (g *ghostState) setTrappedCycles(cycles uint8) {
+
+	// (Write) lock the ghost state
+	g.muState.Lock()
+	{
+		g.trappedCycles = cycles
+	}
+	g.muState.Unlock()
+}
+
+// Check if a ghost is trapped
+func (g *ghostState) isTrapped() bool {
+
+	// (Read) lock the ghost state
+	g.muState.RLock()
+	defer g.muState.RUnlock()
+
+	// Return whether there is at least one fright cycle left
+	return g.trappedCycles > 0
 }
 
 // Respawn the ghost
@@ -156,10 +178,25 @@ func (g *ghostState) plan(wg *sync.WaitGroup) {
 	g.nextLoc.advanceFrom(g.loc)
 
 	// If the ghost is trapped, reverse the current direction and return
-	if g.trappedCycles > 0 {
-		g.nextLoc.reverseDir()
-		g.trappedCycles-- // Decrement the trapped cycles counter (no lock needed)
-		return
+	if func(g *ghostState) bool {
+
+		// Lock the mutex
+		g.muState.Lock()
+		defer g.muState.Unlock()
+
+		/*
+			Reverse the direction if applicable (and propagate the result to the
+			parent function so that it can return if true)
+		*/
+		if g.trappedCycles > 0 {
+			g.nextLoc.reverseDir() // Reverse the direction
+			g.trappedCycles--      // Decrement the trapped cycles
+			return true
+		} else {
+			return false
+		}
+	}(g) {
+		return // Return if the ghost was just trapped
 	}
 
 	// Keep local copies of the fright cycles and spawning variables

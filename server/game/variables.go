@@ -61,6 +61,12 @@ const ghostFrightCycles uint8 = 40
 // The number of pellets in a typical game of Pacman
 const initPelletCount uint16 = 244
 
+// The number of pellets at which to spawn the first fruit
+const fruitThreshold1 uint16 = 174
+
+// The number of pellets at which to spawn the second fruit
+const fruitThreshold2 uint16 = 74
+
 // The points earned when collecting a pellet
 const pelletPoints uint16 = 10
 
