@@ -8,12 +8,22 @@ var dCol [5]int8 = [...]int8{-0, -1, +0, +1, +0}
 
 // Enum-like declaration to hold the direction indices from above
 const (
-	up    uint8 = 0
-	left  uint8 = 1
-	down  uint8 = 2
-	right uint8 = 3
-	none  uint8 = 4
+	up      uint8 = 0
+	left    uint8 = 1
+	down    uint8 = 2
+	right   uint8 = 3
+	none    uint8 = 4
+	numDirs uint8 = 5
 )
+
+// Names of the directions (forr debugging)
+var dirNames [numDirs]string = [...]string{
+	"up",
+	"left",
+	"down",
+	"right",
+	"none",
+}
 
 /*
 An object to keep track of the position and direction of an agent
@@ -62,8 +72,26 @@ func (loc *locationState) collidesWith(loc2 *locationState) bool {
 		loc2.RUnlock()
 	}()
 
+	// If any of the rows or columns is at least 32, they don't collide
+	if loc.row >= 32 || loc.col >= 32 || loc2.row >= 32 || loc2.col >= 32 {
+		return false
+	}
+
 	// Return if both coordinates match
 	return ((loc.row == loc2.row) && (loc.col == loc2.col))
+}
+
+// Determine if a given location state matches with the empty location
+func (loc *locationState) isEmpty() bool {
+
+	// (Read) lock the states (to prevent other reads or writes)
+	loc.RLock()
+	defer func() {
+		loc.RUnlock()
+	}()
+
+	// Return if both coordinates match
+	return ((loc.row == emptyLoc.row) && (loc.col == emptyLoc.col))
 }
 
 // Return a direction corresponding to an existing location

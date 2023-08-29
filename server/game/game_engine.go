@@ -94,9 +94,6 @@ func (ge *GameEngine) RunLoop() {
 	// Length of the serialized output
 	serLen := 0
 
-	// Create a wait group for synchronizing ghost plans
-	var wgPlans sync.WaitGroup
-
 	// Flag to keep track of whether the last iteration of the loop was a tick
 	justTicked := true
 
@@ -114,11 +111,23 @@ func (ge *GameEngine) RunLoop() {
 			if ge.state.updateReady() {
 
 				// Wait until all pending ghost plans are complete
-				wgPlans.Wait()
+				ge.state.wgGhosts.Wait()
 
-				// Loop over the individual ghosts
+				// Acquire the motion locks of all ghosts
+				for _, ghost := range ge.state.ghosts {
+					ghost.muMotion.Lock()
+				}
+
+				// If we should pause upon updating, do so
+				if ge.state.getPauseOnUpdate() {
+					ge.state.pause()
+					ge.state.setPauseOnUpdate(false)
+				}
+
+				// Loop over the individual ghosts, and release their motion locks
 				for _, ghost := range ge.state.ghosts {
 					ghost.update()
+					ghost.muMotion.Unlock()
 				}
 
 				// Check for collisions
@@ -132,15 +141,15 @@ func (ge *GameEngine) RunLoop() {
 
 			/* STEP 3: Start planning the next ghost moves if an update happened */
 
-			// If we're ready for an update, plan the next ghost moves asynchronously
+			// If we're ready for an update, plan the next ghost moves
 			if ge.state.updateReady() {
 
 				// Add pending ghost plans
-				wgPlans.Add(int(numColors))
+				ge.state.wgGhosts.Add(int(numColors))
 
 				// Plan each ghost's next move concurrently
 				for _, ghost := range ge.state.ghosts {
-					go ghost.plan(&wgPlans)
+					go ghost.plan()
 				}
 			}
 		}

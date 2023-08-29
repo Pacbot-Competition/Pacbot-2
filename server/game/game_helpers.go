@@ -10,7 +10,8 @@ import (
 Get a bit within an unsigned integer (treating the integers
 in pellets and walls as bit arrays)
 */
-func getBit[T uint8 | uint16 | uint32](num T, bitIdx int8) bool {
+func getBit[N uint8 | uint16 | uint32, I int8 | uint8](
+	num N, bitIdx I) bool {
 
 	/*
 		Uses bitwise operation magic (not really, look up how the >> and &
@@ -23,7 +24,8 @@ func getBit[T uint8 | uint16 | uint32](num T, bitIdx int8) bool {
 Get a bit within an unsigned integer (treating the integers in pellets
 and walls as bit arrays)
 */
-func modifyBit[T uint8 | uint16 | uint32](num *T, bitIdx int8, bitVal bool) {
+func modifyBit[N uint8 | uint16 | uint32, I int8 | uint8](
+	num *N, bitIdx I, bitVal bool) {
 
 	// If the bit is true, we should set the bit, otherwise we clear it
 	if bitVal {
@@ -175,10 +177,13 @@ func (gs *gameState) distSq(row1, col1, row2, col2 int8) int {
 	return dx*dx + dy*dy
 }
 
-/***************************** Collision Checking *****************************/
+/***************************** Collision Handling *****************************/
 
 // Check collisions between Pacman and all the ghosts
 func (gs *gameState) checkCollisions() {
+
+	// Flag to decide which ghosts should respawn
+	var ghostRespawnFlag uint8 = 0
 
 	// Loop over all the ghosts
 	for _, ghost := range gs.ghosts {
@@ -193,12 +198,38 @@ func (gs *gameState) checkCollisions() {
 
 			// If the ghost is frightened, Pacman eats it, otherwise Pacman dies
 			if ghost.isFrightened() {
-				ghost.respawn()
+				modifyBit(&ghostRespawnFlag, ghost.color, true)
 			} else {
-				log.Println("Pacman caught")
+				gs.deathReset()
+				return
 			}
 		}
 	}
+
+	// Loop over the ghost colors again, to decide which should respawn
+	for _, ghost := range gs.ghosts {
+
+		// If the ghost should respawn, call its respawn function
+		if getBit(ghostRespawnFlag, ghost.color) {
+			ghost.respawn()
+		}
+	}
+}
+
+// Reset the board (while leaving pellets alone) after Pacman dies
+func (gs *gameState) deathReset() {
+	log.Println("Pacman Lost!")
+
+	// Add 4 ghosts to the ghost plans wait group, to halt updates
+	gs.wgGhosts.Add(4)
+
+	// Reset each of the 4 ghosts
+	for _, ghost := range gs.ghosts {
+		go ghost.reset()
+	}
+
+	// Pause the game
+	gs.setPauseOnUpdate(true)
 }
 
 /************************** Motion (Pacman Location) **************************/

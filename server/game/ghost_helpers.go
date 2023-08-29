@@ -2,13 +2,45 @@ package game
 
 import (
 	"log"
-	"sync"
 )
+
+/******************************** Ghost Resets ********************************/
+
+// Respawn the ghost
+func (g *ghostState) reset() {
+
+	// Lock the motion mutex to synchronize with other motion routines
+	g.muMotion.Lock()
+	defer g.muMotion.Unlock()
+
+	// Mark this operation as done once we return
+	defer g.game.wgGhosts.Done()
+
+	// Set the ghost to be eaten and spawning
+	g.setSpawning(true)
+	g.setTrappedCycles(ghostTrappedCycles[g.color])
+
+	// Set the current ghost to be at an empty location
+	g.loc.copyFrom(emptyLoc)
+
+	/*
+		Set the current location of the ghost to be its spawn point
+		(or pink's spawn location, in the case of red, so it spawns in the box)
+	*/
+	g.nextLoc.copyFrom(ghostSpawnLocs[g.color])
+}
 
 /****************************** Ghost Respawning ******************************/
 
 // Respawn the ghost
 func (g *ghostState) respawn() {
+
+	// Lock the motion mutex to synchronize with other motion routines
+	g.muMotion.Lock()
+	defer g.muMotion.Unlock()
+
+	// Mark this operation as done once we return
+	defer g.game.wgGhosts.Done()
 
 	// Set the ghost to be eaten and spawning
 	g.setSpawning(true)
@@ -59,13 +91,17 @@ func (g *ghostState) update() {
 /******************** Ghost Planning (after serialization) ********************/
 
 // Plan the ghost's next move
-func (g *ghostState) plan(wg *sync.WaitGroup) {
+func (g *ghostState) plan() {
 
-	// Return that this go-routine has completed, if applicable
-	defer wg.Done()
+	// Lock the motion mutex to synchronize with other motion routines
+	g.muMotion.Lock()
+	defer g.muMotion.Unlock()
 
-	// If the current location is empty, return, as we can't plan anything
-	if g.loc.collidesWith(emptyLoc) {
+	// Mark the plan as done
+	defer g.game.wgGhosts.Done()
+
+	// If the location is empty (i.e. after a reset/respawn), don't plan
+	if g.loc.isEmpty() {
 		return
 	}
 
