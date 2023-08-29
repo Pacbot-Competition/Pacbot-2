@@ -50,25 +50,6 @@ func (gs *gameState) updateReady() bool {
 	return currTicks%updatePeriod == 0
 }
 
-/************************** General Helper Functions **************************/
-
-// Helper function to frighten all the ghosts
-func (gs *gameState) frightenGhosts() {
-
-	// Loop over all the ghosts
-	for _, ghost := range gs.ghosts {
-
-		/*
-			To frighten a ghost, set its fright cycles to a specified value
-			and trap it for one cycle (to force the direction to reverse)
-		*/
-		ghost.setFrightCycles(ghostFrightCycles)
-		if !ghost.isTrapped() {
-			ghost.setTrappedCycles(1)
-		}
-	}
-}
-
 /**************************** Positional Functions ****************************/
 
 // Determines if a position is within the bounds of the maze
@@ -104,7 +85,7 @@ func (gs *gameState) collectPellet(row int8, col int8) {
 
 	// Make all the ghosts frightened if a super pellet is collected
 	if superPellet {
-		gs.frightenGhosts()
+		gs.frightenAllGhosts()
 	}
 
 	// Update the score, depending on the pellet type
@@ -142,9 +123,9 @@ func (gs *gameState) collectPellet(row int8, col int8) {
 
 	// Other pellet-related events
 	if gs.numPellets == angerThreshold1 { // Ghosts get angry (speeding up)
-		gs.setUpdatePeriod(gs.getUpdatePeriod() - 2)
+		gs.setUpdatePeriod(max(1, gs.getUpdatePeriod()-2))
 	} else if gs.numPellets == angerThreshold2 { // Ghosts get angrier
-		gs.setUpdatePeriod(gs.getUpdatePeriod() - 2)
+		gs.setUpdatePeriod(max(1, gs.getUpdatePeriod()-2))
 	} else if gs.numPellets == 0 {
 		log.Println("Pacman won!")
 	}
@@ -233,7 +214,7 @@ func (gs *gameState) deathReset() {
 	gs.pacmanLoc.copyFrom(emptyLoc)
 
 	// Decrease the number of lives Pacman has left
-	gs.decLives()
+	gs.decrementLives()
 
 	// Reset all the ghosts to their original locations
 	gs.resetAllGhosts()
@@ -294,12 +275,39 @@ func (gs *gameState) tryRespawnPacman() {
 
 /******************************* Ghost Movement *******************************/
 
-// A game state function to reset all ghosts at once
+// Frighten all ghosts at once
+func (gs *gameState) frightenAllGhosts() {
+
+	// Acquire the ghost control lock, to prevent other ghost movement decisions
+	gs.muGhosts.Lock()
+	defer gs.muGhosts.Unlock()
+
+	// Reset the ghost respawn combo back to 0
+	gs.ghostCombo = 0
+
+	// Loop over all the ghosts
+	for _, ghost := range gs.ghosts {
+
+		/*
+			To frighten a ghost, set its fright cycles to a specified value
+			and trap it for one cycle (to force the direction to reverse)
+		*/
+		ghost.setFrightCycles(ghostFrightCycles)
+		if !ghost.isTrapped() {
+			ghost.setTrappedCycles(1)
+		}
+	}
+}
+
+// Reset all ghosts at once
 func (gs *gameState) resetAllGhosts() {
 
 	// Acquire the ghost control lock, to prevent other ghost movement
 	gs.muGhosts.Lock()
 	defer gs.muGhosts.Unlock()
+
+	// Reset the ghost respawn combo back to 0
+	gs.ghostCombo = 0
 
 	// Add relevant ghosts to a wait group
 	gs.wgGhosts.Add(int(numColors))
@@ -315,12 +323,16 @@ func (gs *gameState) resetAllGhosts() {
 	// If no lives are left, set all ghosts to stare at the player, menacingly
 	if gs.getLives() == 0 {
 		for _, ghost := range gs.ghosts {
-			ghost.nextLoc.updateDir(none)
+			if ghost.color != orange {
+				ghost.nextLoc.updateDir(none)
+			} else { // Orange does like making eye contact, unfortunately
+				ghost.nextLoc.updateDir(left)
+			}
 		}
 	}
 }
 
-// A game state function to respawn some ghosts
+// Respawn some ghosts, according to a flag
 func (gs *gameState) respawnGhosts(
 	numGhostRespawns int, ghostRespawnFlag uint8) {
 
@@ -334,9 +346,17 @@ func (gs *gameState) respawnGhosts(
 	// Loop over the ghost colors again, to decide which should respawn
 	for _, ghost := range gs.ghosts {
 
-		// If the ghost should respawn, call its respawn function
+		// If the ghost should respawn, do so and increase the score and combo
 		if getBit(ghostRespawnFlag, ghost.color) {
+
+			// Respawn the ghost
 			ghost.respawn()
+
+			// Add points corresponding to the current combo length
+			gs.incrementScore(comboMultiplier << uint16(gs.ghostCombo))
+
+			// Increment the ghost respawn combo
+			gs.ghostCombo++
 		}
 	}
 
@@ -344,7 +364,7 @@ func (gs *gameState) respawnGhosts(
 	gs.wgGhosts.Wait()
 }
 
-// A game state function to update all ghosts at once
+// Update all ghosts at once
 func (gs *gameState) updateAllGhosts() {
 
 	// Acquire the ghost control lock, to prevent other ghost movement

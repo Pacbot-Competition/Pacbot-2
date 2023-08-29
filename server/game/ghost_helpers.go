@@ -12,9 +12,10 @@ func (g *ghostState) reset() {
 	// Mark this operation as done once we return
 	defer g.game.wgGhosts.Done()
 
-	// Set the ghost to be eaten and spawning
+	// Set the ghost to be trapped, spawning, and not frightened
 	g.setSpawning(true)
 	g.setTrappedCycles(ghostTrappedCycles[g.color])
+	g.setFrightCycles(0)
 
 	// Set the current ghost to be at an empty location
 	g.loc.copyFrom(emptyLoc)

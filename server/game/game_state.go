@@ -75,6 +75,9 @@ type gameState struct {
 	// A wait group for synchronizing updates of multiple ghosts
 	wgGhosts *sync.WaitGroup
 
+	// A variable to keep track of the current ghost combo
+	ghostCombo uint8
+
 	/* Pellet State - 31 * 4 = 124 bytes */
 
 	// Pellets encoded within an array, with each uint32 acting as a bit array
@@ -115,8 +118,9 @@ func newGameState() *gameState {
 		fruitSpawned2: false,
 
 		// Ghosts
-		ghosts:   make([]*ghostState, numColors),
-		wgGhosts: &sync.WaitGroup{},
+		ghosts:     make([]*ghostState, numColors),
+		wgGhosts:   &sync.WaitGroup{},
+		ghostCombo: 0,
 
 		// RNG (random number generation) source
 		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
@@ -326,10 +330,14 @@ func (gs *gameState) getScore() uint16 {
 // (For performance) helper function to increment the current score of the game
 func (gs *gameState) incrementScore(change uint16) {
 
+	// Calculate the next score, capping at the maximum 16-bit unsigned int
+	score := uint32(gs.currScore)
+	score = min(score+uint32(change), 65535)
+
 	// (Write) lock the current score
 	gs.muScore.Lock()
 	{
-		gs.currScore += change // Add the delta to the score
+		gs.currScore = uint16(score) // Update the current score
 	}
 	gs.muScore.Unlock()
 }
@@ -387,7 +395,7 @@ func (gs *gameState) setLives(lives uint8) {
 }
 
 // Helper function to decrement the lives left
-func (gs *gameState) decLives() {
+func (gs *gameState) decrementLives() {
 
 	// Keep track of how many lives Pacman has left
 	lives := gs.getLives()

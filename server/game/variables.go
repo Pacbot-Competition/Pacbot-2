@@ -79,6 +79,9 @@ const pelletPoints uint16 = 10
 // The points earned when collecting a pellet
 const superPelletPoints uint16 = 50
 
+// The multiplier for the combo from catching successive frightened ghosts
+const comboMultiplier uint16 = 200
+
 // Column-wise, this may look backwards; column 0 is at bit 0 on the right
 // (Tip: Ctrl+F '1' to see the initial pellet locations)
 var initPellets [mazeRows]uint32 = [...]uint32{
