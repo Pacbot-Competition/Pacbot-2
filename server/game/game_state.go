@@ -54,6 +54,9 @@ type gameState struct {
 
 	pacmanLoc *locationState
 
+	// A mutex for synchronizing updates to Pacman
+	muPacman sync.Mutex
+
 	/* Fruit location - 2 bytes */
 
 	fruitExists   bool
@@ -64,8 +67,13 @@ type gameState struct {
 
 	/* Ghosts - 4 * 3 = 12 bytes */
 
-	ghosts   []*ghostState
-	wgGhosts *sync.WaitGroup // A wait group for synchronizing ghost actions
+	ghosts []*ghostState
+
+	// A mutex for synchronizing simultaneous updates of all ghosts
+	muGhosts sync.Mutex
+
+	// A wait group for synchronizing updates of multiple ghosts
+	wgGhosts *sync.WaitGroup
 
 	/* Pellet State - 31 * 4 = 124 bytes */
 
@@ -178,8 +186,8 @@ func (gs *gameState) getUpdatePeriod() uint8 {
 func (gs *gameState) setUpdatePeriod(period uint8) {
 
 	// Send a message to the terminal
-	log.Printf("\033[36mGAME: Update period changed (%d -> %d)\033[0m\n",
-		gs.getUpdatePeriod(), period)
+	log.Printf("\033[36mGAME: Update period changed (%d -> %d) (t = %d)\033[0m\n",
+		gs.getUpdatePeriod(), period, gs.getCurrTicks())
 
 	// (Write) lock the update period
 	gs.muPeriod.Lock()
@@ -260,7 +268,7 @@ func (gs *gameState) pause() {
 	gs.setMode(paused)
 
 	// Log message to alert the user
-	log.Printf("\033[32m\033[2mGame paused  (t = %d)\033[0m\n",
+	log.Printf("\033[32m\033[2mGAME: Paused  (t = %d)\033[0m\n",
 		gs.getCurrTicks())
 }
 
@@ -268,7 +276,7 @@ func (gs *gameState) pause() {
 func (gs *gameState) play() {
 
 	// If the game engine is already playing, there's no more to do
-	if !gs.isPaused() {
+	if !gs.isPaused() || gs.getLives() == 0 {
 		return
 	}
 
@@ -276,7 +284,7 @@ func (gs *gameState) play() {
 	gs.setMode(gs.getLastUnpausedMode())
 
 	// Log message to alert the user
-	log.Printf("\033[32mGame resumed (t = %d)\033[0m\n",
+	log.Printf("\033[32mGAME: Resumed (t = %d)\033[0m\n",
 		gs.getCurrTicks())
 }
 
@@ -352,7 +360,7 @@ func (gs *gameState) setLevel(level uint8) {
 
 /**************************** Game Level Functions ****************************/
 
-// Helper function to get the current level of the game
+// Helper function to get the lives left
 func (gs *gameState) getLives() uint8 {
 
 	// (Read) lock the current lives
@@ -363,13 +371,40 @@ func (gs *gameState) getLives() uint8 {
 	return gs.currLives
 }
 
-// Helper function to increment the current score of the game
+// Helper function to set the lives left
 func (gs *gameState) setLives(lives uint8) {
+
+	// Send a message to the terminal
+	log.Printf("\033[36mGAME: Lives changed (%d -> %d)\033[0m\n",
+		gs.getLives(), lives)
 
 	// (Write) lock the current lives
 	gs.muLives.Lock()
 	{
 		gs.currLives = lives // Update the lives
+	}
+	gs.muLives.Unlock()
+}
+
+// Helper function to decrement the lives left
+func (gs *gameState) decLives() {
+
+	// Keep track of how many lives Pacman has left
+	lives := gs.getLives()
+
+	// If there were no lives, no need to decrement any more
+	if lives == 0 {
+		return
+	}
+
+	// Send a message to the terminal
+	log.Printf("\033[31mGAME: Pacman lost a life (%d -> %d) (t = %d)\033[0m\n",
+		lives, lives-1, gs.getCurrTicks())
+
+	// (Write) lock the current lives
+	gs.muLives.Lock()
+	{
+		gs.currLives-- // Update the lives
 	}
 	gs.muLives.Unlock()
 }

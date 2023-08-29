@@ -32,7 +32,7 @@ var fruitSpawnLoc = newLocationState(17, 13, none)
 var emptyLoc = newLocationState(32, 32, none)
 
 // Spawn positions for the ghosts
-var ghostSpawnLocs [4]*locationState = [...]*locationState{
+var ghostSpawnLocs [numColors]*locationState = [...]*locationState{
 	newLocationState(11, 13, left), // red
 	newLocationState(13, 13, down), // pink
 	newLocationState(14, 11, up),   // cyan
@@ -40,7 +40,7 @@ var ghostSpawnLocs [4]*locationState = [...]*locationState{
 }
 
 // Scatter targets for the ghosts - should remain constant
-var ghostScatterTargets [4]*locationState = [...]*locationState{
+var ghostScatterTargets [numColors]*locationState = [...]*locationState{
 	newLocationState(-3, 25, none), // red
 	newLocationState(-3, 2, none),  // pink
 	newLocationState(31, 27, none), // cyan
@@ -48,7 +48,7 @@ var ghostScatterTargets [4]*locationState = [...]*locationState{
 }
 
 // The number of cycles that the ghosts stay in the trapped state for
-var ghostTrappedCycles [4]uint8 = [...]uint8{
+var ghostTrappedCycles [numColors]uint8 = [...]uint8{
 	0,  // red
 	5,  // pink
 	16, // cyan

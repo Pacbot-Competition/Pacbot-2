@@ -9,10 +9,6 @@ import (
 // Respawn the ghost
 func (g *ghostState) reset() {
 
-	// Lock the motion mutex to synchronize with other motion routines
-	g.muMotion.Lock()
-	defer g.muMotion.Unlock()
-
 	// Mark this operation as done once we return
 	defer g.game.wgGhosts.Done()
 
@@ -35,10 +31,6 @@ func (g *ghostState) reset() {
 // Respawn the ghost
 func (g *ghostState) respawn() {
 
-	// Lock the motion mutex to synchronize with other motion routines
-	g.muMotion.Lock()
-	defer g.muMotion.Unlock()
-
 	// Mark this operation as done once we return
 	defer g.game.wgGhosts.Done()
 
@@ -54,16 +46,20 @@ func (g *ghostState) respawn() {
 		(or pink's spawn location, in the case of red, so it spawns in the box)
 	*/
 	if g.color == red {
-		g.nextLoc.copyFrom(ghostSpawnLocs[pink])
+		g.nextLoc.updateCoords(ghostSpawnLocs[pink].getCoords())
 	} else {
-		g.nextLoc.copyFrom(ghostSpawnLocs[g.color])
+		g.nextLoc.updateCoords(ghostSpawnLocs[g.color].getCoords())
 	}
+	g.nextLoc.updateDir(up)
 }
 
 /******************** Ghost Updates (before serialization) ********************/
 
 // Update the ghost's position
 func (g *ghostState) update() {
+
+	// Mark the plan as done once we return
+	defer g.game.wgGhosts.Done()
 
 	/*
 		If the ghost is at the red spawn point and not moving downwards,
@@ -93,11 +89,7 @@ func (g *ghostState) update() {
 // Plan the ghost's next move
 func (g *ghostState) plan() {
 
-	// Lock the motion mutex to synchronize with other motion routines
-	g.muMotion.Lock()
-	defer g.muMotion.Unlock()
-
-	// Mark the plan as done
+	// Mark the plan as done once we return
 	defer g.game.wgGhosts.Done()
 
 	// If the location is empty (i.e. after a reset/respawn), don't plan
@@ -110,7 +102,7 @@ func (g *ghostState) plan() {
 
 	// If the ghost is trapped, reverse the current direction and return
 	if g.isTrapped() {
-		g.nextLoc.reverseDir()
+		g.nextLoc.updateDir(g.nextLoc.getReversedDir())
 		g.decTrappedCycles()
 		return
 	}
@@ -145,9 +137,9 @@ func (g *ghostState) plan() {
 		location is valid, and count how many are good
 	*/
 	numValidMoves := 0
-	var moveValid [4]bool
-	var moveDistSq [4]int
-	for dir := uint8(0); dir < 4; dir++ {
+	var moveValid [numDirs]bool
+	var moveDistSq [numDirs]int
+	for dir := uint8(0); dir < numDirs; dir++ {
 
 		// Get the neighboring cell in that location
 		row, col := g.nextLoc.getNeighborCoords(dir)
@@ -189,9 +181,10 @@ func (g *ghostState) plan() {
 	// Debug statement, in case a ghost somehow is surrounded by all walls
 	if numValidMoves == 0 {
 		row, col := g.nextLoc.getCoords()
-		log.Printf("\033[35mWARN: %s has nowhere to go "+
-			"(row = %d, col = %d, spawning = %t)\n\033[0m",
-			ghostNames[g.color], row, col, spawning)
+		dir := g.nextLoc.getDir()
+		log.Printf("\033[2m\033[36mWARN: %s has nowhere to go "+
+			"(row = %d, col = %d, dir = %s, spawning = %t)\n\033[0m",
+			ghostNames[g.color], row, col, dirNames[dir], spawning)
 		return
 	}
 
@@ -205,7 +198,7 @@ func (g *ghostState) plan() {
 		randomNum := g.game.rng.Intn(numValidMoves)
 
 		// Loop over all directions
-		for dir, count := uint8(0), 0; dir < 4; dir++ {
+		for dir, count := uint8(0), 0; dir < numDirs; dir++ {
 
 			// Skip any invalid moves
 			if !moveValid[dir] {

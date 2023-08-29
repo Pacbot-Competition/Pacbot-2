@@ -91,7 +91,7 @@
   const showMotion = true;
 
   // Hide the ghost if bit 5 (32) of either coordinate is set
-  $: showGhost = ((colState | rowState) & 0b100000) ? false : true;
+  $: showGhost = ((colState | rowState) & 0b100000) ? false : true
 
   /* 
     The last 5 bits of each state byte are the position, 

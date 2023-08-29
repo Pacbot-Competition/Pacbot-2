@@ -12,12 +12,12 @@ const (
 	left    uint8 = 1
 	down    uint8 = 2
 	right   uint8 = 3
-	none    uint8 = 4
-	numDirs uint8 = 5
+	numDirs uint8 = 4
+	none    uint8 = numDirs
 )
 
 // Names of the directions (forr debugging)
-var dirNames [numDirs]string = [...]string{
+var dirNames [numDirs + 1]string = [...]string{
 	"up",
 	"left",
 	"down",
@@ -107,15 +107,22 @@ func (loc *locationState) getDir() uint8 {
 
 func (loc *locationState) getReversedDir() uint8 {
 
-	// (Read) the state (to prevent writes)
-	loc.RLock()
-	defer loc.RUnlock()
+	// Copy the current direction
+	dir := loc.getDir()
 
-	// Bitwise trick to switch between up and down, or left and right
-	if loc.dir < 4 {
-		return loc.dir ^ 2
+	// Switch between up and down, or left and right
+	switch dir {
+	case up:
+		return down
+	case left:
+		return right
+	case down:
+		return up
+	case right:
+		return left
+	default:
+		return dir
 	}
-	return loc.dir
 }
 
 // Return a set of coordinates corresponding to an existing location
@@ -162,18 +169,11 @@ func (loc *locationState) getAheadCoords(spaces int8) (int8, int8) {
 // Copy all the variables from another location state into the given location
 func (loc *locationState) copyFrom(loc2 *locationState) {
 
-	// Lock the states for thread safety
-	loc.Lock()
-	loc2.RLock()
-	defer func() {
-		loc.Unlock()
-		loc2.RUnlock()
-	}()
+	// Copy the coordinates and direction
+	loc.updateCoords(loc2.getCoords())
 
-	// Update the values
-	loc.row = loc2.row
-	loc.col = loc2.col
-	loc.dir = loc2.dir
+	// Keep the same direction by default
+	loc.updateDir(loc2.getDir())
 }
 
 /*
@@ -182,20 +182,11 @@ and copy the current direction
 */
 func (loc *locationState) advanceFrom(loc2 *locationState) {
 
-	// Lock the states for thread safety
-	loc.Lock()
-	loc2.RLock()
-	defer func() {
-		loc.Unlock()
-		loc2.RUnlock()
-	}()
-
-	// Update the values
-	loc.row += dRow[loc2.dir]
-	loc.col += dCol[loc2.dir]
+	// Set the next location to be one ahead of the current one
+	loc.updateCoords(loc2.getAheadCoords(1))
 
 	// Keep the same direction by default
-	loc.dir = loc2.dir
+	loc.updateDir(loc2.getDir())
 }
 
 // Copy all the variables from another location state into the given location
@@ -209,21 +200,8 @@ func (loc *locationState) updateDir(dir uint8) {
 	loc.dir = dir
 }
 
-// Reverse the direction of a given location state
-func (loc *locationState) reverseDir() {
-
-	// Lock the state for thread safety
-	loc.Lock()
-	defer loc.Unlock()
-
-	// Bitwise trick to switch between up and down, or left and right
-	if loc.dir < 4 {
-		loc.dir ^= 2
-	}
-}
-
 // Move a given location state to specified coordinates
-func (loc *locationState) moveToCoords(row int8, col int8) {
+func (loc *locationState) updateCoords(row int8, col int8) {
 
 	// Lock the state for thread safety
 	loc.Lock()

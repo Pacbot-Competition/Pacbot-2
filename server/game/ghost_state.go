@@ -35,7 +35,6 @@ type ghostState struct {
 	spawning      bool         // Flag set when spawning
 	eaten         bool         // Flag set when eaten and returning to ghost house
 	muState       sync.RWMutex // Mutex to lock general state parameters
-	muMotion      sync.Mutex   // Mutex to force plans to be sequential
 }
 
 // Create a new ghost state with given location and color values

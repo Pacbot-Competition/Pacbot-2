@@ -47,6 +47,9 @@
   // Using the & operator to pick out the 5 lowest bits
   $: posX = pacmanColState & 0b11111
   $: posY = pacmanRowState & 0b11111
+
+  // Hide the Pacman if bit 5 (32) of either coordinate is set
+  $: showPacman = ((pacmanRowState | pacmanColState) & 0b100000) ? false : true;
   
   // The below code is a sign-extension trick, taking advantage of 32-bit
   // integer representations in JavaScript
@@ -73,10 +76,12 @@
 
 </script>
 
-<div
-  class="pacman {clip ? "clip" : ""} eating"
-  style:--grid-size="{gridSize}px"
-  style:--dir-angle="{rotation}deg"
-  style:left="{gridSize * posX}px"
-  style:top="{gridSize * posY}px"
-/>
+{#if showPacman}
+  <div
+    class="pacman {clip ? "clip" : ""} eating"
+    style:--grid-size="{gridSize}px"
+    style:--dir-angle="{rotation}deg"
+    style:left="{gridSize * posX}px"
+    style:top="{gridSize * posY}px"
+  />
+{/if}

@@ -110,25 +110,11 @@ func (ge *GameEngine) RunLoop() {
 			// If the game state is ready to update, update the ghost positions
 			if ge.state.updateReady() {
 
-				// Wait until all pending ghost plans are complete
-				ge.state.wgGhosts.Wait()
+				// Update all ghosts at once
+				ge.state.updateAllGhosts()
 
-				// Acquire the motion locks of all ghosts
-				for _, ghost := range ge.state.ghosts {
-					ghost.muMotion.Lock()
-				}
-
-				// If we should pause upon updating, do so
-				if ge.state.getPauseOnUpdate() {
-					ge.state.pause()
-					ge.state.setPauseOnUpdate(false)
-				}
-
-				// Loop over the individual ghosts, and release their motion locks
-				for _, ghost := range ge.state.ghosts {
-					ghost.update()
-					ghost.muMotion.Unlock()
-				}
+				// Try to respawn Pacman (if it is at an empty location)
+				ge.state.tryRespawnPacman()
 
 				// Check for collisions
 				ge.state.checkCollisions()
@@ -144,13 +130,11 @@ func (ge *GameEngine) RunLoop() {
 			// If we're ready for an update, plan the next ghost moves
 			if ge.state.updateReady() {
 
-				// Add pending ghost plans
-				ge.state.wgGhosts.Add(int(numColors))
-
-				// Plan each ghost's next move concurrently
-				for _, ghost := range ge.state.ghosts {
-					go ghost.plan()
-				}
+				/*
+					Acquire the ghost control lock, to prevent other actions like
+					respawns/resets while updating the ghost state
+				*/
+				ge.state.planAllGhosts()
 			}
 		}
 

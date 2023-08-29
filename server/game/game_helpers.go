@@ -185,6 +185,9 @@ func (gs *gameState) checkCollisions() {
 	// Flag to decide which ghosts should respawn
 	var ghostRespawnFlag uint8 = 0
 
+	// Keep track of how many ghosts need to respawn
+	numGhostRespawns := 0
+
 	// Loop over all the ghosts
 	for _, ghost := range gs.ghosts {
 
@@ -199,6 +202,7 @@ func (gs *gameState) checkCollisions() {
 			// If the ghost is frightened, Pacman eats it, otherwise Pacman dies
 			if ghost.isFrightened() {
 				modifyBit(&ghostRespawnFlag, ghost.color, true)
+				numGhostRespawns++
 			} else {
 				gs.deathReset()
 				return
@@ -206,36 +210,55 @@ func (gs *gameState) checkCollisions() {
 		}
 	}
 
-	// Loop over the ghost colors again, to decide which should respawn
-	for _, ghost := range gs.ghosts {
-
-		// If the ghost should respawn, call its respawn function
-		if getBit(ghostRespawnFlag, ghost.color) {
-			ghost.respawn()
-		}
+	// If no ghosts need to respawn, there's no more work to do
+	if numGhostRespawns == 0 {
+		return
 	}
+
+	// Lock the motion mutex to synchronize with other ghost update routines
+	gs.respawnGhosts(numGhostRespawns, ghostRespawnFlag)
 }
 
 // Reset the board (while leaving pellets alone) after Pacman dies
 func (gs *gameState) deathReset() {
-	log.Println("Pacman Lost!")
 
-	// Add 4 ghosts to the ghost plans wait group, to halt updates
-	gs.wgGhosts.Add(4)
+	// Acquire the Pacman control lock, to prevent other Pacman movement
+	gs.muPacman.Lock()
+	defer gs.muPacman.Unlock()
 
-	// Reset each of the 4 ghosts
-	for _, ghost := range gs.ghosts {
-		go ghost.reset()
-	}
-
-	// Pause the game
+	// Set the game to be paused at the next update
 	gs.setPauseOnUpdate(true)
+
+	// Set Pacman to be in an empty state
+	gs.pacmanLoc.copyFrom(emptyLoc)
+
+	// Decrease the number of lives Pacman has left
+	gs.decLives()
+
+	// Reset all the ghosts to their original locations
+	gs.resetAllGhosts()
 }
 
 /************************** Motion (Pacman Location) **************************/
 
 // Move Pacman one space in a given direction
 func (gs *gameState) movePacmanDir(dir uint8) {
+
+	// Acquire the Pacman control lock, to prevent other Pacman movement
+	gs.muPacman.Lock()
+	defer func() {
+
+		// Unlock when we return
+		gs.muPacman.Unlock()
+
+		// Check collisions with all the ghosts
+		gs.checkCollisions()
+	}()
+
+	// Ignore the command if the game is paused
+	if gs.isPaused() || gs.getPauseOnUpdate() {
+		return
+	}
 
 	// Shorthand to make computation simpler
 	pLoc := gs.pacmanLoc
@@ -246,17 +269,123 @@ func (gs *gameState) movePacmanDir(dir uint8) {
 	// Update Pacman's direction
 	pLoc.updateDir(dir)
 
-	// Check collisions with all the ghosts
-	gs.checkCollisions()
-
 	// Check if there is a wall at the anticipated location, and return if so
 	if gs.wallAt(nextRow, nextCol) {
 		return
 	}
 
 	// Move Pacman the anticipated spot
-	pLoc.moveToCoords(nextRow, nextCol)
+	pLoc.updateCoords(nextRow, nextCol)
 	gs.collectPellet(nextRow, nextCol)
+}
+
+// Move Pacman back to its spawn point, if necessary
+func (gs *gameState) tryRespawnPacman() {
+
+	// Acquire the Pacman control lock, to prevent other Pacman movement
+	gs.muPacman.Lock()
+	defer gs.muPacman.Unlock()
+
+	// Set Pacman to be in its original state
+	if gs.pacmanLoc.isEmpty() && gs.getLives() > 0 {
+		gs.pacmanLoc.copyFrom(pacmanSpawnLoc)
+	}
+}
+
+/******************************* Ghost Movement *******************************/
+
+// A game state function to reset all ghosts at once
+func (gs *gameState) resetAllGhosts() {
+
+	// Acquire the ghost control lock, to prevent other ghost movement
+	gs.muGhosts.Lock()
+	defer gs.muGhosts.Unlock()
+
+	// Add relevant ghosts to a wait group
+	gs.wgGhosts.Add(int(numColors))
+
+	// Reset each of the ghosts
+	for _, ghost := range gs.ghosts {
+		go ghost.reset()
+	}
+
+	// Wait for the resets to finish
+	gs.wgGhosts.Wait()
+
+	// If no lives are left, set all ghosts to stare at the player, menacingly
+	if gs.getLives() == 0 {
+		for _, ghost := range gs.ghosts {
+			ghost.nextLoc.updateDir(none)
+		}
+	}
+}
+
+// A game state function to respawn some ghosts
+func (gs *gameState) respawnGhosts(
+	numGhostRespawns int, ghostRespawnFlag uint8) {
+
+	// Acquire the ghost control lock, to prevent other ghost movement
+	gs.muGhosts.Lock()
+	defer gs.muGhosts.Unlock()
+
+	// Add relevant ghosts to a wait group
+	gs.wgGhosts.Add(numGhostRespawns)
+
+	// Loop over the ghost colors again, to decide which should respawn
+	for _, ghost := range gs.ghosts {
+
+		// If the ghost should respawn, call its respawn function
+		if getBit(ghostRespawnFlag, ghost.color) {
+			ghost.respawn()
+		}
+	}
+
+	// Wait for the respawns to finish
+	gs.wgGhosts.Wait()
+}
+
+// A game state function to update all ghosts at once
+func (gs *gameState) updateAllGhosts() {
+
+	// Acquire the ghost control lock, to prevent other ghost movement
+	gs.muGhosts.Lock()
+	defer gs.muGhosts.Unlock()
+
+	// If we should pause upon updating, do so
+	if gs.getPauseOnUpdate() {
+		gs.pause()
+		gs.setPauseOnUpdate(false)
+	}
+
+	// Add relevant ghosts to a wait group
+	gs.wgGhosts.Add(int(numColors))
+
+	// Loop over the individual ghosts
+	for _, ghost := range gs.ghosts {
+		go ghost.update()
+	}
+
+	// Wait for the respawns to finish
+	gs.wgGhosts.Wait()
+}
+
+// A game state function to plan all ghosts at once
+func (gs *gameState) planAllGhosts() {
+
+	// Acquire the ghost control lock, to prevent other ghost movement
+	gs.muGhosts.Lock()
+	defer gs.muGhosts.Unlock()
+
+	// Add pending ghost plans
+	gs.wgGhosts.Add(int(numColors))
+
+	// Plan each ghost's next move concurrently
+	for _, ghost := range gs.ghosts {
+		go ghost.plan()
+	}
+
+	// Wait until all pending ghost plans are complete
+	gs.wgGhosts.Wait()
 }
 
 /************************ Ghost Targeting (Chase Mode) ************************/
