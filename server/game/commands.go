@@ -11,7 +11,11 @@ func (gs *gameState) interpretCommand(msg []byte) {
 
 	// Log the command if necessary
 	if getCommandLogEnable() {
-		log.Printf("\033[2m\033[36m| Response: %s`\033[0m\n", string(msg))
+		if len(msg) > 1 {
+			log.Printf("\033[2m\033[35mCOMM: %c %v\033[0m", msg[0], msg[1:])
+		} else {
+			log.Printf("\033[2m\033[35mCOMM: %c\033[0m", msg[0])
+		}
 	}
 
 	// Decide the command type based on the first byte

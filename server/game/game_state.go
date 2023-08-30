@@ -148,7 +148,7 @@ func newGameState() *gameState {
 
 /**************************** Curr Ticks Functions ****************************/
 
-// Helper function to get the update period
+// Helper function to get the current ticks
 func (gs *gameState) getCurrTicks() uint16 {
 
 	// (Read) lock the current ticks
@@ -161,6 +161,17 @@ func (gs *gameState) getCurrTicks() uint16 {
 
 // Helper function to increment the current ticks
 func (gs *gameState) nextTick() {
+
+	// Get the current number of ticks
+	currTicks := gs.getCurrTicks()
+
+	// If the current ticks are at the maximum, return
+	if currTicks == 0xffff {
+		return
+	} else if currTicks == 0xfffe {
+		gs.pause()
+		log.Println("\033[31mGAME: Max tick limit reached\033[0m")
+	}
 
 	// (Write) lock the current ticks
 	gs.muTicks.Lock()
@@ -235,6 +246,15 @@ func (gs *gameState) isPaused() bool {
 // Helper function to set the game mode
 func (gs *gameState) setMode(mode uint8) {
 
+	// Read the current game mode
+	currMode := gs.getMode()
+
+	// If the game is not paused and won't be paused, log the change
+	if currMode != paused && mode != paused {
+		log.Printf("\033[32mGAME: Mode changed (%d -> %d) (t = %d)\033[0m\n",
+			currMode, mode, gs.getCurrTicks())
+	}
+
 	// (Write) lock the game mode
 	gs.muMode.Lock()
 	{
@@ -276,8 +296,8 @@ func (gs *gameState) pause() {
 // Helper function to play the game
 func (gs *gameState) play() {
 
-	// If the game engine is already playing, there's no more to do
-	if !gs.isPaused() || gs.getLives() == 0 {
+	// If the game engine is already playing or can't play, return
+	if !gs.isPaused() || gs.getLives() == 0 || gs.getCurrTicks() == 0xffff {
 		return
 	}
 

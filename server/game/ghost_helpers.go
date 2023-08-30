@@ -14,8 +14,8 @@ func (g *ghostState) reset() {
 
 	// Set the ghost to be trapped, spawning, and not frightened
 	g.setSpawning(true)
-	g.setTrappedCycles(ghostTrappedCycles[g.color])
-	g.setFrightCycles(0)
+	g.setTrappedSteps(ghostTrappedSteps[g.color])
+	g.setFrightSteps(0)
 
 	// Set the current ghost to be at an empty location
 	g.loc.copyFrom(emptyLoc)
@@ -73,12 +73,12 @@ func (g *ghostState) update() {
 	// Set the ghost to be no longer eaten, if applicable
 	if g.isEaten() {
 		g.setEaten(false)
-		g.setFrightCycles(0)
+		g.setFrightSteps(0)
 	}
 
-	// Decrement the ghost's fright cycles count if necessary
+	// Decrement the ghost's frightened steps count if necessary
 	if g.isFrightened() {
-		g.decFrightCycles()
+		g.decFrightSteps()
 	}
 
 	// Copy the next location into the current location
@@ -104,12 +104,12 @@ func (g *ghostState) plan() {
 	// If the ghost is trapped, reverse the current direction and return
 	if g.isTrapped() {
 		g.nextLoc.updateDir(g.nextLoc.getReversedDir())
-		g.decTrappedCycles()
+		g.decTrappedSteps()
 		return
 	}
 
-	// Keep local copies of the fright cycles and spawning variables
-	frightCycles := g.getFrightCycles()
+	// Keep local copies of the fright steps and spawning variables
+	frightSteps := g.getFrightSteps()
 	spawning := g.isSpawning()
 
 	// Decide on a target for this ghost, depending on the game mode
@@ -193,7 +193,7 @@ func (g *ghostState) plan() {
 		 	If the ghost will still frightened one tick later, immediately choose
 			a random valid direction and return
 	*/
-	if frightCycles > 1 {
+	if frightSteps > 1 {
 
 		// Generate a random index out of the valid moves
 		randomNum := g.game.rng.Intn(numValidMoves)

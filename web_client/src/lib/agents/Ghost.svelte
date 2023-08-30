@@ -109,10 +109,10 @@
 
   /* 
     Using bitwise operations to unpack the spawning conditions and 
-    frighten cycles of ghosts
+    frighten steps of ghosts
   */
   $: spawning = (frightState >> 7)
-  $: frightCycles = (frightState & 0b1111111)
+  $: frightSteps = (frightState & 0b1111111)
 
   /*
     Visual effects, to make the ghosts appear as if they are 
@@ -131,8 +131,8 @@
                       ) : 0
 
   // Determines if the ghost is frightened, using the frightened counter
-  $: fr = (frightCycles > 0)
-  $: rc = (frightCycles <= 10) && (2 * modTicks >= updatePeriod)
+  $: fr = (frightSteps > 0)
+  $: rc = (frightSteps <= 10) && (2 * modTicks >= updatePeriod)
 
   // Allow "animated" sprites by toggling every 2 ticks
   $: spriteTwo = ((modTicks >> 1) & 1)

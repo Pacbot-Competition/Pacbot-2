@@ -182,8 +182,8 @@ func (gs *gameState) serGhost(color uint8, outputBuf []byte, startIdx int) int {
 		spawnFlag = 0b10000000
 	}
 
-	// Serialize the fright cycles and spawn flag info next
-	startIdx = serUint8(g.frightCycles|spawnFlag, outputBuf, startIdx)
+	// Serialize the fright steps and spawn flag info next
+	startIdx = serUint8(g.frightSteps|spawnFlag, outputBuf, startIdx)
 
 	// Return the starting index of the next field
 	return startIdx

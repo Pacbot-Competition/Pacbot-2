@@ -75,7 +75,7 @@
     if (gameMode === Modes.Paused) {
       modeColor = 'gray';
     } else if (gameMode === Modes.Scatter) {
-      modeColor = 'green';
+      modeColor = 'lime';
     } else if (gameMode === Modes.Chase) {
       modeColor = 'yellow';
     } else if (gameMode === Modes.Offline) {

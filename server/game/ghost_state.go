@@ -30,8 +30,8 @@ type ghostState struct {
 	scatterTarget *locationState // Position of (fixed) scatter target
 	game          *gameState     // The game state tied to the ghost
 	color         uint8
-	trappedCycles uint8
-	frightCycles  uint8
+	trappedSteps  uint8
+	frightSteps   uint8
 	spawning      bool         // Flag set when spawning
 	eaten         bool         // Flag set when eaten and returning to ghost house
 	muState       sync.RWMutex // Mutex to lock general state parameters
@@ -45,8 +45,8 @@ func newGhostState(_gameState *gameState, _color uint8) *ghostState {
 		scatterTarget: newLocationStateCopy(ghostScatterTargets[_color]),
 		game:          _gameState,
 		color:         _color,
-		trappedCycles: ghostTrappedCycles[_color],
-		frightCycles:  0,
+		trappedSteps:  ghostTrappedSteps[_color],
+		frightSteps:   0,
 		spawning:      true,
 		eaten:         false,
 	}
@@ -54,37 +54,37 @@ func newGhostState(_gameState *gameState, _color uint8) *ghostState {
 
 /*************************** Ghost Frightened State ***************************/
 
-// Set the fright cycles of a ghost
-func (g *ghostState) setFrightCycles(cycles uint8) {
+// Set the fright steps of a ghost
+func (g *ghostState) setFrightSteps(steps uint8) {
 
 	// (Write) lock the ghost state
 	g.muState.Lock()
 	{
-		g.frightCycles = cycles
+		g.frightSteps = steps
 	}
 	g.muState.Unlock()
 }
 
-// Decrement the fright cycles of a ghost
-func (g *ghostState) decFrightCycles() {
+// Decrement the fright steps of a ghost
+func (g *ghostState) decFrightSteps() {
 
 	// (Write) lock the ghost state
 	g.muState.Lock()
 	{
-		g.frightCycles--
+		g.frightSteps--
 	}
 	g.muState.Unlock()
 }
 
-// Get the fright cycles of a ghost
-func (g *ghostState) getFrightCycles() uint8 {
+// Get the fright steps of a ghost
+func (g *ghostState) getFrightSteps() uint8 {
 
 	// (Read) lock the ghost state
 	g.muState.RLock()
 	defer g.muState.RUnlock()
 
-	// Return the current fright cycles
-	return g.frightCycles
+	// Return the current fright steps
+	return g.frightSteps
 }
 
 // Check if a ghost is frightened
@@ -94,30 +94,30 @@ func (g *ghostState) isFrightened() bool {
 	g.muState.RLock()
 	defer g.muState.RUnlock()
 
-	// Return whether there is at least one fright cycle left
-	return g.frightCycles > 0
+	// Return whether there is at least one fright step left
+	return g.frightSteps > 0
 }
 
 /****************************** Ghost Trap State ******************************/
 
-// Set the trapped cycles of a ghost
-func (g *ghostState) setTrappedCycles(cycles uint8) {
+// Set the trapped steps of a ghost
+func (g *ghostState) setTrappedSteps(steps uint8) {
 
 	// (Write) lock the ghost state
 	g.muState.Lock()
 	{
-		g.trappedCycles = cycles
+		g.trappedSteps = steps
 	}
 	g.muState.Unlock()
 }
 
-// Decrement the trapped cycles of a ghost
-func (g *ghostState) decTrappedCycles() {
+// Decrement the trapped steps of a ghost
+func (g *ghostState) decTrappedSteps() {
 
 	// (Write) lock the ghost state
 	g.muState.Lock()
 	{
-		g.trappedCycles--
+		g.trappedSteps--
 	}
 	g.muState.Unlock()
 }
@@ -129,8 +129,8 @@ func (g *ghostState) isTrapped() bool {
 	g.muState.RLock()
 	defer g.muState.RUnlock()
 
-	// Return whether there is at least one fright cycle left
-	return g.trappedCycles > 0
+	// Return whether there is at least one fright step left
+	return g.trappedSteps > 0
 }
 
 /**************************** Ghost Spawning State ****************************/

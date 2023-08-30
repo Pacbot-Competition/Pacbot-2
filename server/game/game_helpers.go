@@ -302,12 +302,12 @@ func (gs *gameState) frightenAllGhosts() {
 	for _, ghost := range gs.ghosts {
 
 		/*
-			To frighten a ghost, set its fright cycles to a specified value
-			and trap it for one cycle (to force the direction to reverse)
+			To frighten a ghost, set its fright steps to a specified value
+			and trap it for one step (to force the direction to reverse)
 		*/
-		ghost.setFrightCycles(ghostFrightCycles)
+		ghost.setFrightSteps(ghostFrightSteps)
 		if !ghost.isTrapped() {
-			ghost.setTrappedCycles(1)
+			ghost.setTrappedSteps(1)
 		}
 	}
 }
