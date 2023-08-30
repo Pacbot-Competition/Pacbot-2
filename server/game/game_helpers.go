@@ -80,6 +80,10 @@ func (gs *gameState) collectPellet(row int8, col int8) {
 		return
 	}
 
+	// If we can clear the pellet's bit, decrease the number of pellets
+	modifyBit(&(gs.pellets[row]), col, false)
+	gs.decrementNumPellets()
+
 	// If the we are in particular rows and columns, it is a super pellet
 	superPellet := ((row == 3) || (row == 23)) && ((col == 1) || (col == 26))
 
@@ -95,26 +99,16 @@ func (gs *gameState) collectPellet(row int8, col int8) {
 		gs.incrementScore(pelletPoints)
 	}
 
-	// (Write) lock the pellets array, then clear the pellet's bit
-	gs.muPellets.Lock()
-	{
-		// Clear the pellet's bit and decrement the number of pellets
-		modifyBit(&(gs.pellets[row]), col, false)
-		gs.numPellets--
-	}
-	gs.muPellets.Unlock()
-
 	// Act depending on the number of pellets left over
-	gs.muPellets.RLock()
-	defer gs.muPellets.RUnlock()
+	numPellets := gs.getNumPellets()
 
 	// Spawn fruit, if applicable
 	gs.muFruit.Lock()
 	{
-		if gs.numPellets == fruitThreshold1 && !gs.fruitSpawned1 {
+		if (numPellets == fruitThreshold1) && !gs.fruitSpawned1 {
 			log.Println("Fruit 1 should spawn")
 			gs.fruitSpawned1 = true
-		} else if gs.numPellets == fruitThreshold2 && !gs.fruitSpawned2 {
+		} else if (numPellets == fruitThreshold2) && !gs.fruitSpawned2 {
 			log.Println("Fruit 2 should spawn")
 			gs.fruitSpawned2 = true
 		}
@@ -122,12 +116,13 @@ func (gs *gameState) collectPellet(row int8, col int8) {
 	gs.muFruit.Unlock()
 
 	// Other pellet-related events
-	if gs.numPellets == angerThreshold1 { // Ghosts get angry (speeding up)
+	if numPellets == angerThreshold1 { // Ghosts get angry (speeding up)
 		gs.setUpdatePeriod(max(1, gs.getUpdatePeriod()-2))
-	} else if gs.numPellets == angerThreshold2 { // Ghosts get angrier
+	} else if numPellets == angerThreshold2 { // Ghosts get angrier
 		gs.setUpdatePeriod(max(1, gs.getUpdatePeriod()-2))
-	} else if gs.numPellets == 0 {
-		log.Println("Pacman won!")
+	} else if numPellets == 0 {
+		gs.levelReset()
+		gs.incrementLevel()
 	}
 }
 
@@ -200,6 +195,8 @@ func (gs *gameState) checkCollisions() {
 	gs.respawnGhosts(numGhostRespawns, ghostRespawnFlag)
 }
 
+/***************************** Event-Based Resets *****************************/
+
 // Reset the board (while leaving pellets alone) after Pacman dies
 func (gs *gameState) deathReset() {
 
@@ -218,6 +215,22 @@ func (gs *gameState) deathReset() {
 
 	// Reset all the ghosts to their original locations
 	gs.resetAllGhosts()
+}
+
+// Reset the board (including pellets) after Pacman clears a level
+func (gs *gameState) levelReset() {
+
+	// Set the game to be paused at the next update
+	gs.setPauseOnUpdate(true)
+
+	// Set Pacman to be in an empty state
+	gs.pacmanLoc.copyFrom(emptyLoc)
+
+	// Reset all the ghosts to their original locations
+	gs.resetAllGhosts()
+
+	// Reset the pellet bit array and count
+	gs.resetPellets()
 }
 
 /************************** Motion (Pacman Location) **************************/

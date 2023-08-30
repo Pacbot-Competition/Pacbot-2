@@ -142,9 +142,6 @@ func newGameState() *gameState {
 	copy(gs.pellets[:], initPellets[:])
 	copy(gs.walls[:], initWalls[:])
 
-	// Collect the first pellet (no lock necessary, as no other routine sees gs)
-	gs.collectPellet(gs.pacmanLoc.getCoords())
-
 	// Return the new game state
 	return &gs
 }
@@ -362,6 +359,37 @@ func (gs *gameState) setLevel(level uint8) {
 	gs.muLevel.Lock()
 	{
 		gs.currLevel = level // Update the level
+
+		// Adjust the initial update period accordingly
+		suggestedPeriod := int(initUpdatePeriod) - 2*(int(level)-1)
+		gs.setUpdatePeriod(uint8(max(1, suggestedPeriod)))
+	}
+	gs.muLevel.Unlock()
+}
+
+// Helper function to increment the game level
+func (gs *gameState) incrementLevel() {
+
+	// Keep track of the current level
+	level := gs.getLevel()
+
+	// If we are at the last level, don't increment it anymore
+	if level == 255 {
+		return
+	}
+
+	// Send a message to the terminal
+	log.Printf("\033[32mGAME: Next level (%d -> %d) (t = %d)\033[0m\n",
+		level, level+1, gs.getCurrTicks())
+
+	// (Write) lock the current lives
+	gs.muLevel.Lock()
+	{
+		gs.currLevel++ // Update the level
+
+		// Adjust the initial update period accordingly
+		suggestedPeriod := int(initUpdatePeriod) - 2*int(level)
+		gs.setUpdatePeriod(uint8(max(1, suggestedPeriod)))
 	}
 	gs.muLevel.Unlock()
 }
@@ -415,4 +443,45 @@ func (gs *gameState) decrementLives() {
 		gs.currLives-- // Update the lives
 	}
 	gs.muLives.Unlock()
+}
+
+/****************************** Pellet Functions ******************************/
+
+// Helper function to get the number of pellets
+func (gs *gameState) getNumPellets() uint16 {
+
+	// (Read) lock the number of pellets
+	gs.muPellets.RLock()
+	defer gs.muPellets.RUnlock()
+
+	// Return the number of pellets
+	return gs.numPellets
+}
+
+// Helper function to decrement the number of pellets
+func (gs *gameState) decrementNumPellets() {
+
+	// (Write) lock the number of pellets
+	gs.muPellets.Lock()
+	{
+		if gs.numPellets != 0 {
+			gs.numPellets--
+		}
+	}
+	gs.muPellets.Unlock()
+}
+
+// Reset all the pellets on the board
+func (gs *gameState) resetPellets() {
+
+	// (Write) lock the pellets array and number of pellets
+	gs.muPellets.Lock()
+	{
+		// Copy over pellet bit array
+		copy(gs.pellets[:], initPellets[:])
+
+		// Set the number of pellets to be the default
+		gs.numPellets = initPelletCount
+	}
+	gs.muPellets.Unlock()
 }
