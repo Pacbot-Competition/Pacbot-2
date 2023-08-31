@@ -7,13 +7,6 @@ import (
 	"time"
 )
 
-// Enum-like declaration to hold the game mode options
-const (
-	paused  uint8 = 0
-	scatter uint8 = 1
-	chase   uint8 = 2
-)
-
 /*
 	NOTE: at 24 ticks/sec, currTicks will experience an integer overflow after
 	about 45 minutes, so don't run it continuously for too long (indefinite
@@ -38,6 +31,14 @@ type gameState struct {
 	mode             uint8        // Game mode
 	muMode           sync.RWMutex // Associated mutex
 	pauseOnUpdate    bool         // Should pause when an update is ready
+
+	// The number of steps (update periods) before the mode changes
+	modeSteps   uint8
+	muModeSteps sync.RWMutex // Associated mutex
+
+	// The number of steps (update periods) before a speedup penalty starts
+	levelSteps   uint16
+	muLevelSteps sync.RWMutex // Associated mutex
 
 	/* Game information - 4 bytes */
 
@@ -101,11 +102,15 @@ func newGameState() *gameState {
 	gs := gameState{
 
 		// Message header
-		currTicks:        0,
-		updatePeriod:     initUpdatePeriod,
-		mode:             paused,
+		currTicks:    0,
+		updatePeriod: initUpdatePeriod,
+		mode:         paused,
+
+		// Additional header-related info
 		lastUnpausedMode: initMode,
 		pauseOnUpdate:    false,
+		modeSteps:        modeDurations[initMode],
+		levelSteps:       levelDuration,
 
 		// Game info
 		currScore: 0,
@@ -211,125 +216,7 @@ func (gs *gameState) setUpdatePeriod(period uint8) {
 
 /******************************* Mode Functions *******************************/
 
-// Helper function to get the game mode
-func (gs *gameState) getMode() uint8 {
-
-	// (Read) lock the game mode
-	gs.muMode.RLock()
-	defer gs.muMode.RUnlock()
-
-	// Return the current game mode
-	return gs.mode
-}
-
-// Helper function to get the last unpaused mode
-func (gs *gameState) getLastUnpausedMode() uint8 {
-
-	// (Read) lock the game mode
-	gs.muMode.RLock()
-	defer gs.muMode.RUnlock()
-
-	// If the current mode is not paused, return it
-	if gs.mode != paused {
-		return gs.mode
-	}
-
-	// Return the last unpaused game mode
-	return gs.lastUnpausedMode
-}
-
-// Helper function to determine if the game is paused
-func (gs *gameState) isPaused() bool {
-	return gs.getMode() == paused
-}
-
-// Helper function to set the game mode
-func (gs *gameState) setMode(mode uint8) {
-
-	// Read the current game mode
-	currMode := gs.getMode()
-
-	// If the game is not paused and won't be paused, log the change
-	if currMode != paused && mode != paused {
-		log.Printf("\033[32mGAME: Mode changed (%d -> %d) (t = %d)\033[0m\n",
-			currMode, mode, gs.getCurrTicks())
-	}
-
-	// (Write) lock the game mode
-	gs.muMode.Lock()
-	{
-		gs.mode = mode // Update the game mode
-	}
-	gs.muMode.Unlock()
-}
-
-// Helper function to set the game mode
-func (gs *gameState) setLastUnpausedMode(mode uint8) {
-
-	// (Write) lock the game mode
-	gs.muMode.Lock()
-	{
-		gs.lastUnpausedMode = mode // Update the game mode
-	}
-	gs.muMode.Unlock()
-}
-
-// Helper function to pause the game
-func (gs *gameState) pause() {
-
-	// If the game engine is already paused, there's no more to do
-	if gs.isPaused() {
-		return
-	}
-
-	// Otherwise, save the current mode
-	gs.setLastUnpausedMode(gs.getMode())
-
-	// Set the mode to paused
-	gs.setMode(paused)
-
-	// Log message to alert the user
-	log.Printf("\033[32m\033[2mGAME: Paused  (t = %d)\033[0m\n",
-		gs.getCurrTicks())
-}
-
-// Helper function to play the game
-func (gs *gameState) play() {
-
-	// If the game engine is already playing or can't play, return
-	if !gs.isPaused() || gs.getLives() == 0 || gs.getCurrTicks() == 0xffff {
-		return
-	}
-
-	// Otherwise, set the current mode to the last unpaused mode
-	gs.setMode(gs.getLastUnpausedMode())
-
-	// Log message to alert the user
-	log.Printf("\033[32mGAME: Resumed (t = %d)\033[0m\n",
-		gs.getCurrTicks())
-}
-
-// Helper function to pause the game after the next update
-func (gs *gameState) setPauseOnUpdate(flag bool) {
-
-	// (Write) lock the game mode
-	gs.muMode.Lock()
-	{
-		gs.pauseOnUpdate = flag // Set a flag to pause at the next update
-	}
-	gs.muMode.Unlock()
-}
-
-// Helper function to pause the game after the next update
-func (gs *gameState) getPauseOnUpdate() bool {
-
-	// (Read) lock the game mode
-	gs.muMode.RLock()
-	defer gs.muMode.RUnlock()
-
-	// Return whether the game should pause at the next update
-	return gs.pauseOnUpdate
-}
+// See game_modes.go, there were a lot of mode functions so I moved them there
 
 /**************************** Game Score Functions ****************************/
 

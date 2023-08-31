@@ -9,8 +9,21 @@ const mazeCols int8 = 28
 // The update period that the game starts with by default
 const initUpdatePeriod uint8 = 12
 
+// The number of steps (update periods) that pass before the level speeds up
+const levelDuration uint16 = 960 // 8 minutes at 24 fps, update period = 12
+
+// The number of steps (update periods) before a level speeds up further
+const levelPenaltyDuration uint16 = 240 // 2 min (24fps, update period = 12)
+
 // The mode that the game starts on by default
-const initMode uint8 = chase
+const initMode uint8 = scatter
+
+// The lengths of the game modes, in units of steps (update periods)
+var modeDurations [numModes]uint8 = [...]uint8{
+	255, // paused
+	60,  // scatter - 30 seconds at 24 fps
+	180, // chase   - 90 seconds at 24 fps
+}
 
 // The level that Pacman starts on by default
 const initLevel uint8 = 1

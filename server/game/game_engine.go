@@ -116,8 +116,17 @@ func (ge *GameEngine) RunLoop() {
 				// Try to respawn Pacman (if it is at an empty location)
 				ge.state.tryRespawnPacman()
 
+				// If we should pause upon updating, do so
+				if ge.state.getPauseOnUpdate() {
+					ge.state.pause()
+					ge.state.setPauseOnUpdate(false)
+				}
+
 				// Check for collisions
 				ge.state.checkCollisions()
+
+				// Decrement the mode steps, to decide if the mode needs to change
+				ge.state.adjustMode()
 			}
 
 			/* STEP 2: Serialize the current game state to the output buffer */

@@ -117,9 +117,13 @@ func (gs *gameState) collectPellet(row int8, col int8) {
 
 	// Other pellet-related events
 	if numPellets == angerThreshold1 { // Ghosts get angry (speeding up)
-		gs.setUpdatePeriod(max(1, gs.getUpdatePeriod()-2))
+		gs.setUpdatePeriod(uint8(max(1, int(gs.getUpdatePeriod())-2)))
+		gs.setMode(chase)
+		gs.setModeSteps(0xff)
 	} else if numPellets == angerThreshold2 { // Ghosts get angrier
-		gs.setUpdatePeriod(max(1, gs.getUpdatePeriod()-2))
+		gs.setUpdatePeriod(uint8(max(1, int(gs.getUpdatePeriod())-2)))
+		gs.setMode(chase)
+		gs.setModeSteps(0xff)
 	} else if numPellets == 0 {
 		gs.levelReset()
 		gs.incrementLevel()
@@ -213,6 +217,10 @@ func (gs *gameState) deathReset() {
 	// Decrease the number of lives Pacman has left
 	gs.decrementLives()
 
+	// If the mode is not the initial mode, change it
+	gs.setMode(initMode)
+	gs.setModeSteps(modeDurations[initMode])
+
 	// Reset all the ghosts to their original locations
 	gs.resetAllGhosts()
 }
@@ -225,6 +233,13 @@ func (gs *gameState) levelReset() {
 
 	// Set Pacman to be in an empty state
 	gs.pacmanLoc.copyFrom(emptyLoc)
+
+	// If the mode is not the initial mode, change it
+	gs.setMode(initMode)
+	gs.setModeSteps(modeDurations[initMode])
+
+	// Reset the level penalty
+	gs.setLevelSteps(levelDuration)
 
 	// Reset all the ghosts to their original locations
 	gs.resetAllGhosts()
@@ -383,12 +398,6 @@ func (gs *gameState) updateAllGhosts() {
 	// Acquire the ghost control lock, to prevent other ghost movement
 	gs.muGhosts.Lock()
 	defer gs.muGhosts.Unlock()
-
-	// If we should pause upon updating, do so
-	if gs.getPauseOnUpdate() {
-		gs.pause()
-		gs.setPauseOnUpdate(false)
-	}
 
 	// Add relevant ghosts to a wait group
 	gs.wgGhosts.Add(int(numColors))
