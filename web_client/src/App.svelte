@@ -238,22 +238,22 @@
   // Calculate the remainder when currTicks is divided by updatePeriod
   $: modTicks = currTicks % updatePeriod
 
-  // Deal with control-related (pause, play) keys
-  let controlKeyHeld = false;
-  const controlCommand = (key) => {
+  // Deal with media control-related (pause, play) keys
+  let mediaControlKeyHeld = false;
+  const mediaControlCommand = (key) => {
 
     /*
-      If control-related keys are pressed, reset the cooldown and
+      If media control-related keys are pressed, reset the cooldown and
       send the command back to the keydown handler
     */
     if (key === 'p' && gameMode !== Modes.Paused) {
-      controlKeyHeld = true;
+      mediaControlKeyHeld = true;
       return 'p';
     } else if (key === 'P' && gameMode === Modes.Paused) {
-      controlKeyHeld = true;
+      mediaControlKeyHeld = true;
       return 'P';
-    } else if (key === ' ' && !controlKeyHeld) {
-      controlKeyHeld = true;
+    } else if (key === ' ' && !mediaControlKeyHeld) {
+      mediaControlKeyHeld = true;
       return (gameMode === Modes.Paused ? 'P' : 'p');
     }
     return null;
@@ -264,9 +264,8 @@
   const motionCommand = (key) => {
     
     /*
-      If not enough ticks (with a threshold of 1/3 of the update period)
-      have elapsed since the last motion key, or if we haven't waited a tick
-      since the last control key, ignore this key
+      If not enough ticks (with a threshold of 1/4 of the update period)
+      have elapsed since the last motion key, ignore this key
     */
     if ((4 * (currTicks - lastMotionTicks) < updatePeriod)) {
       return null;
@@ -313,7 +312,7 @@
     const key = event.key;
 
     // Check if it is a pause/play command
-    const control = controlCommand(key);
+    const control = mediaControlCommand(key);
     if (control) {
       sendToSocket(control);
     }
@@ -332,7 +331,7 @@
     const key = event.key;
 
     if (key === 'p' || key === 'P' || key === ' ') {
-      controlKeyHeld = false;
+      mediaControlKeyHeld = false;
     }
   }
 

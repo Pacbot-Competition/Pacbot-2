@@ -251,6 +251,9 @@ func (gs *gameState) adjustMode() {
 				gs.setModeSteps(modeDurations[chase])
 			}
 		}
+
+		// Reverse the directions of all ghosts to indicate a mode switch
+		gs.reverseAllGhosts()
 	}
 
 	// If the level steps are 0, add a penalty by speeding up the game

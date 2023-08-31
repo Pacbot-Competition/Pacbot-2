@@ -217,9 +217,14 @@ func (gs *gameState) deathReset() {
 	// Decrease the number of lives Pacman has left
 	gs.decrementLives()
 
-	// If the mode is not the initial mode, change it
-	gs.setMode(initMode)
-	gs.setModeSteps(modeDurations[initMode])
+	/*
+		If the mode is not the initial mode and the ghosts aren't angry,
+		change the mode back to the initial mode
+	*/
+	if gs.getNumPellets() > angerThreshold1 {
+		gs.setMode(initMode)
+		gs.setModeSteps(modeDurations[initMode])
+	}
 
 	// Reset all the ghosts to their original locations
 	gs.resetAllGhosts()
@@ -321,6 +326,22 @@ func (gs *gameState) frightenAllGhosts() {
 			and trap it for one step (to force the direction to reverse)
 		*/
 		ghost.setFrightSteps(ghostFrightSteps)
+		if !ghost.isTrapped() {
+			ghost.setTrappedSteps(1)
+		}
+	}
+}
+
+// Reverse all ghosts at once (similar to frightenAllGhosts)
+func (gs *gameState) reverseAllGhosts() {
+
+	// Loop over all the ghosts
+	for _, ghost := range gs.ghosts {
+
+		/*
+			To change the direction a ghost, trap it for one step
+			(to force the direction to reverse)
+		*/
 		if !ghost.isTrapped() {
 			ghost.setTrappedSteps(1)
 		}
