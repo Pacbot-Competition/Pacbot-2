@@ -35,7 +35,7 @@
 
 <h2
   class='mps-counter'
-  style:--grid-size="{gridSize}px"
+  style:--grid-size='{gridSize}px'
 >
   MPS: {mpsAvg}
 </h2>

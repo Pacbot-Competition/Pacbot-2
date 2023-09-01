@@ -40,7 +40,7 @@
 
 <h2
   class='score-box'
-  style:--grid-size="{gridSize}px"
+  style:--grid-size='{gridSize}px'
 >
   <div>Level {currLevel}</div>
   <div>{currScore}</div>

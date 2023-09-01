@@ -40,7 +40,11 @@
 </style>
 
 <script>
+
+  // Grid size, same as for other components
   export let gridSize;
+
+  // Pacman state
   export let pacmanRowState;
   export let pacmanColState;
   
@@ -78,10 +82,10 @@
 
 {#if showPacman}
   <div
-    class="pacman {clip ? "clip" : ""} eating"
-    style:--grid-size="{gridSize}px"
-    style:--dir-angle="{rotation}deg"
-    style:left="{gridSize * posX}px"
-    style:top="{gridSize * posY}px"
+    class='pacman {clip ? 'clip' : ''} eating'
+    style:--grid-size='{gridSize}px'
+    style:--dir-angle='{rotation}deg'
+    style:left='{gridSize * posX}px'
+    style:top='{gridSize * posY}px'
   />
 {/if}

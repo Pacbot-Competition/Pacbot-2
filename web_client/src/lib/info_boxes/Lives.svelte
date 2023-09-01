@@ -78,7 +78,7 @@
 
 <div
   class='lives-box'
-  style:--grid-size="{gridSize}px"
+  style:--grid-size='{gridSize}px'
 >
   {#if currLives == 0}
     <!-- No lives left -->

@@ -96,19 +96,19 @@
 
 <svelte:window bind:innerWidth bind:innerHeight />
 
-<div class="top-left"> 
+<div class='top-left'> 
   {#each {length:31} as _, i}
-    <div class="row">
+    <div class='row'>
       {#each {length:28} as _, j}
         <button 
           on:click={() => hello(i, j)} 
-          class={"grid-element" + pelletMods[pelletGrid[i][j]]}
-          style:--grid-size="{gridSize}px"
+          class={'grid-element' + pelletMods[pelletGrid[i][j]]}
+          style:--grid-size='{gridSize}px'
         >
           <span 
-            class={"pellet" + pelletMods[pelletGrid[i][j]]}
-            style:width="{pellet_size}px"
-            style:height="{pellet_size}px"
+            class={'pellet' + pelletMods[pelletGrid[i][j]]}
+            style:width='{pellet_size}px'
+            style:height='{pellet_size}px'
           />
         </button>
       {/each}

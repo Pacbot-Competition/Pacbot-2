@@ -34,6 +34,7 @@
   import Pacman from './lib/agents/Pacman.svelte';
 
   /* Environment */
+  import Fruit from './lib/environment/Fruit.svelte';
   import Maze from './lib/environment/Maze.svelte';
   import Pellets from './lib/environment/Pellets.svelte';
   
@@ -399,6 +400,10 @@
     colState={orangeColState} 
     frightState={orangeFrightState}
     color='orange'
+  />
+
+  <Fruit
+    {gridSize}
   />
 
   <Mps

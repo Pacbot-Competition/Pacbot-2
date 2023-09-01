@@ -23,9 +23,9 @@
 </script>
 
 <img
-  class="maze" 
-  src="maze.svg"
+  class='maze'
+  src='maze.svg'
   alt='Pacman Maze' 
-  style:--grid-size="{gridSize}px" 
-  draggable="false"
+  style:--grid-size='{gridSize}px'
+  draggable='false'
 />

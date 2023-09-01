@@ -113,20 +113,20 @@
     
     <!-- Circular outline of ticker -->
     <circle
-      cx="{gridSize+pad}"
-      cy="{gridSize+pad}"
-      r="{gridSize}"
+      cx='{gridSize+pad}'
+      cy='{gridSize+pad}'
+      r='{gridSize}'
     />
 
     <!-- Filled ticker region -->
     <path 
-      d='M {gridSize+pad} {gridSize+pad} 
-         L {gridSize+pad} {pad}
-         A {gridSize} {gridSize} 0 
+      d=' M {gridSize+pad} {gridSize+pad} 
+          L {gridSize+pad} {pad}
+          A {gridSize} {gridSize} 0 
             {longArcFlag} 1 
             {gridSize + gridSize * sine + pad} 
             {gridSize - gridSize * cosine + pad} 
-         z' 
+          z' 
     />
   </svg>
 </button>
