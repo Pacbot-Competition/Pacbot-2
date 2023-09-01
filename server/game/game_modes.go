@@ -17,7 +17,7 @@ var modeNames [numModes]string = [...]string{
 	"chase",
 }
 
-/******************************* Mode Functions *******************************/
+/******************************** Current Mode ********************************/
 
 // Helper function to get the game mode
 func (gs *gameState) getMode() uint8 {
@@ -28,27 +28,6 @@ func (gs *gameState) getMode() uint8 {
 
 	// Return the current game mode
 	return gs.mode
-}
-
-// Helper function to get the last unpaused mode
-func (gs *gameState) getLastUnpausedMode() uint8 {
-
-	// (Read) lock the game mode
-	gs.muMode.RLock()
-	defer gs.muMode.RUnlock()
-
-	// If the current mode is not paused, return it
-	if gs.mode != paused {
-		return gs.mode
-	}
-
-	// Return the last unpaused game mode
-	return gs.lastUnpausedMode
-}
-
-// Helper function to determine if the game is paused
-func (gs *gameState) isPaused() bool {
-	return gs.getMode() == paused
 }
 
 // Helper function to set the game mode
@@ -71,6 +50,24 @@ func (gs *gameState) setMode(mode uint8) {
 	gs.muMode.Unlock()
 }
 
+/***************************** Last Unpaused Mode *****************************/
+
+// Helper function to get the last unpaused mode
+func (gs *gameState) getLastUnpausedMode() uint8 {
+
+	// (Read) lock the game mode
+	gs.muMode.RLock()
+	defer gs.muMode.RUnlock()
+
+	// If the current mode is not paused, return it
+	if gs.mode != paused {
+		return gs.mode
+	}
+
+	// Return the last unpaused game mode
+	return gs.lastUnpausedMode
+}
+
 // Helper function to set the game mode
 func (gs *gameState) setLastUnpausedMode(mode uint8) {
 
@@ -90,6 +87,13 @@ func (gs *gameState) setLastUnpausedMode(mode uint8) {
 		gs.lastUnpausedMode = mode // Update the game mode
 	}
 	gs.muMode.Unlock()
+}
+
+/******************************** Pause / Play ********************************/
+
+// Helper function to determine if the game is paused
+func (gs *gameState) isPaused() bool {
+	return gs.getMode() == paused
 }
 
 // Helper function to pause the game
@@ -127,6 +131,8 @@ func (gs *gameState) play() {
 		gs.getCurrTicks())
 }
 
+/*************************** Pausing on Next Update ***************************/
+
 // Helper function to return whether the game should pause after next update
 func (gs *gameState) getPauseOnUpdate() bool {
 
@@ -148,6 +154,8 @@ func (gs *gameState) setPauseOnUpdate(flag bool) {
 	}
 	gs.muMode.Unlock()
 }
+
+/********************************* Mode Steps *********************************/
 
 // Helper function to get the number of steps until the mode changes
 func (gs *gameState) getModeSteps() uint8 {
@@ -184,6 +192,8 @@ func (gs *gameState) decrementModeSteps() {
 	gs.muModeSteps.Unlock()
 }
 
+/***************************** Level Steps Passed *****************************/
+
 // Helper function to get the number of steps until the level speeds up
 func (gs *gameState) getLevelSteps() uint16 {
 
@@ -218,6 +228,8 @@ func (gs *gameState) decrementLevelSteps() {
 	}
 	gs.muLevelSteps.Unlock()
 }
+
+/******************************* Adjusting Mode *******************************/
 
 // Helper function to adjust the mode of the game, if the mode steps hit 0
 func (gs *gameState) adjustMode() {
