@@ -60,11 +60,11 @@ type gameState struct {
 
 	/* Fruit location - 2 bytes */
 
-	fruitExists   bool
-	fruitLoc      *locationState
-	fruitSpawned1 bool
-	fruitSpawned2 bool
-	muFruit       sync.RWMutex // Associated mutex (for fruitExists)
+	fruitLoc *locationState
+
+	// The number of steps (update periods) before fruit disappears
+	fruitSteps uint8
+	muFruit    sync.RWMutex // Associated mutex
 
 	/* Ghosts - 4 * 3 = 12 bytes */
 
@@ -118,9 +118,7 @@ func newGameState() *gameState {
 		currLives: initLives,
 
 		// Fruit
-		fruitExists:   false,
-		fruitSpawned1: false,
-		fruitSpawned2: false,
+		fruitSteps: 0,
 
 		// Ghosts
 		ghosts:     make([]*ghostState, numColors),
@@ -391,4 +389,147 @@ func (gs *gameState) resetPellets() {
 		gs.numPellets = initPelletCount
 	}
 	gs.muPellets.Unlock()
+}
+
+/************************** Fruit Spawning Functions **************************/
+
+// Helper function to get the number of steps until the fruit disappears
+func (gs *gameState) getFruitSteps() uint8 {
+
+	// (Read) lock the fruit steps
+	gs.muFruit.RLock()
+	defer gs.muFruit.RUnlock()
+
+	// Return the fruit steps
+	return gs.fruitSteps
+}
+
+// Helper function to determine whether fruit exists
+func (gs *gameState) fruitExists() bool {
+
+	// Return whether fruit exists
+	return gs.getFruitSteps() > 0
+}
+
+// Helper function to set the number of steps until the fruit disappears
+func (gs *gameState) setFruitSteps(steps uint8) {
+
+	// (Write) lock the fruit steps
+	gs.muFruit.Lock()
+	{
+		gs.fruitSteps = steps // Set the fruit steps
+	}
+	gs.muFruit.Unlock()
+}
+
+// Helper function to decrement the number of fruit steps
+func (gs *gameState) decrementFruitSteps() {
+
+	// (Write) lock the fruit steps
+	gs.muFruit.Lock()
+	{
+		if gs.fruitSteps != 0 {
+			gs.fruitSteps-- // Decrease the fruit steps
+		}
+	}
+	gs.muFruit.Unlock()
+}
+
+/***************************** Level Steps Passed *****************************/
+
+// Helper function to get the number of steps until the level speeds up
+func (gs *gameState) getLevelSteps() uint16 {
+
+	// (Read) lock the level steps
+	gs.muLevelSteps.RLock()
+	defer gs.muLevelSteps.RUnlock()
+
+	// Return the level steps
+	return gs.levelSteps
+}
+
+// Helper function to set the number of steps until the level speeds up
+func (gs *gameState) setLevelSteps(steps uint16) {
+
+	// (Write) lock the level steps
+	gs.muLevelSteps.Lock()
+	{
+		gs.levelSteps = steps // Set the level steps
+	}
+	gs.muLevelSteps.Unlock()
+}
+
+// Helper function to decrement the number of steps until the mode changes
+func (gs *gameState) decrementLevelSteps() {
+
+	// (Write) lock the level steps
+	gs.muLevelSteps.Lock()
+	{
+		if gs.levelSteps != 0 {
+			gs.levelSteps-- // Decrease the level steps
+		}
+	}
+	gs.muLevelSteps.Unlock()
+}
+
+/***************************** Step-Related Events ****************************/
+
+// Helper function to handle step-related events, if the mode steps hit 0
+func (gs *gameState) handleStepEvents() {
+
+	// Get the current mode steps
+	modeSteps := gs.getModeSteps()
+
+	// Get the current level steps
+	levelSteps := gs.getLevelSteps()
+
+	// If the mode steps are 0, change the mode
+	if modeSteps == 0 {
+		switch gs.getMode() {
+		// chase -> scatter
+		case chase:
+			gs.setMode(scatter)
+			gs.setModeSteps(modeDurations[scatter])
+		// scatter -> chase
+		case scatter:
+			gs.setMode(chase)
+			gs.setModeSteps(modeDurations[chase])
+		case paused:
+			switch gs.getLastUnpausedMode() {
+			// chase -> scatter
+			case chase:
+				gs.setLastUnpausedMode(scatter)
+				gs.setModeSteps(modeDurations[scatter])
+			// scatter -> chase
+			case scatter:
+				gs.setLastUnpausedMode(chase)
+				gs.setModeSteps(modeDurations[chase])
+			}
+		}
+
+		// Reverse the directions of all ghosts to indicate a mode switch
+		gs.reverseAllGhosts()
+	}
+
+	// If the level steps are 0, add a penalty by speeding up the game
+	if levelSteps == 0 {
+
+		// Log the change to the terminal
+		log.Println("\033[31mGAME: Long-game penalty applied\033[0m")
+
+		// Drop the update period by 2
+		gs.setUpdatePeriod(uint8(max(1, int(gs.getUpdatePeriod())-2)))
+
+		// Reset the level steps to the level penalty duration
+		gs.setLevelSteps(levelPenaltyDuration)
+	}
+
+	// Decrement the mode steps
+	gs.decrementModeSteps()
+
+	// Decrement the level steps
+	gs.decrementLevelSteps()
+
+	// Decrement the fruit steps
+	gs.decrementFruitSteps()
 }

@@ -151,7 +151,7 @@ func (gs *gameState) serFruit(outputBuf []byte, startIdx int) int {
 	// (Read) lock the fruit state
 	gs.muFruit.RLock()
 	{
-		if gs.fruitExists { // Serialize the fruit's location if it exists
+		if gs.fruitExists() { // Serialize the fruit's location if it exists
 			startIdx = serLocation(gs.fruitLoc, outputBuf, startIdx)
 		} else { // Otherwise, give an empty (0x00 0x00) location
 			startIdx = serLocation(emptyLoc, outputBuf, startIdx)

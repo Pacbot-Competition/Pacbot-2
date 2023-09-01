@@ -1,9 +1,5 @@
 package game
 
-import (
-	"log"
-)
-
 /***************************** Bitwise Operations *****************************/
 
 /*
@@ -76,6 +72,14 @@ Collects a pellet if it is at a given location
 Returns the number of pellets that are left
 */
 func (gs *gameState) collectPellet(row int8, col int8) {
+
+	// Collect fruit, if applicable
+	if gs.fruitExists() && gs.pacmanLoc.collidesWith(gs.fruitLoc) {
+		gs.setFruitSteps(0)
+		gs.incrementScore(fruitPoints)
+	}
+
+	// If there's no pellet, return
 	if !gs.pelletAt(row, col) {
 		return
 	}
@@ -103,17 +107,11 @@ func (gs *gameState) collectPellet(row int8, col int8) {
 	numPellets := gs.getNumPellets()
 
 	// Spawn fruit, if applicable
-	gs.muFruit.Lock()
-	{
-		if (numPellets == fruitThreshold1) && !gs.fruitSpawned1 {
-			log.Println("Fruit 1 should spawn")
-			gs.fruitSpawned1 = true
-		} else if (numPellets == fruitThreshold2) && !gs.fruitSpawned2 {
-			log.Println("Fruit 2 should spawn")
-			gs.fruitSpawned2 = true
-		}
+	if (numPellets == fruitThreshold1) && !gs.fruitExists() {
+		gs.setFruitSteps(fruitDuration)
+	} else if (numPellets == fruitThreshold2) && !gs.fruitExists() {
+		gs.setFruitSteps(fruitDuration)
 	}
-	gs.muFruit.Unlock()
 
 	// Other pellet-related events
 	if numPellets == angerThreshold1 { // Ghosts get angry (speeding up)
@@ -226,6 +224,9 @@ func (gs *gameState) deathReset() {
 		gs.setModeSteps(modeDurations[initMode])
 	}
 
+	// Set the fruit steps back to 0
+	gs.setFruitSteps(0)
+
 	// Reset all the ghosts to their original locations
 	gs.resetAllGhosts()
 }
@@ -245,6 +246,9 @@ func (gs *gameState) levelReset() {
 
 	// Reset the level penalty
 	gs.setLevelSteps(levelDuration)
+
+	// Set the fruit steps back to 0
+	gs.setFruitSteps(0)
 
 	// Reset all the ghosts to their original locations
 	gs.resetAllGhosts()

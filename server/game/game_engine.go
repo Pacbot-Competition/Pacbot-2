@@ -125,8 +125,11 @@ func (ge *GameEngine) RunLoop() {
 				// Check for collisions
 				ge.state.checkCollisions()
 
-				// Decrement the mode steps, to decide if the mode needs to change
-				ge.state.adjustMode()
+				/*
+					Decrement all step counters, and decide if the mode, penalty,
+					or fruit states should change
+				*/
+				ge.state.handleStepEvents()
 			}
 
 			/* STEP 2: Serialize the current game state to the output buffer */

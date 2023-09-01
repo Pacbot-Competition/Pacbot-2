@@ -109,12 +109,12 @@
     Right:    0b01000000,
   }
 
-  // Initial states for all the agents
+  // Initial states for all the agents / objects
   let pacmanRowState = 23;
   let pacmanColState = 13 | Directions.Right;
 
-  let fruitRowState = 0;
-  let fruitColState = 0;
+  let fruitRowState = 32;
+  let fruitColState = 32;
 
   let redRowState = 11;
   let redColState = 13 | Directions.Left; // left
@@ -356,6 +356,12 @@
     {gridSize}
   />
 
+  <Fruit
+    {gridSize}
+    {fruitRowState}
+    {fruitColState}
+  />
+
   <Pacman 
     {gridSize}
     {pacmanRowState}
@@ -400,10 +406,6 @@
     colState={orangeColState} 
     frightState={orangeFrightState}
     color='orange'
-  />
-
-  <Fruit
-    {gridSize}
   />
 
   <Mps

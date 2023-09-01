@@ -41,6 +41,12 @@ var pacmanSpawnLoc = newLocationState(23, 13, right)
 // Spawn position for the fruit
 var fruitSpawnLoc = newLocationState(17, 13, none)
 
+// The number of steps that the fruit stays on the maze for
+const fruitDuration uint8 = 30
+
+// The points earned upon collecting a fruit
+const fruitPoints uint16 = 100
+
 // "Invalid" location - serializes to 0x00100000 0x00100000
 var emptyLoc = newLocationState(32, 32, none)
 

@@ -43,8 +43,8 @@
   export let gridSize;
 
   // Fruit state
-  let fruitRowState = 17 | 32;
-  let fruitColState = 13;
+  export let fruitRowState;
+  export let fruitColState;
 
   // Using the & operator to pick out the 5 lowest bits
   $: posX = fruitColState & 0b11111
@@ -62,6 +62,7 @@
       style:top='{gridSize * posY}px'
   >
 
+    <!-- Left cherry -->
     <circle
       cx='{5*gridSize/16}'
       cy='{5*gridSize/8}'
@@ -69,6 +70,7 @@
       class='cherry'
     />
 
+    <!-- Left indentation -->
     <ellipse
       cx='{6*gridSize/16}'
       cy='{17*gridSize/32}'
@@ -79,6 +81,7 @@
       style:transform='rotate(35deg)'
     />
 
+    <!-- Left reflection -->
     <ellipse
       cx='{3*gridSize/16}'
       cy='{21*gridSize/32}'
@@ -89,6 +92,7 @@
       style:transform='rotate(-20deg)'
     />
 
+    <!-- Right cherry -->
     <circle
       cx='{5*gridSize/8}'
       cy='{6*gridSize/8}'
@@ -96,6 +100,7 @@
       class='cherry'
     />
 
+    <!-- Right indentation -->
     <ellipse
       cx='{10*gridSize/16}'
       cy='{10*gridSize/16}'
@@ -106,6 +111,7 @@
       style:transform='rotate(5deg)'
     />
 
+    <!-- Right reflection -->
     <ellipse
       cx='{4*gridSize/8}'
       cy='{25*gridSize/32}'
@@ -116,6 +122,7 @@
       style:transform='rotate(-15deg)'
     />
 
+    <!-- End of stem -->
     <circle
       cx='{27*gridSize/32}'
       cy='{5*gridSize/32}'
@@ -123,6 +130,7 @@
       style:fill='yellow'
     />
 
+    <!-- Stem -->
     <path
       d=' M {6*gridSize/16} {17*gridSize/32}
           A {gridSize} {gridSize} 0
