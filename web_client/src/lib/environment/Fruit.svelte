@@ -135,7 +135,7 @@
       d=' M {6*gridSize/16} {17*gridSize/32}
           A {gridSize} {gridSize} 0
             0 1
-            {13 * gridSize / 16} 
+            {13 * gridSize / 16}
             {3  * gridSize / 16}
           V {2  * gridSize / 16}
           H {14 * gridSize / 16}
@@ -143,7 +143,7 @@
           H {13 * gridSize / 16}
           A {gridSize} {gridSize} 0
             0 0
-            {10 * gridSize / 16} 
+            {10 * gridSize / 16}
             {10 * gridSize / 16}
           '
       class='stem'

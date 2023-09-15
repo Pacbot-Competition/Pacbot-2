@@ -25,7 +25,7 @@
 <img
   class='maze'
   src='maze.svg'
-  alt='Pacman Maze' 
+  alt='Pacman Maze'
   style:--grid-size='{gridSize}px'
   draggable='false'
 />

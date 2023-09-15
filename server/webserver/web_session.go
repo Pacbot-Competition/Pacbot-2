@@ -169,11 +169,20 @@ func (ws *webSession) readLoop() {
 		if err != nil {
 
 			// Types of errors which we intentionally catch and return from
-			clientCloseErr := websocket.IsCloseError(err, websocket.CloseGoingAway)
+			clientCloseErr := websocket.IsCloseError(
+				err,
+				websocket.CloseGoingAway,
+				websocket.CloseNormalClosure,
+			)
 			serverCloseErr := (err == websocket.ErrCloseSent)
 			_, netErr := err.(*net.OpError)
 			if clientCloseErr || serverCloseErr || netErr {
 				return
+			}
+
+			closeErr, ok := err.(*websocket.CloseError)
+			if ok && closeErr.Code == websocket.CloseNormalClosure {
+				log.Println("caught!")
 			}
 
 			// For all other unspecified errors, log them and quit
@@ -229,7 +238,11 @@ func (ws *webSession) sendLoop() {
 		if err := ws.conn.WriteMessage(websocket.BinaryMessage, msg); err != nil {
 
 			// Types of errors which we intentionally catch and return from
-			clientCloseErr := websocket.IsCloseError(err, websocket.CloseGoingAway)
+			clientCloseErr := websocket.IsCloseError(
+				err,
+				websocket.CloseGoingAway,
+				websocket.CloseNormalClosure,
+			)
 			serverCloseErr := (err == websocket.ErrCloseSent)
 			_, netErr := err.(*net.OpError)
 			if clientCloseErr || serverCloseErr || netErr {

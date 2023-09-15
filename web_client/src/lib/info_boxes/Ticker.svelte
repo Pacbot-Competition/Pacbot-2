@@ -21,15 +21,15 @@
     top:         calc(10  * var(--grid-size));
     font-size:   calc(0.9 * var(--grid-size));
   }
-  
+
   /* Info box outline (clicked), should be none */
   .ticker-box:focus-visible {
     outline: none;
   }
-  
+
   /* Ticker shape */
   .ticker {
-    
+
     /* Positioning */
     position: absolute;
     z-index: 2;
@@ -85,7 +85,7 @@
     }
   }
 
-  // Math to calculate relevant degree measures, lengths, and flags 
+  // Math to calculate relevant degree measures, lengths, and flags
   export let modTicks;
   export let updatePeriod;
   const degToRad = Math.PI / 180
@@ -110,7 +110,7 @@
     style:--pad='{pad}px'
     style:--color='{modeColor}'
   >
-    
+
     <!-- Circular outline of ticker -->
     <circle
       cx='{gridSize+pad}'
@@ -119,14 +119,14 @@
     />
 
     <!-- Filled ticker region -->
-    <path 
-      d=' M {gridSize+pad} {gridSize+pad} 
+    <path
+      d=' M {gridSize+pad} {gridSize+pad}
           L {gridSize+pad} {pad}
-          A {gridSize} {gridSize} 0 
-            {longArcFlag} 1 
-            {gridSize + gridSize * sine + pad} 
-            {gridSize - gridSize * cosine + pad} 
-          z' 
+          A {gridSize} {gridSize} 0
+            {longArcFlag} 1
+            {gridSize + gridSize * sine + pad}
+            {gridSize - gridSize * cosine + pad}
+          z'
     />
   </svg>
 </button>

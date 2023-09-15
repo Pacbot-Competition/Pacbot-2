@@ -30,7 +30,7 @@
     /* Positioning */
     position: absolute;
     z-index: 2;
-    
+
     /* Grid-size related CSS */
     right:       calc(0.2  * var(--grid-size));
     top:         calc(0.2 * var(--grid-size));

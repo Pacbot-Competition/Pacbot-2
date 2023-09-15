@@ -37,7 +37,7 @@
   import Fruit from './lib/environment/Fruit.svelte';
   import Maze from './lib/environment/Maze.svelte';
   import Pellets from './lib/environment/Pellets.svelte';
-  
+
   /* Info Boxes */
   import Lives from './lib/info_boxes/Lives.svelte';
   import Mps from './lib/info_boxes/Mps.svelte';
@@ -49,8 +49,8 @@
   socket.binaryType = 'arraybuffer';
   let socketOpen = false;
 
-  /* 
-    This generates an empty array of pellet states 
+  /*
+    This generates an empty array of pellet states
     (0 = none, 1 = pellet, 2 = super)
   */
   let pelletGrid = [];
@@ -62,10 +62,10 @@
   }
 
   /*
-    We use a circular queue (with a fixed max capacity to keep track of the 
+    We use a circular queue (with a fixed max capacity to keep track of the
     times of the most recent messages. For every message we receive, we should
-    add this time to the queue and remove all times longer than 1ms ago. The 
-    length of this array will be the MPS (messages per second), which should 
+    add this time to the queue and remove all times longer than 1ms ago. The
+    length of this array will be the MPS (messages per second), which should
     be synced with the frame rate of the game engine if there is no lag.
   */
   const MPS_BUFFER_SIZE = 2 * config.GameFPS; // Allow double the specified FPS
@@ -207,11 +207,11 @@
           for (let col = 0; col < 28; col++) {
 
             // Super pellet condition
-            let superPellet = ((row === 3) || (row === 23)) 
+            let superPellet = ((row === 3) || (row === 23))
                               && ((col === 1) || (col === 26));
 
             // Update the pellet grid
-            pelletGrid[row][col] = ((binRow >> col) & 1) ? 
+            pelletGrid[row][col] = ((binRow >> col) & 1) ?
                                     (superPellet ? 2 : 1) : 0;
           }
           byteIdx += 4;
@@ -233,7 +233,7 @@
   // Track the size of the window, to determine the grid size
   let innerWidth = 0;
   let innerHeight = 0;
-  $: gridSize = 0.8 * ((innerHeight * 28 < innerWidth * 31) ? 
+  $: gridSize = 0.8 * ((innerHeight * 28 < innerWidth * 31) ?
     (innerHeight / 31) : (innerWidth / 28))
 
   // Calculate the remainder when currTicks is divided by updatePeriod
@@ -263,7 +263,7 @@
   // Deal with motion-related keys
   let lastMotionTicks = 0;
   const motionCommand = (key) => {
-    
+
     /*
       If not enough ticks (with a threshold of 1/4 of the update period)
       have elapsed since the last motion key, ignore this key
@@ -272,8 +272,8 @@
       return null;
     }
 
-    /* 
-      If motion-related keys are pressed, reset the cooldown and 
+    /*
+      If motion-related keys are pressed, reset the cooldown and
       send the command back to the keydown handler
     */
     if (key === 'w' || key === 'ArrowUp') {
@@ -317,7 +317,7 @@
     if (control) {
       sendToSocket(control);
     }
-    
+
     // Check if it is a motion command
     const motion = motionCommand(key);
     if (motion) {
@@ -338,20 +338,20 @@
 
 </script>
 
-<svelte:window 
-  on:keydown={handleKeyDown} 
+<svelte:window
+  on:keydown={handleKeyDown}
   on:keyup={handleKeyUp}
   bind:innerWidth
-  bind:innerHeight 
+  bind:innerHeight
 />
 
 <div class='maze-space' style:--grid-size="{gridSize}px">
-  
-  <Maze 
-    {gridSize} 
+
+  <Maze
+    {gridSize}
   />
 
-  <Pellets 
+  <Pellets
     {pelletGrid}
     {gridSize}
   />
@@ -362,23 +362,23 @@
     {fruitColState}
   />
 
-  <Pacman 
+  <Pacman
     {gridSize}
     {pacmanRowState}
     {pacmanColState}
   />
 
-  <Ghost 
+  <Ghost
     {gridSize}
     {modTicks}
-    {updatePeriod} 
+    {updatePeriod}
     rowState={redRowState}
     colState={redColState}
     frightState={redFrightState}
     color='red'
   />
-  
-  <Ghost 
+
+  <Ghost
     {gridSize}
     {modTicks}
     {updatePeriod}
@@ -388,7 +388,7 @@
     color='pink'
   />
 
-  <Ghost 
+  <Ghost
     {gridSize}
     {modTicks}
     {updatePeriod}
@@ -401,9 +401,9 @@
   <Ghost
     {gridSize}
     {modTicks}
-    {updatePeriod} 
-    rowState={orangeRowState} 
-    colState={orangeColState} 
+    {updatePeriod}
+    rowState={orangeRowState}
+    colState={orangeColState}
     frightState={orangeFrightState}
     color='orange'
   />
@@ -431,7 +431,7 @@
   <Lives
     {gridSize}
     {currLives}
-    {Directions} 
+    {Directions}
   />
 
 </div>

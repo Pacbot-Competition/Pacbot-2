@@ -18,8 +18,8 @@
 
   /* Clip path (mouth of Pacman) */
   .clip {
-    clip-path: polygon(-100% -100%, -100% 200%, 
-                        200% 200%, 100% 80%, 45% 50%, 
+    clip-path: polygon(-100% -100%, -100% 200%,
+                        200% 200%, 100% 80%, 45% 50%,
                         100% 20%, 200% -100%);
   }
 
@@ -31,8 +31,8 @@
   /* Pacman eating animation (clip path changes) */
   @keyframes eat {
     50% {
-      clip-path: polygon(-100% -100%, -100% 200%, 
-                          200% 200%, 100% 50%, 45% 50%, 
+      clip-path: polygon(-100% -100%, -100% 200%,
+                          200% 200%, 100% 50%, 45% 50%,
                           100% 50%, 200% -100%);
     }
   }
@@ -47,14 +47,14 @@
   // Pacman state
   export let pacmanRowState;
   export let pacmanColState;
-  
+
   // Using the & operator to pick out the 5 lowest bits
   $: posX = pacmanColState & 0b11111
   $: posY = pacmanRowState & 0b11111
 
   // Hide the Pacman if bit 5 (32) of either coordinate is set
   $: showPacman = ((pacmanRowState | pacmanColState) & 0b100000) ? false : true;
-  
+
   // The below code is a sign-extension trick, taking advantage of 32-bit
   // integer representations in JavaScript
   $: dirX = ((pacmanColState >> 6) << 30) >> 30

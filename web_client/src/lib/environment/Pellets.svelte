@@ -61,7 +61,7 @@
   }
 
   /* Super pellet */
-  
+
   .grid-element .super {
     border-radius: 40%;
     transform: scale(3);
@@ -90,22 +90,22 @@
 
   const pelletMods = [' hidden', '', ' super']
 
-  $: pellet_size = ~~(gridSize/6 + 0.5)  
+  $: pellet_size = ~~(gridSize/6 + 0.5)
 
 </script>
 
 <svelte:window bind:innerWidth bind:innerHeight />
 
-<div class='top-left'> 
+<div class='top-left'>
   {#each {length:31} as _, i}
     <div class='row'>
       {#each {length:28} as _, j}
-        <button 
-          on:click={() => hello(i, j)} 
+        <button
+          on:click={() => hello(i, j)}
           class={'grid-element' + pelletMods[pelletGrid[i][j]]}
           style:--grid-size='{gridSize}px'
         >
-          <span 
+          <span
             class={'pellet' + pelletMods[pelletGrid[i][j]]}
             style:width='{pellet_size}px'
             style:height='{pellet_size}px'
