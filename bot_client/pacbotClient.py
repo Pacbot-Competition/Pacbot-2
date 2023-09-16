@@ -1,14 +1,18 @@
 # JSON (for reading config.json)
 import json
 
-# Asyncio (for asynchronous communication)
+# Asyncio (for concurrency)
 import asyncio
 
-# Websockets imports
-from websockets.sync.client import connect, ClientConnection
+# Websockets (for communication with the server)
+from websockets.sync.client import connect, ClientConnection # type: ignore
 from websockets.exceptions import ConnectionClosedError
+from websockets.typing import Data
 
-# Restore the ability to use Ctrl+C within asyncio
+# Game state
+from gameState import GameState
+
+# Restore the ability to use Ctrl + C within asyncio
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -28,8 +32,8 @@ def get_connect_url() -> str:
 
 class PacbotClient:
 	'''
-	Asyncio implementation of a websocket client to communicate with the
-	Pacbot game server.
+	Sample implementation of a websocket client to communicate with the
+	Pacbot game server, using asyncio.
 	'''
 
 	# Constructor
@@ -37,6 +41,7 @@ class PacbotClient:
 		self.connect_url: str = connect_url
 		self._socket_open: bool = False
 		self.connection: ClientConnection
+		self.state: GameState = GameState()
 
 	# Connect and run
 	async def run(self) -> None:
@@ -52,14 +57,17 @@ class PacbotClient:
 	# Connect to the websocket server
 	async def connect(self) -> None:
 
-		try: # Connect to the specified URL
+		# Connect to the specified URL
+		try:
 			self.connection = connect(self.connect_url)
 			self._socket_open = True
+
+		# If the connection is refused, log and return
 		except ConnectionRefusedError:
 			print(
-				f"{GREEN}Websocket connection refused [{self.connect_url}]\n"
-				f"Are the address and port correct, and is the "
-				f"server running?{NORMAL}"
+				f'{GREEN}Websocket connection refused [{self.connect_url}]\n'
+				f'Are the address and port correct, and is the '
+				f'server running?{NORMAL}'
 			)
 			return
 
@@ -67,27 +75,45 @@ class PacbotClient:
 	async def disconnect(self) -> None:
 
 		# Close the connection
-		self.connection.close()
 		self._socket_open = False
+		self.connection.close()
+
+	# Return whether the connection is open
+	def is_open(self) -> bool:
+		return self._socket_open
 
 	# Receive loop for capturing messages
 	async def recv_loop(self) -> None:
 
-		# Loop indefinitely
+		# Receive values as long as the connection is open
 		while self._socket_open:
-			try: # Receive values as long as the connection is open
-				message = self.connection.recv()
-				print(message)
-			except ConnectionClosedError: # Break once the conneciton is closed
+
+			# Try to receive messages (and skip to except in case of an error)
+			try:
+
+				# Receive a message from the connection
+				message: Data = self.connection.recv()
+
+				# Convert the message to bytes, if necessary
+				message_bytes: bytes
+				if isinstance(message, bytes):
+					message_bytes = message # type: ignore
+				else:
+					message_bytes = message.encode('ascii') # type: ignore
+
+				self.state.update(message_bytes)
+
+			# Break once the connection is closed
+			except ConnectionClosedError:
 				break
 
-# Main loop
+# Main function
 async def main():
 
 	# Get the URL to connect to
 	connect_url = get_connect_url()
-	pbc = PacbotClient(connect_url)
-	await pbc.run()
+	client = PacbotClient(connect_url)
+	await client.run()
 
 	# Once the connection is closed, end the event loop
 	loop = asyncio.get_event_loop()
