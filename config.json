@@ -1,9 +1,9 @@
 {
   "ServerIP": "localhost",
   "WebSocketPort": 3002,
-  "OneBrowserPerIP": true,
+  "OneClientPerIP": true,
 
-  "TrustedBrowserIPs": [
+  "TrustedClientIPs": [
     "[::1]",
     "localhost"
   ],

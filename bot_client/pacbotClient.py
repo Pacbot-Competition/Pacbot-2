@@ -17,7 +17,7 @@ import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 # Font color modifiers
-GREEN = '\033[31m'
+RED = '\033[31m'
 NORMAL = '\033[0m'
 
 # Get the connect URL from the config.json file
@@ -65,7 +65,7 @@ class PacbotClient:
 		# If the connection is refused, log and return
 		except ConnectionRefusedError:
 			print(
-				f'{GREEN}Websocket connection refused [{self.connect_url}]\n'
+				f'{RED}Websocket connection refused [{self.connect_url}]\n'
 				f'Are the address and port correct, and is the '
 				f'server running?{NORMAL}'
 			)
@@ -75,8 +75,9 @@ class PacbotClient:
 	async def disconnect(self) -> None:
 
 		# Close the connection
+		if self._socket_open:
+			self.connection.close()
 		self._socket_open = False
-		self.connection.close()
 
 	# Return whether the connection is open
 	def is_open(self) -> bool:

@@ -9,30 +9,30 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// One browser per IP restriction
-var oneBrowserPerIP bool = false
+// One client per IP restriction
+var oneClientPerIP bool = false
 
-// Keep track of trusted browser IPs in a set (empty-valued map)
-var trustedBrowserIPs = make(map[string](struct{}))
+// Keep track of trusted client IPs in a set (empty-valued map)
+var trustedClientIPs = make(map[string](struct{}))
 
-// Set the one browser per IP restriction based on a configuration
-func ConfigOneBrowserPerIP(_oneBrowserPerIP bool) {
-	oneBrowserPerIP = _oneBrowserPerIP
+// Set the one client per IP restriction based on a configuration
+func ConfigOneClientPerIP(_oneClientPerIP bool) {
+	oneClientPerIP = _oneClientPerIP
 }
 
-// Set the one browser per IP restriction based on a configuration
-func ConfigTrustedBrowserIPs(_trustedBrowserIPs []string) {
-	for _, ip := range _trustedBrowserIPs {
-		trustedBrowserIPs[ip] = struct{}{}
+// Set the one client per IP restriction based on a configuration
+func ConfigTrustedClientIPs(_trustedClientIPs []string) {
+	for _, ip := range _trustedClientIPs {
+		trustedClientIPs[ip] = struct{}{}
 	}
 }
 
-// Store the responses from trusted browsers in a (send-only) channel
+// Store the responses from trusted clients in a (send-only) channel
 var responseCh chan<- []byte
 
 /*
 Map to keep track of websocket client IPs; if only
-one browser connection is allowed per IP, kick the oldest
+one client connection is allowed per IP, kick the oldest
 */
 var ipQuitMap = make(map[string](chan struct{}))
 
@@ -81,7 +81,7 @@ func (ws *webSession) register() {
 
 	// If we've seen this IP address before, kick the old one and start a new one
 	ip := getIP(ws.conn)
-	if oldQuitCh, ok := ipQuitMap[ip]; ok && oneBrowserPerIP {
+	if oldQuitCh, ok := ipQuitMap[ip]; ok && oneClientPerIP {
 		oldQuitCh <- struct{}{}
 	}
 
@@ -89,7 +89,7 @@ func (ws *webSession) register() {
 		Determine if we trust this new connection, by checking against configured
 		trusted connections
 	*/
-	_, trusted := trustedBrowserIPs[ip]
+	_, trusted := trustedClientIPs[ip]
 	if !trusted {
 		ws.readEn = false
 	}
@@ -103,10 +103,10 @@ func (ws *webSession) register() {
 		// Add this web session to the web sessions set
 		openWebSessions[ws] = struct{}{}
 		if trusted {
-			log.Printf("\033[34m[%d -> %d] trusted browser connected\033[0m\n",
+			log.Printf("\033[34m[%d -> %d] trusted client connected\033[0m\n",
 				len(openWebSessions)-1, len(openWebSessions))
 		} else {
-			log.Printf("\033[34m[%d -> %d] browser connected\033[0m\n",
+			log.Printf("\033[34m[%d -> %d] client connected\033[0m\n",
 				len(openWebSessions)-1, len(openWebSessions))
 		}
 	}
@@ -129,10 +129,10 @@ func (ws *webSession) unregister() {
 	{
 		// Print information regarding the disconnect
 		if newConnectionsAllowed || (len(openWebSessions) > 0) {
-			log.Printf("\033[33m[%d -> %d] browser disconnected\033[0m\n",
+			log.Printf("\033[33m[%d -> %d] client disconnected\033[0m\n",
 				len(openWebSessions), len(openWebSessions)-1)
 		} else {
-			log.Printf("\033[33m[X -> X] browser(s) blocked\033[0m\n")
+			log.Printf("\033[33m[X -> X] client(s) blocked\033[0m\n")
 		}
 
 		// Remove this websession from the open web sessions set

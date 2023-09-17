@@ -19,7 +19,7 @@ var muOWS sync.RWMutex
 
 /*
 Websockets are the way that the server will communicate with
-the browser clients over the LAN. When connecting to a web-socket,
+the clients over the LAN. When connecting to a web-socket,
 we connect normally over HTTP and then upgrade the
 connection upon agreement between the server and client.
 */

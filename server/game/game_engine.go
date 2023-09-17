@@ -183,7 +183,7 @@ func (ge *GameEngine) RunLoop() {
 		/*
 			If the web input channel hits full capacity, send a terminal warning
 
-			What this means: either the browsers are sending too much input,
+			What this means: either the clients are sending too much input,
 			or the game loop can't keep up
 		*/
 		default:

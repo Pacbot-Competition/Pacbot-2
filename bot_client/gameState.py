@@ -17,7 +17,6 @@ class GhostColors(IntEnum):
 	CYAN = 2
 	ORANGE = 3
 
-# TODO
 class Location:
 	''' Location of an entity in the game engine '''
 
@@ -51,7 +50,6 @@ class Location:
 		# Get the column value (last 6 bits)
 		self.col = col_uint8 & 0x3f
 
-# TODO
 class Ghost:
 	''' Location and auxiliary info of a ghost in the game engine '''
 

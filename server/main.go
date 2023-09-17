@@ -18,8 +18,8 @@ func main() {
 	conf := GetConfig()
 
 	// Use this configuration info to set up server subunits
-	webserver.ConfigOneBrowserPerIP(conf.OneBrowserPerIP)
-	webserver.ConfigTrustedBrowserIPs(conf.TrustedBrowserIPs)
+	webserver.ConfigOneClientPerIP(conf.OneClientPerIP)
+	webserver.ConfigTrustedClientIPs(conf.TrustedClientIPs)
 
 	// Make channels for communication between web broker and game engine
 	webBroadcastCh := make(chan []byte, 100)

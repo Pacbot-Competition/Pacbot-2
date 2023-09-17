@@ -15,13 +15,13 @@ var newConnectionsAllowed = true
 // Mutex to protect numActiveWebBrokerLoops
 var muAWB sync.Mutex
 
-// Wait group to safely close all open browsers when quitting
+// Wait group to safely close all open clients when quitting
 var wgQuit *sync.WaitGroup
 
 /*
 A web-broker object, to act as an intermediary between web sessions
 and messages from the game engine - its responsibility is to forward byte
-messages from the game engine to the browsers and vice versa
+messages from the game engine to the clients and vice versa
 */
 type WebBroker struct {
 	quitCh      chan struct{}
