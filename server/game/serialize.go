@@ -45,7 +45,7 @@ func serUint16(num uint16, outputBuf []byte, startIdx int) int {
 func serUint32(num uint32, outputBuf []byte, startIdx int) int {
 
 	// Loop over each of the 4 bytes within the row (MSB first)
-	for byteIdx := int(numColors) - 1; byteIdx >= 0; byteIdx-- {
+	for byteIdx := 3; byteIdx >= 0; byteIdx-- {
 
 		// Serialize the byte
 		outputBuf[startIdx] = getByte(num, byteIdx)

@@ -6,8 +6,8 @@ import asyncio
 
 # Websockets (for communication with the server)
 from websockets.sync.client import connect, ClientConnection # type: ignore
-from websockets.exceptions import ConnectionClosedError
-from websockets.typing import Data
+from websockets.exceptions import ConnectionClosedError # type: ignore
+from websockets.typing import Data # type: ignore
 
 # Game state
 from gameState import GameState
@@ -101,6 +101,7 @@ class PacbotClient:
 				else:
 					message_bytes = message.encode('ascii') # type: ignore
 
+				# Update the state, given this message from the server
 				self.state.update(message_bytes)
 
 			# Break once the connection is closed
