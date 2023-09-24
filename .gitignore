@@ -1,3 +1,4 @@
 pacbot_server
 **/node_modules
 **/__pycache__/
+**/.idea
