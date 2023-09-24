@@ -9,6 +9,10 @@ import (
 	"sync"
 )
 
+const (
+	PORT = 3002
+)
+
 func main() {
 
 	// Disable logging timestamps
@@ -31,6 +35,7 @@ func main() {
 	// Websocket setup (package webserver)
 	wb := webserver.NewWebBroker(webBroadcastCh, webResponseCh, &wgQuit)
 	go wb.RunLoop() // Run the web broker loop asynchronously
+	fmt.Printf("[Start] Server running on :%v\n", PORT)
 	http.HandleFunc("/", webserver.WebSocketHandler)
 	go http.ListenAndServe(fmt.Sprintf(":%d", conf.WebSocketPort), nil)
 

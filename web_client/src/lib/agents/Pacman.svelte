@@ -82,7 +82,7 @@
 
 {#if showPacman}
   <div
-    class='pacman {clip ? 'clip' : ''} eating'
+    class={`pacman ${clip ? 'clip' : ''} eating`}
     style:--grid-size='{gridSize}px'
     style:--dir-angle='{rotation}deg'
     style:left='{gridSize * posX}px'
