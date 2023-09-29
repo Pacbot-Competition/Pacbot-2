@@ -12,6 +12,9 @@ from websockets.typing import Data # type: ignore
 # Game state
 from gameState import GameState
 
+# Decision module
+from decisionModule import DecisionModule
+
 # Restore the ability to use Ctrl + C within asyncio
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -36,26 +39,46 @@ class PacbotClient:
 	Pacbot game server, using asyncio.
 	'''
 
-	# Constructor
 	def __init__(self, connect_url: str) -> None:
+		'''
+		Construct a new Pacbot client object
+		'''
+
+		# Connection URL (starts with ws://)
 		self.connect_url: str = connect_url
+
+		# Private variable to store whether the socket is open
 		self._socket_open: bool = False
+
+		# Connection object to communicate with the server
 		self.connection: ClientConnection
+
+		# Game state object to store the game information
 		self.state: GameState = GameState()
 
-	# Connect and run
+		# Decision module (policy) to make high-level decisions
+		self.policy: DecisionModule = DecisionModule(self.state)
+
 	async def run(self) -> None:
+		'''
+		Connect to the server, then run
+		'''
 
 		# Connect to the websocket server
 		await self.connect()
 
 		try: # Try receiving messages indefinitely
-			await self.recv_loop()
+			await asyncio.gather(
+				self.recv_loop(),
+				self.policy.decision_loop()
+			)
 		finally: # Disconnect once the connection is over
 			await self.disconnect()
 
-	# Connect to the websocket server
 	async def connect(self) -> None:
+		'''
+		Connect to the websocket server
+		'''
 
 		# Connect to the specified URL
 		try:
@@ -71,8 +94,10 @@ class PacbotClient:
 			)
 			return
 
-	# Disconnect from the websocket server
 	async def disconnect(self) -> None:
+		'''
+		Disconnect from the websocket server
+		'''
 
 		# Close the connection
 		if self._socket_open:
@@ -81,10 +106,15 @@ class PacbotClient:
 
 	# Return whether the connection is open
 	def is_open(self) -> bool:
+		'''
+		Check whether the connection is open (unused)
+		'''
 		return self._socket_open
 
-	# Receive loop for capturing messages
 	async def recv_loop(self) -> None:
+		'''
+		Receive loop for capturing messages from the server
+		'''
 
 		# Receive values as long as the connection is open
 		while self._socket_open:
@@ -104,6 +134,9 @@ class PacbotClient:
 
 				# Update the state, given this message from the server
 				self.state.update(message_bytes)
+
+				# Free the event loop to allow another decision
+				await asyncio.sleep(0)
 
 			# Break once the connection is closed
 			except ConnectionClosedError:

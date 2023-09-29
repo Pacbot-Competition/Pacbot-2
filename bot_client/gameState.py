@@ -5,30 +5,42 @@ from enum import IntEnum
 from struct import unpack_from
 
 class GameMode(IntEnum):
-	''' Enum of possible game modes '''
+	'''
+	Enum of possible game modes
+	'''
+
 	PAUSED = 0
 	SCATTER = 1
 	CHASE = 2
 
 class GhostColors(IntEnum):
-	''' Enum of possible ghost names '''
+	'''
+	Enum of possible ghost names
+	'''
+
 	RED = 0
 	PINK = 1
 	CYAN = 2
 	ORANGE = 3
 
 class Location:
-	''' Location of an entity in the game engine '''
+	'''
+	Location of an entity in the game engine
+	'''
 
-	# Constructor
 	def __init__(self) -> None:
+		'''
+		Construct a new location state object
+		'''
 		self.rowDir: int  = 0
 		self.row: int     = 32
 		self.colDir: int  = 0
 		self.col: int     = 32
 
-	# Update location
 	def update(self, loc_uint16: int) -> None:
+		'''
+		Update a location, based on a 2-byte serialization
+		'''
 
 		# Get the row and column bytes
 		row_uint8: int = loc_uint16 >> 8
@@ -51,10 +63,14 @@ class Location:
 		self.col = col_uint8 & 0x3f
 
 class Ghost:
-	''' Location and auxiliary info of a ghost in the game engine '''
+	'''
+	Location and auxiliary info of a ghost in the game engine
+	'''
 
-	# Constructor
 	def __init__(self, color: GhostColors) -> None:
+		'''
+		Construct a new ghost state object
+		'''
 
 		# Set the color for this ghost
 		self.color: GhostColors = color
@@ -62,8 +78,11 @@ class Ghost:
 		self.frightCycles: int = 0
 		self.spawning: bool = bool(True)
 
-	# Update auxiliary info
 	def updateAux(self, aux_info: int) -> None:
+		'''
+		Update auxiliary info (fright cycles and spawning flag)
+		'''
+
 		self.frightCycles = aux_info & 0xff
 		self.spawning = bool(aux_info >> 7)
 
@@ -73,13 +92,18 @@ class GameState:
 	from the server to make querying the game state simple.
 	'''
 
-	# Constructor
 	def __init__(self) -> None:
+		'''
+		Construct a new game state object
+		'''
 
 		# Big endian format specifier
 		self.format: str = '>'
 
-		''' A list of important game state attributes (from game engine) '''
+		# Internal variable to lock the state
+		self._locked: bool = False
+
+		#--- Important game state attributes (from game engine) ---#
 
 		# 2 bytes
 		self.currTicks: int = 0
@@ -121,8 +145,40 @@ class GameState:
 		self.pelletArr: list[int]
 		self.format += (31 * 'I')
 
-	# Update, given a bytes object from the client
+	def lock(self) -> None:
+		'''
+		Lock the game state, to prevent updates
+		'''
+
+		# Lock the state by updating the internal state variable
+		self._locked = True
+
+	def unlock(self) -> None:
+		'''
+		Unlock the game state, to allow updates
+		'''
+
+		# Unlock the state by updating the internal state variable
+		self._locked = False
+
+	def is_locked(self) -> bool:
+		'''
+		Check if the game state is locked
+		'''
+
+		# Unlock the state by updating the internal state variable
+		return self._locked
+
+	#
 	def update(self, state: bytes) -> None:
+		'''
+		Update this game state, given a bytes object from the client
+		'''
+
+		# If the state is locked, don't update it
+		if self._locked:
+			print('o') # TODO: Remove
+			return
 
 		# Unpack the values based on the format string
 		unpacked: tuple[int, ...] = unpack_from(self.format, state, 0)
@@ -159,4 +215,7 @@ class GameState:
 
 		# Pellet info
 		self.pelletArr = list(unpacked)[16:]
+
+		# TODO: Remove
+		print('+')
 
