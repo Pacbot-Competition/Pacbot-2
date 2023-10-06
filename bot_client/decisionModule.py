@@ -31,13 +31,13 @@ class DecisionModule:
 			# client may fall behind on updating the game state!
 
 			# Lock the game state
-			self.state.lock()
+			# self.state.lock()
 
 			# Replace this with the actual decisions for Pacbot
 			await asyncio.sleep(1)
 
 			# Lock the game state
-			self.state.unlock()
+			# self.state.unlock()
 
 			# Free up the event loop (a good chance to talk to the bot!)
 			await asyncio.sleep(1)

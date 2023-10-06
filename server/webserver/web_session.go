@@ -103,11 +103,11 @@ func (ws *webSession) register() {
 		// Add this web session to the web sessions set
 		openWebSessions[ws] = struct{}{}
 		if trusted {
-			log.Printf("\033[34m[%d -> %d] trusted client connected\033[0m\n",
-				len(openWebSessions)-1, len(openWebSessions))
+			log.Printf("\033[34m[%d -> %d] trusted client connected (%s)\033[0m\n",
+				len(openWebSessions)-1, len(openWebSessions), ip)
 		} else {
-			log.Printf("\033[34m[%d -> %d] client connected\033[0m\n",
-				len(openWebSessions)-1, len(openWebSessions))
+			log.Printf("\033[34m[%d -> %d] client connected (%s)\033[0m\n",
+				len(openWebSessions)-1, len(openWebSessions), ip)
 		}
 	}
 	muOWS.Unlock()
@@ -121,6 +121,10 @@ func (ws *webSession) unregister() {
 	ws.conn.Close()
 	close(ws.sendCh)
 
+	// Record the IP address of the disconnecting client
+	ip := getIP(ws.conn)
+	_, trusted := trustedClientIPs[ip]
+
 	/*
 		Lock the mutex so that other channels will not read the open web
 		sessions map until this is complete
@@ -129,8 +133,13 @@ func (ws *webSession) unregister() {
 	{
 		// Print information regarding the disconnect
 		if newConnectionsAllowed || (len(openWebSessions) > 0) {
-			log.Printf("\033[33m[%d -> %d] client disconnected\033[0m\n",
-				len(openWebSessions), len(openWebSessions)-1)
+			if trusted {
+				log.Printf("\033[33m[%d -> %d] trusted client disconnected (%s)\033[0m\n",
+					len(openWebSessions), len(openWebSessions)-1, ip)
+			} else {
+				log.Printf("\033[33m[%d -> %d] client disconnected (%s)\033[0m\n",
+					len(openWebSessions), len(openWebSessions)-1, ip)
+			}
 		} else {
 			log.Printf("\033[33m[X -> X] client(s) blocked\033[0m\n")
 		}

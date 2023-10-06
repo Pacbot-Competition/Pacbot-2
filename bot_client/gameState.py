@@ -4,6 +4,9 @@ from enum import IntEnum
 # Struct class (for processing)
 from struct import unpack_from
 
+# Internal representation of walls
+from walls import wallArr
+
 class GameMode(IntEnum):
 	'''
 	Enum of possible game modes
@@ -12,6 +15,13 @@ class GameMode(IntEnum):
 	PAUSED = 0
 	SCATTER = 1
 	CHASE = 2
+
+# Terminal colors, based on the game mode
+GameModeColors = {
+	GameMode.PAUSED:  '\033[2m',
+	GameMode.CHASE:   '\033[33m',
+	GameMode.SCATTER: '\033[32m'
+}
 
 class GhostColors(IntEnum):
 	'''
@@ -22,6 +32,16 @@ class GhostColors(IntEnum):
 	PINK = 1
 	CYAN = 2
 	ORANGE = 3
+
+class Direction(IntEnum):
+	'''
+	Enum of possible directions
+	'''
+
+	UP = 0
+	LEFT = 1
+	DOWN = 2
+	RIGHT = 3
 
 class Location:
 	'''
@@ -61,6 +81,13 @@ class Location:
 
 		# Get the column value (last 6 bits)
 		self.col = col_uint8 & 0x3f
+
+	def at(self, row: int, col: int):
+		'''
+		Determine whether a row and column intersect with this location
+		'''
+
+		return (self.row == row) and (self.col == col)
 
 class Ghost:
 	'''
@@ -103,6 +130,10 @@ class GameState:
 		# Internal variable to lock the state
 		self._locked: bool = False
 
+		# Internal representation of walls:
+		# 31 * 4 bytes = 31 * (32-bit integer bitset)
+		self.wallArr: list[int] = wallArr
+
 		#--- Important game state attributes (from game engine) ---#
 
 		# 2 bytes
@@ -142,7 +173,7 @@ class GameState:
 		self.format += 'H'
 
 		# 31 * 4 bytes = 31 * (32-bit integer bitset)
-		self.pelletArr: list[int]
+		self.pelletArr: list[int] = [0 for _ in range(31)]
 		self.format += (31 * 'I')
 
 	def lock(self) -> None:
@@ -169,7 +200,6 @@ class GameState:
 		# Unlock the state by updating the internal state variable
 		return self._locked
 
-	#
 	def update(self, state: bytes) -> None:
 		'''
 		Update this game state, given a bytes object from the client
@@ -177,7 +207,6 @@ class GameState:
 
 		# If the state is locked, don't update it
 		if self._locked:
-			print('o') # TODO: Remove
 			return
 
 		# Unpack the values based on the format string
@@ -214,8 +243,73 @@ class GameState:
 		self.fruitLoc.update(unpacked[15])
 
 		# Pellet info
-		self.pelletArr = list(unpacked)[16:]
+		self.pelletArr = list[int](unpacked)[16:]
 
-		# TODO: Remove
-		print('+')
+		# Display the game state (i.e., terminal printer)
+		self.display()
 
+	def pelletAt(self, row: int, col: int):
+		'''
+		Helper function to check if a pellet is at a given location
+		'''
+
+		return bool((self.pelletArr[row] >> col) & 1)
+
+	def wallAt(self, row: int, col: int):
+		'''
+		Helper function to check if a wall is at a given location
+		'''
+
+		return bool((self.wallArr[row] >> col) & 1)
+
+	def display(self):
+		'''
+		Helper function to display the game state in the terminal
+		'''
+
+		# Print the tick number, colored based on the mode
+		print(f'{GameModeColors[self.gameMode]}------- time = {self.currTicks:5d} -------\033[0m')
+
+		# Loop over all 31 rows
+		for row in range(31):
+
+			# For each cell, choose a character based on the entities in it
+			for col in range(28):
+
+				# Red ghost
+				if self.ghosts[GhostColors.RED].location.at(row, col):
+					print('\033[31m@\033[0m', end='')
+
+				# Pink ghost
+				elif self.ghosts[GhostColors.PINK].location.at(row, col):
+					print('\033[38;5;199m@\033[0m', end='')
+
+				# Cyan ghost
+				elif self.ghosts[GhostColors.CYAN].location.at(row, col):
+					print('\033[36m@\033[0m', end='')
+
+				# Orange ghost
+				elif self.ghosts[GhostColors.ORANGE].location.at(row, col):
+					print('\033[38;5;208m@\033[0m', end='')
+
+				# Pacman
+				elif self.pacmanLoc.at(row, col):
+					print('\033[33mP\033[0m', end='')
+
+				# Wall
+				elif self.wallAt(row, col):
+					print('\033[2m#\033[0m', end='')
+
+				# Pellet
+				elif self.pelletAt(row, col):
+					print('.', end='')
+
+				# Empty space
+				else:
+					print(' ', end='')
+
+			# New line at end of row
+			print()
+
+		# New line at end of display
+		print()

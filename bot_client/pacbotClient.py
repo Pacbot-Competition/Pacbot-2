@@ -68,10 +68,11 @@ class PacbotClient:
 		await self.connect()
 
 		try: # Try receiving messages indefinitely
-			await asyncio.gather(
-				self.recv_loop(),
-				self.policy.decision_loop()
-			)
+			if self._socket_open:
+				await asyncio.gather(
+          self.recv_loop(),
+          self.policy.decision_loop()
+        )
 		finally: # Disconnect once the connection is over
 			await self.disconnect()
 
