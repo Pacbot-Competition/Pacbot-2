@@ -18,13 +18,13 @@ class DecisionModule:
 		# Game state object to store the game information
 		self.state = state
 
-	async def decision_loop(self) -> None:
+	async def decisionLoop(self) -> None:
 		'''
 		Decision loop for Pacbot
 		'''
 
 		# Receive values as long as we have access
-		while True:
+		while self.state.isConnected():
 
 			# WARNING: 'await' statements should be routinely placed
 			# to free the event loop to receive messages, or the
@@ -34,10 +34,13 @@ class DecisionModule:
 			# self.state.lock()
 
 			# Replace this with the actual decisions for Pacbot
-			await asyncio.sleep(1)
+			await asyncio.sleep(0.1)
 
 			# Lock the game state
 			# self.state.unlock()
 
+			# Writing back to the server, as a test (move right)
+			self.state.writeServerBuf.append(b'd')
+
 			# Free up the event loop (a good chance to talk to the bot!)
-			await asyncio.sleep(1)
+			await asyncio.sleep(0.1)
