@@ -184,14 +184,15 @@ func (ws *webSession) readLoop() {
 				websocket.CloseNormalClosure,
 			)
 			serverCloseErr := (err == websocket.ErrCloseSent)
+			abnormalCloseErr := websocket.IsUnexpectedCloseError(err)
 			_, netErr := err.(*net.OpError)
-			if clientCloseErr || serverCloseErr || netErr {
+			if clientCloseErr || serverCloseErr || netErr || abnormalCloseErr {
 				return
 			}
 
 			closeErr, ok := err.(*websocket.CloseError)
 			if ok && closeErr.Code == websocket.CloseNormalClosure {
-				log.Println("caught!")
+				return
 			}
 
 			// For all other unspecified errors, log them and quit
@@ -253,8 +254,9 @@ func (ws *webSession) sendLoop() {
 				websocket.CloseNormalClosure,
 			)
 			serverCloseErr := (err == websocket.ErrCloseSent)
+			abnormalCloseErr := websocket.IsUnexpectedCloseError(err)
 			_, netErr := err.(*net.OpError)
-			if clientCloseErr || serverCloseErr || netErr {
+			if clientCloseErr || serverCloseErr || netErr || abnormalCloseErr {
 				return
 			}
 

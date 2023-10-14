@@ -7,6 +7,9 @@ from struct import unpack_from
 # Internal representation of walls
 from walls import wallArr
 
+# Buffer to collect messages to write to the server
+from collections import deque
+
 class GameMode(IntEnum):
 	'''
 	Enum of possible game modes
@@ -102,16 +105,16 @@ class Ghost:
 		# Set the color for this ghost
 		self.color: GhostColors = color
 		self.location: Location = Location()
-		self.frightCycles: int = 0
+		self.frightSteps: int = 0
 		self.spawning: bool = bool(True)
 
-	def updateAux(self, aux_info: int) -> None:
+	def updateAux(self, auxInfo: int) -> None:
 		'''
-		Update auxiliary info (fright cycles and spawning flag)
+		Update auxiliary info (fright steps and spawning flag)
 		'''
 
-		self.frightCycles = aux_info & 0xff
-		self.spawning = bool(aux_info >> 7)
+		self.frightSteps = auxInfo & 0xff
+		self.spawning = bool(auxInfo >> 7)
 
 class GameState:
 	'''
@@ -129,6 +132,12 @@ class GameState:
 
 		# Internal variable to lock the state
 		self._locked: bool = False
+
+		# Keep track of whether the client is connected
+		self._connected: bool = False
+
+		# Buffer of messages to write back to the server
+		self.writeServerBuf: deque[bytes] = deque[bytes](maxlen=6)
 
 		# Internal representation of walls:
 		# 31 * 4 bytes = 31 * (32-bit integer bitset)
@@ -192,13 +201,29 @@ class GameState:
 		# Unlock the state by updating the internal state variable
 		self._locked = False
 
-	def is_locked(self) -> bool:
+	def isLocked(self) -> bool:
 		'''
 		Check if the game state is locked
 		'''
 
-		# Unlock the state by updating the internal state variable
+		# Return the internal 'locked' state variable
 		return self._locked
+
+	def setConnectionStatus(self, connected: bool) -> None:
+		'''
+		Set the connection status of this game state's client
+		'''
+
+		# Update the internal 'connected' state variable
+		self._connected = connected
+
+	def isConnected(self) -> bool:
+		'''
+		Check if the client attached to the game state is connected
+		'''
+
+		# Return the internal 'connected' state variable
+		return self._connected
 
 	def update(self, state: bytes) -> None:
 		'''
