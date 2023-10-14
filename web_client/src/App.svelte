@@ -116,6 +116,8 @@
   let fruitRowState = 32;
   let fruitColState = 32;
 
+  let numActiveGhosts = config.NumActiveGhosts;
+
   let redRowState = 11;
   let redColState = 13 | Directions.Left; // left
   let redFrightState = 0 | 128;
@@ -368,45 +370,53 @@
     {pacmanColState}
   />
 
-  <Ghost
-    {gridSize}
-    {modTicks}
-    {updatePeriod}
-    rowState={redRowState}
-    colState={redColState}
-    frightState={redFrightState}
-    color='red'
-  />
+  {#if numActiveGhosts >= 1}
+    <Ghost
+      {gridSize}
+      {modTicks}
+      {updatePeriod}
+      rowState={redRowState}
+      colState={redColState}
+      frightState={redFrightState}
+      color='red'
+    />
+  {/if}
 
-  <Ghost
-    {gridSize}
-    {modTicks}
-    {updatePeriod}
-    rowState={pinkRowState}
-    colState={pinkColState}
-    frightState={pinkFrightState}
-    color='pink'
-  />
+  {#if numActiveGhosts >= 2}
+    <Ghost
+      {gridSize}
+      {modTicks}
+      {updatePeriod}
+      rowState={pinkRowState}
+      colState={pinkColState}
+      frightState={pinkFrightState}
+      color='pink'
+    />
+  {/if}
 
-  <Ghost
-    {gridSize}
-    {modTicks}
-    {updatePeriod}
-    rowState={cyanRowState}
-    colState={cyanColState}
-    frightState={cyanFrightState}
-    color='cyan'
-  />
+  {#if numActiveGhosts >= 3}
+    <Ghost
+      {gridSize}
+      {modTicks}
+      {updatePeriod}
+      rowState={cyanRowState}
+      colState={cyanColState}
+      frightState={cyanFrightState}
+      color='cyan'
+    />
+  {/if}
 
-  <Ghost
-    {gridSize}
-    {modTicks}
-    {updatePeriod}
-    rowState={orangeRowState}
-    colState={orangeColState}
-    frightState={orangeFrightState}
-    color='orange'
-  />
+  {#if numActiveGhosts >= 4}
+    <Ghost
+      {gridSize}
+      {modTicks}
+      {updatePeriod}
+      rowState={orangeRowState}
+      colState={orangeColState}
+      frightState={orangeFrightState}
+      color='orange'
+    />
+  {/if}
 
   <Mps
     {gridSize}
