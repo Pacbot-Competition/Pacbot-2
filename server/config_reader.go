@@ -12,6 +12,7 @@ type Configuration struct {
 	WebSocketPort    int
 	OneClientPerIP   bool
 	GameFPS          int32
+	NumActiveGhosts  uint8
 	TrustedClientIPs []string
 }
 

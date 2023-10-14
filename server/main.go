@@ -35,6 +35,7 @@ func main() {
 	go http.ListenAndServe(fmt.Sprintf(":%d", conf.WebSocketPort), nil)
 
 	// Game engine setup (package game)
+	game.ConfigNumActiveGhosts(min(conf.NumActiveGhosts, 4))
 	ge := game.NewGameEngine(webBroadcastCh, webResponseCh, &wgQuit, conf.GameFPS)
 	go ge.RunLoop() // Run the game engine loop asynchronously
 

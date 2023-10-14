@@ -12,6 +12,11 @@ func (g *ghostState) reset() {
 	// Mark this operation as done once we return
 	defer g.game.wgGhosts.Done()
 
+	// If the ghost is inactive (in a game with fewer ghosts), skip
+	if g.color >= numActiveGhosts {
+		return
+	}
+
 	// Set the ghost to be trapped, spawning, and not frightened
 	g.setSpawning(true)
 	g.setTrappedSteps(ghostTrappedSteps[g.color])
@@ -34,6 +39,11 @@ func (g *ghostState) respawn() {
 
 	// Mark this operation as done once we return
 	defer g.game.wgGhosts.Done()
+
+	// If the ghost is inactive (in a game with fewer ghosts), skip
+	if g.color >= numActiveGhosts {
+		return
+	}
 
 	// Set the ghost to be eaten and spawning
 	g.setSpawning(true)
