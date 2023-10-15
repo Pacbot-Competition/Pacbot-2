@@ -96,6 +96,23 @@ func (gs *gameState) serGameMode(outputBuf []byte, startIdx int) int {
 	return serUint8(gs.getMode(), outputBuf, startIdx)
 }
 
+/*
+Serialize the number of steps until the mode changes, in addition to the
+duration of the mode in steps (2 bytes)
+*/
+func (gs *gameState) serModeSteps(outputBuf []byte, startIdx int) int {
+
+	// Serialize the number of mode steps
+	startIdx = serUint8(gs.getModeSteps(), outputBuf, startIdx)
+
+	// Serialize the duration of this (last unpaused) mode
+	modeDuration := modeDurations[gs.getLastUnpausedMode()]
+	startIdx = serUint8(modeDuration, outputBuf, startIdx)
+
+	// Return the starting index of the next field
+	return startIdx
+}
+
 // Serialize the current score (2 bytes)
 func (gs *gameState) serCurrScore(outputBuf []byte, startIdx int) int {
 
@@ -211,6 +228,7 @@ func (gs *gameState) serFull(outputBuf []byte, startIdx int) int {
 	startIdx = gs.serCurrTicks(outputBuf, startIdx)
 	startIdx = gs.serUpdatePeriod(outputBuf, startIdx)
 	startIdx = gs.serGameMode(outputBuf, startIdx)
+	startIdx = gs.serModeSteps(outputBuf, startIdx)
 
 	// General game state information
 	startIdx = gs.serCurrScore(outputBuf, startIdx)
