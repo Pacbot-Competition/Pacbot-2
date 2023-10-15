@@ -158,6 +158,11 @@ class GameState:
 		self.format += 'B'
 
 		# 2 bytes
+		self.modeSteps: int = 0
+		self.modeDuration: int = 255
+		self.format += 'BB'
+
+		# 2 bytes
 		self.currScore: int = 0
 		self.format += 'H'
 
@@ -241,37 +246,39 @@ class GameState:
 		self.currTicks    = unpacked[0]
 		self.updatePeriod = unpacked[1]
 		self.gameMode     = unpacked[2]
-		self.currScore    = unpacked[3]
-		self.currLevel    = unpacked[4]
-		self.currLives    = unpacked[5]
+		self.modeSteps    = unpacked[3]
+		self.modeDuration = unpacked[4]
+		self.currScore    = unpacked[5]
+		self.currLevel    = unpacked[6]
+		self.currLives    = unpacked[7]
 
 		# Red ghost info
-		self.ghosts[GhostColors.RED].location.update(unpacked[6])
-		self.ghosts[GhostColors.RED].updateAux(unpacked[7])
+		self.ghosts[GhostColors.RED].location.update(unpacked[8])
+		self.ghosts[GhostColors.RED].updateAux(unpacked[9])
 
 		# Pink ghost info
-		self.ghosts[GhostColors.PINK].location.update(unpacked[8])
-		self.ghosts[GhostColors.PINK].updateAux(unpacked[9])
+		self.ghosts[GhostColors.PINK].location.update(unpacked[10])
+		self.ghosts[GhostColors.PINK].updateAux(unpacked[11])
 
 		# Cyan ghost info
-		self.ghosts[GhostColors.CYAN].location.update(unpacked[10])
-		self.ghosts[GhostColors.CYAN].updateAux(unpacked[11])
+		self.ghosts[GhostColors.CYAN].location.update(unpacked[12])
+		self.ghosts[GhostColors.CYAN].updateAux(unpacked[13])
 
 		# Pink ghost info
-		self.ghosts[GhostColors.ORANGE].location.update(unpacked[12])
-		self.ghosts[GhostColors.ORANGE].updateAux(unpacked[13])
+		self.ghosts[GhostColors.ORANGE].location.update(unpacked[14])
+		self.ghosts[GhostColors.ORANGE].updateAux(unpacked[15])
 
 		# Pacman location info
-		self.pacmanLoc.update(unpacked[14])
+		self.pacmanLoc.update(unpacked[16])
 
 		# Fruit location info
-		self.fruitLoc.update(unpacked[15])
+		self.fruitLoc.update(unpacked[17])
 
 		# Pellet info
-		self.pelletArr = list[int](unpacked)[16:]
+		self.pelletArr = list[int](unpacked)[18:]
 
 		# Display the game state (i.e., terminal printer)
-		self.display()
+		# self.display()
 
 	def pelletAt(self, row: int, col: int):
 		'''
@@ -327,7 +334,7 @@ class GameState:
 
 				# Pellet
 				elif self.pelletAt(row, col):
-					print('.', end='')
+					print('·', end='')
 
 				# Empty space
 				else:
