@@ -3,6 +3,7 @@ import asyncio
 
 # Game state
 from gameState import GameState
+from a_star import get_neighbors
 
 class DecisionModule:
 	'''
@@ -40,7 +41,8 @@ class DecisionModule:
 			# self.state.unlock()
 
 			# Writing back to the server, as a test (move right)
-			self.state.writeServerBuf.append(b'd')
+			#self.state.writeServerBuf.append(b'd')
+			get_neighbors(self.state)
 
 			# Free up the event loop (a good chance to talk to the bot!)
 			await asyncio.sleep(0.1)

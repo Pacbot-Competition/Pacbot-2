@@ -271,7 +271,7 @@ class GameState:
 		self.pelletArr = list[int](unpacked)[16:]
 
 		# Display the game state (i.e., terminal printer)
-		self.display()
+		#self.display() #comment out to turn off display in terminal
 
 	def pelletAt(self, row: int, col: int):
 		'''
