@@ -10,6 +10,9 @@ from walls import wallArr
 # Buffer to collect messages to write to the server
 from collections import deque
 
+# Terminal colors for formatting output text
+from terminalColors import *
+
 class GameMode(IntEnum):
 	'''
 	Enum of possible game modes
@@ -21,9 +24,9 @@ class GameMode(IntEnum):
 
 # Terminal colors, based on the game mode
 GameModeColors = {
-	GameMode.PAUSED:  '\033[2m',
-	GameMode.CHASE:   '\033[33m',
-	GameMode.SCATTER: '\033[32m'
+	GameMode.PAUSED:  DIM,
+	GameMode.CHASE:   YELLOW,
+	GameMode.SCATTER: GREEN
 }
 
 class GhostColors(IntEnum):
@@ -45,8 +48,6 @@ class Direction(IntEnum):
 	LEFT = 1
 	DOWN = 2
 	RIGHT = 3
-
-
 
 class Location:
 	'''
@@ -393,27 +394,35 @@ class GameState:
 
 				# Red ghost
 				if self.ghosts[GhostColors.RED].location.at(row, col):
-					print('\033[31m@\033[0m', end='')
+					scared = self.ghosts[GhostColors.RED].frightSteps > 0
+					print(f'{RED if not scared else BLUE}@{NORMAL}', end='')
 
 				# Pink ghost
 				elif self.ghosts[GhostColors.PINK].location.at(row, col):
-					print('\033[38;5;199m@\033[0m', end='')
+					scared = self.ghosts[GhostColors.PINK].frightSteps > 0
+					print(f'{PINK if not scared else BLUE}@{NORMAL}', end='')
 
 				# Cyan ghost
 				elif self.ghosts[GhostColors.CYAN].location.at(row, col):
-					print('\033[36m@\033[0m', end='')
+					scared = self.ghosts[GhostColors.CYAN].frightSteps > 0
+					print(f'{CYAN if not scared else BLUE}@{NORMAL}', end='')
 
 				# Orange ghost
 				elif self.ghosts[GhostColors.ORANGE].location.at(row, col):
-					print('\033[38;5;208m@\033[0m', end='')
+					scared = self.ghosts[GhostColors.ORANGE].frightSteps > 0
+					print(f'{ORANGE if not scared else BLUE}@{NORMAL}', end='')
 
 				# Pacman
 				elif self.pacmanLoc.at(row, col):
-					print('\033[33mP\033[0m', end='')
+					print(f'{YELLOW}P{NORMAL}', end='')
+
+			  # Fruit
+				elif self.fruitLoc.at(row, col):
+					print(f'{GREEN}f{NORMAL}', end='')
 
 				# Wall
 				elif self.wallAt(row, col):
-					print('\033[2m#\033[0m', end='')
+					print(f'{DIM}#{NORMAL}', end='')
 
 				# Super pellet
 				elif self.superPelletAt(row, col):
