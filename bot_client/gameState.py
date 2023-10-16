@@ -2,7 +2,7 @@
 from enum import IntEnum
 
 # Struct class (for processing)
-from struct import unpack_from
+from struct import unpack_from, pack
 
 # Internal representation of walls
 from walls import wallArr
@@ -46,6 +46,8 @@ class Direction(IntEnum):
 	DOWN = 2
 	RIGHT = 3
 
+
+
 class Location:
 	'''
 	Location of an entity in the game engine
@@ -55,6 +57,7 @@ class Location:
 		'''
 		Construct a new location state object
 		'''
+
 		self.rowDir: int  = 0
 		self.row: int     = 32
 		self.colDir: int  = 0
@@ -92,6 +95,20 @@ class Location:
 
 		return (self.row == row) and (self.col == col)
 
+	def serialize(self) -> int:
+		'''
+		Serialize this location state into a 16-bit integer (two bytes)
+		'''
+
+		# Serialize the row byte
+		row_uint8: int = (((self.rowDir & 0x03) << 6) | (self.row & 0x3f))
+
+		# Serialize the column byte
+		col_uint8: int = (((self.colDir & 0x03) << 6) | (self.col & 0x3f))
+
+		# Return the full serialization
+		return (row_uint8 << 8) | (col_uint8)
+
 class Ghost:
 	'''
 	Location and auxiliary info of a ghost in the game engine
@@ -110,11 +127,18 @@ class Ghost:
 
 	def updateAux(self, auxInfo: int) -> None:
 		'''
-		Update auxiliary info (fright steps and spawning flag)
+		Update auxiliary info (fright steps and spawning flag, 1 byte)
 		'''
 
 		self.frightSteps = auxInfo & 0xff
 		self.spawning = bool(auxInfo >> 7)
+
+	def serializeAux(self) -> int:
+		'''
+		Serialize auxiliary info (fright steps and spawning flag, 1 byte)
+		'''
+
+		return (self.spawning << 7) | (self.frightSteps)
 
 class GameState:
 	'''
@@ -230,17 +254,67 @@ class GameState:
 		# Return the internal 'connected' state variable
 		return self._connected
 
-	def update(self, state: bytes) -> None:
+	def serialize(self) -> bytes:
+		'''
+		Serialize this game state into a bytes object (for policy state storage)
+		'''
+
+		# Return a serialization with the same format as server updates
+		return pack(
+
+			# Format string
+			self.format,
+
+			# General game info
+			self.currTicks,
+			self.updatePeriod,
+			self.gameMode,
+			self.modeSteps,
+			self.modeDuration,
+			self.currScore,
+			self.currLevel,
+			self.currLives,
+
+			# Red ghost info
+			self.ghosts[GhostColors.RED].location.serialize(),
+			self.ghosts[GhostColors.RED].serializeAux(),
+
+			# Pink ghost info
+			self.ghosts[GhostColors.PINK].location.serialize(),
+			self.ghosts[GhostColors.PINK].serializeAux(),
+
+			# Cyan ghost info
+			self.ghosts[GhostColors.CYAN].location.serialize(),
+			self.ghosts[GhostColors.CYAN].serializeAux(),
+
+			# Orange ghost info
+			self.ghosts[GhostColors.ORANGE].location.serialize(),
+			self.ghosts[GhostColors.ORANGE].serializeAux(),
+
+			# Pacman location info
+			self.pacmanLoc.serialize(),
+
+			# Fruit location info
+			self.fruitLoc.serialize(),
+
+			# Pellet info
+			*self.pelletArr
+		)
+
+	def update(self, serializedState: bytes, lockOverride: bool = False) -> None:
 		'''
 		Update this game state, given a bytes object from the client
 		'''
 
 		# If the state is locked, don't update it
-		if self._locked:
+		if self._locked and not lockOverride:
 			return
 
+		print(lockOverride)
+		print(serializedState)
+
 		# Unpack the values based on the format string
-		unpacked: tuple[int, ...] = unpack_from(self.format, state, 0)
+		unpacked: tuple[int, ...] = unpack_from(self.format, serializedState, 0)
 
 		# General game info
 		self.currTicks    = unpacked[0]
@@ -264,7 +338,7 @@ class GameState:
 		self.ghosts[GhostColors.CYAN].location.update(unpacked[12])
 		self.ghosts[GhostColors.CYAN].updateAux(unpacked[13])
 
-		# Pink ghost info
+		# Orange ghost info
 		self.ghosts[GhostColors.ORANGE].location.update(unpacked[14])
 		self.ghosts[GhostColors.ORANGE].updateAux(unpacked[15])
 
@@ -280,14 +354,22 @@ class GameState:
 		# Display the game state (i.e., terminal printer)
 		# self.display()
 
-	def pelletAt(self, row: int, col: int):
+	def pelletAt(self, row: int, col: int) -> bool:
 		'''
 		Helper function to check if a pellet is at a given location
 		'''
 
 		return bool((self.pelletArr[row] >> col) & 1)
 
-	def wallAt(self, row: int, col: int):
+	def superPelletAt(self, row: int, col: int) -> bool:
+		'''
+		Helper function to check if a super pellet is at a given location
+		'''
+
+		return self.pelletAt(row, col) and \
+			((row == 3) or (row == 23)) and ((col == 1) or (col == 26))
+
+	def wallAt(self, row: int, col: int) -> bool:
 		'''
 		Helper function to check if a wall is at a given location
 		'''
@@ -300,7 +382,8 @@ class GameState:
 		'''
 
 		# Print the tick number, colored based on the mode
-		print(f'{GameModeColors[self.gameMode]}------- time = {self.currTicks:5d} -------\033[0m')
+		print(f'{GameModeColors[self.gameMode]}-------'\
+				f' time = {self.currTicks:5d} -------\033[0m')
 
 		# Loop over all 31 rows
 		for row in range(31):
@@ -331,6 +414,10 @@ class GameState:
 				# Wall
 				elif self.wallAt(row, col):
 					print('\033[2m#\033[0m', end='')
+
+				# Super pellet
+				elif self.superPelletAt(row, col):
+					print('●', end='')
 
 				# Pellet
 				elif self.pelletAt(row, col):

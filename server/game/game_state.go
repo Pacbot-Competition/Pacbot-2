@@ -260,6 +260,10 @@ func (gs *gameState) getLevel() uint8 {
 // Helper function to set the current level of the game
 func (gs *gameState) setLevel(level uint8) {
 
+	// Send a message to the terminal
+	log.Printf("\033[32mGAME: Level changed (%d -> %d) (t = %d)\033[0m\n",
+		gs.getLevel(), level, gs.getCurrTicks())
+
 	// (Write) lock the current level
 	gs.muLevel.Lock()
 	{
@@ -287,7 +291,7 @@ func (gs *gameState) incrementLevel() {
 	log.Printf("\033[32mGAME: Next level (%d -> %d) (t = %d)\033[0m\n",
 		level, level+1, gs.getCurrTicks())
 
-	// (Write) lock the current lives
+	// (Write) lock the current level
 	gs.muLevel.Lock()
 	{
 		gs.currLevel++ // Update the level
@@ -299,7 +303,7 @@ func (gs *gameState) incrementLevel() {
 	gs.muLevel.Unlock()
 }
 
-/**************************** Game Level Functions ****************************/
+/**************************** Game Lives Functions ****************************/
 
 // Helper function to get the lives left
 func (gs *gameState) getLives() uint8 {
