@@ -19,9 +19,8 @@ from decisionModule import DecisionModule
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-# Font color modifiers
-RED = '\033[31m'
-NORMAL = '\033[0m'
+# Terminal colors for formatting output text
+from terminalColors import *
 
 # Get the connect URL from the config.json file
 def getConnectURL() -> str:
