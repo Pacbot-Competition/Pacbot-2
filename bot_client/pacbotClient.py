@@ -147,6 +147,7 @@ class PacbotClient:
 
 			# Break once the connection is closed
 			except ConnectionClosedError:
+				print('Connection lost...')
 				self.state.setConnectionStatus(False)
 				break
 

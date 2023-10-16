@@ -2,7 +2,7 @@
 import asyncio
 
 # Game state
-from gameState import GameState
+from gameState import *
 
 class DecisionModule:
 	'''
@@ -36,7 +36,10 @@ class DecisionModule:
 			# Replace this with the actual decisions for Pacbot
 			await asyncio.sleep(0.1)
 
-			self.state.update(self.state.serialize(), lockOverride=True)
+			# self.state.update(self.state.serialize(), lockOverride=True)
+
+			self.state.display()
+			print(self.state.simulateAction(3, Directions.RIGHT))
 			self.state.display()
 
 			# Unlock the game state
