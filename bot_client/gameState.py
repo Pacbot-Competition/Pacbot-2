@@ -196,7 +196,7 @@ class Ghost:
 		Update auxiliary info (fright steps and spawning flag, 1 byte)
 		'''
 
-		self.frightSteps = auxInfo & 0xff
+		self.frightSteps = auxInfo & 0x3f
 		self.spawning = bool(auxInfo >> 7)
 
 	def serializeAux(self) -> int:
@@ -224,6 +224,10 @@ class Ghost:
 
 		# Set the current direction to the guess of the planned direction
 		self.location.setDirection(self.plannedDirection)
+
+		# If the ghost is frightened, drop its steps by 1
+		if self.frightSteps > 0:
+			self.frightSteps -= 1
 
 	def guessPlan(self) -> None:
 		'''
@@ -288,8 +292,10 @@ class Ghost:
 			targetCol = SCATTER_COL[self.color]
 
 		# Calculate the distance squared to the target, for all 4 moves
-		bestDistSq = 0xfffffff
-		bestDir    = Directions.UP
+		minDist = 0xfffffff
+		maxDist = -1
+		minDir  = Directions.UP
+		maxDir  = Directions.UP
 		for direction in Directions:
 			if direction != Directions.NONE:
 
@@ -306,12 +312,15 @@ class Ghost:
 						# if it is better, choose it to be the new ghost plan
 						distSqToTarget = (newRow - targetRow) * (newRow - targetRow) + \
 															(newCol - targetCol) * (newCol - targetCol)
-						if distSqToTarget < bestDistSq:
-							bestDir = direction
-							bestDistSq = distSqToTarget
+						if distSqToTarget < minDist:
+							minDir  = direction
+							minDist = distSqToTarget
+						elif distSqToTarget >= maxDist:
+							maxDir  = direction
+							maxDist = distSqToTarget
 
 		# Update the best direction to be the plan
-		self.plannedDirection = bestDir
+		self.plannedDirection = minDir if (self.frightSteps == 0) else maxDir
 
 class GameState:
 	'''
@@ -540,6 +549,31 @@ class GameState:
 		return self.pelletAt(row, col) and \
 			((row == 3) or (row == 23)) and ((col == 1) or (col == 26))
 
+	def collectPellet(self, row: int, col: int) -> None:
+		'''
+		Helper function to collect a pellet for simulation purposes
+		'''
+
+		# Return if there are no pellets to collect
+		if not self.pelletAt(row, col):
+			return
+
+		# Determine the type of pellet (super / normal)
+		superPellet: bool = self.superPelletAt(row, col)
+
+		# Remove the pellet at this location
+		self.pelletArr[row] &= (~(1 << col))
+
+		# Increase the score by this amount
+		# print(f'Score: {self.currScore} -> '\
+		#  			f'{self.currScore + (50 if superPellet else 10)}')
+		self.currScore += (50 if superPellet else 10)
+
+		# Scare the ghosts, if applicable
+		if superPellet:
+			for ghost in self.ghosts:
+				ghost.frightSteps = 40
+
 	def wallAt(self, row: int, col: int) -> bool:
 		'''
 		Helper function to check if a wall is at a given location
@@ -681,6 +715,7 @@ class GameState:
 		# Set the direction of Pacman, as chosen, and try to move one step
 		self.pacmanLoc.setDirection(pacmanDir)
 		self.pacmanLoc.advance()
+		self.collectPellet(self.pacmanLoc.row, self.pacmanLoc.col)
 
 		# Return if Pacman collides with a non-frightened ghost
 		if not self.safetyCheck():
