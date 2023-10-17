@@ -118,6 +118,9 @@ class PacbotClient:
 		Receive loop for capturing messages from the server
 		'''
 
+		# The number of ticks to keep
+		writeWaitTicks: int = 0
+
 		# Receive values as long as the connection is open
 		while self.isOpen():
 
@@ -138,9 +141,11 @@ class PacbotClient:
 				self.state.update(messageBytes)
 
 				# Write a response back to the server if necessary
-				if self.state.writeServerBuf:
+				if self.state.writeServerBuf and writeWaitTicks == 0:
 					response: bytes = self.state.writeServerBuf.popleft()
 					self.connection.send(response)
+					writeWaitTicks = 3
+				writeWaitTicks -= 1
 
 				# Free the event loop to allow another decision
 				await asyncio.sleep(0)
