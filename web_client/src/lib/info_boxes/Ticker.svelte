@@ -56,6 +56,22 @@
     fill: var(--color);
   }
 
+  /* Bar to show how long until the mode changes */
+  .mode-bar {
+
+    /* Positioning */
+    position: absolute;
+    bottom: 0;
+    right: 0;
+
+    /* Formatting */
+    opacity: 0.8;
+
+    /* Grid-size related CSS */
+    width:  calc(0.3 * var(--grid-size));
+    height: calc(3   * var(--grid-size));
+  }
+
 </style>
 
 <script>
@@ -94,6 +110,11 @@
   $: sine        = Math.sin(degToRad * degrees);
   $: longArcFlag = (degrees > 180) ? 1 : 0; // Reflexive angle condition
 
+  // Math to calculate the mode length
+  export let modeSteps;
+  export let modeDuration;
+  $: modeFraction = modeSteps / modeDuration;
+
 </script>
 
 <!-- Interactive button to toggle pausing -->
@@ -127,6 +148,20 @@
             {gridSize + gridSize * sine + pad}
             {gridSize - gridSize * cosine + pad}
           z'
+    />
+  </svg>
+
+  <svg
+    class='mode-bar'
+    style:--bar-height='{modeFraction * 3 * gridSize}px'
+    style:--color='{modeColor}'
+  >
+    <path
+    d=' M {0   * gridSize} {3 * gridSize}
+        H {0.3 * gridSize}
+        V {(1 - modeFraction) * 3 * gridSize}
+        H {0   * gridSize}
+        z'
     />
   </svg>
 </button>

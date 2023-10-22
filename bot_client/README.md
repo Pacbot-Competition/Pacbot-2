@@ -2,7 +2,8 @@ This folder contains *sample* Python code to function as a high-level client for
 
 Teams are encouraged (and expected) to modify client code to fit their navigation algorithms and robot communication protocols.
 
-To run the sample bot client, simply run `python pacbotClient.py`.
+To run the sample bot client, simply run `python pacbotClient.py`. It may be necessary to also run
+`pip install -r requirements.txt`, to get important libraries installed the first time.
 
 Other useful files:
 * `decisionModule.py`: a sample decision module (policy) with an asynchronous loop and game state locking capabilities

@@ -19,9 +19,8 @@ from decisionModule import DecisionModule
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-# Font color modifiers
-RED = '\033[31m'
-NORMAL = '\033[0m'
+# Terminal colors for formatting output text
+from terminalColors import *
 
 # Get the connect URL from the config.json file
 def getConnectURL() -> str:
@@ -119,6 +118,9 @@ class PacbotClient:
 		Receive loop for capturing messages from the server
 		'''
 
+		# The number of ticks to keep
+		writeWaitTicks: int = 0
+
 		# Receive values as long as the connection is open
 		while self.isOpen():
 
@@ -139,15 +141,18 @@ class PacbotClient:
 				self.state.update(messageBytes)
 
 				# Write a response back to the server if necessary
-				if self.state.writeServerBuf:
+				if self.state.writeServerBuf and writeWaitTicks == 0:
 					response: bytes = self.state.writeServerBuf.popleft()
 					self.connection.send(response)
+					writeWaitTicks = 3
+				writeWaitTicks -= 1
 
 				# Free the event loop to allow another decision
 				await asyncio.sleep(0)
 
 			# Break once the connection is closed
 			except ConnectionClosedError:
+				print('Connection lost...')
 				self.state.setConnectionStatus(False)
 				break
 

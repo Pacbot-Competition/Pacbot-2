@@ -2,7 +2,7 @@
 import asyncio
 
 # Game state
-from gameState import GameState
+from gameState import *
 
 class DecisionModule:
 	'''
@@ -31,16 +31,25 @@ class DecisionModule:
 			# client may fall behind on updating the game state!
 
 			# Lock the game state
-			# self.state.lock()
+			self.state.lock()
 
 			# Replace this with the actual decisions for Pacbot
 			await asyncio.sleep(0.1)
 
-			# Lock the game state
+			# self.state.update(self.state.serialize(), lockOverride=True)
+
+			self.state.display()
+			print(self.state.simulateAction(3, Directions.RIGHT))
+			self.state.display()
+
+			# Unlock the game state
 			# self.state.unlock()
 
 			# Writing back to the server, as a test (move right)
-			self.state.writeServerBuf.append(b'd')
+			# self.state.writeServerBuf.append(b'd')
 
 			# Free up the event loop (a good chance to talk to the bot!)
-			await asyncio.sleep(0.1)
+			await asyncio.sleep(1000)
+
+			# (REMOVE THIS) Unlock the game state
+			self.state.unlock()

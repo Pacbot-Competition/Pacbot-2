@@ -84,6 +84,13 @@
   // Keep track of the game mode (from the server)
   let gameMode = 0;
 
+  /*
+    Keep track of the number of steps until the mode changes, as well as the
+    mode duration (from the server)
+  */
+  let modeSteps = 0;
+  let modeDuration = 255;
+
   // Local object to encode the possible modes
   const Modes = {
     Paused:   0,
@@ -171,6 +178,10 @@
 
         // Get the game mode from the server
         gameMode          = view.getUint8(byteIdx++, false);
+
+        // Get the mode steps and duration from the server
+        modeSteps         = view.getUint8(byteIdx++, false);
+        modeDuration      = view.getUint8(byteIdx++, false);
 
         // Get the current score from the server
         currScore         = view.getUint16(byteIdx, false); byteIdx += 2;
@@ -428,6 +439,8 @@
     {modTicks}
     {updatePeriod}
     {gameMode}
+    {modeSteps}
+    {modeDuration}
     {Modes}
     {togglePause}
   />
