@@ -11,14 +11,14 @@ def get_neighbors(g: GameState):
     pacman_loc = g.pacmanLoc
     y,x = (pacman_loc.row,pacman_loc.col)
     dirs = []
-    if not g.wallAt(y+1,x):
-        dirs.append(((y+1,x),'s'))
-    if not g.wallAt(y-1,x):
-        dirs.append(((y-1,x),'w'))
-    if not g.wallAt(y,x+1):
-        dirs.append(((y,x+1),'d'))
-    if not g.wallAt(y,x-1):
-        dirs.append(((y,x-1),'a'))
+    if not g.wallAt(y + 1,x):
+        dirs.append((y + 1,x))
+    if not g.wallAt(y - 1,x):
+        dirs.append((y - 1,x))
+    if not g.wallAt(y, x + 1):
+        dirs.append((y, x + 1))
+    if not g.wallAt(y, x - 1):
+        dirs.append((y, x - 1))
     return dirs
 
 class node:
@@ -30,14 +30,22 @@ class node:
         self.h = f + g
         self.parent_node = parent_node
 
-    def get_f():
-        return f
+    def __init__ (self, y, x, parent_node=None):
+        self.y = y
+        self.x = x
+        self.f = 0
+        self.g = 0
+        self.h = 0
+        self.parent_node = parent_node
+
+    def get_f(self):
+        return self.f
     
-    def get_y():
-        return y
+    def get_y(self):
+        return self.y
     
-    def get_x():
-        return x
+    def get_x(self):
+        return self.x
 
 def pathfind(start, end):
     open_cells = []
@@ -46,13 +54,14 @@ def pathfind(start, end):
 
     open_cells.append(start)
     while len(open_cells) > 0:
+        print("test")
         current_node = open_cells[0]
         min_f = current_node.get_f()
 
         for i in range(0, len(open_cells)):
-            if open_cells[i].get_f < min_f:
+            if open_cells[i].get_f() < min_f:
                 current_node = open_cells[i]
-                min_f = open_cells[i].get_f
+                min_f = open_cells[i].get_f()
         
         open_cells.remove(current_node)
         closed_cells.append(current_node)
@@ -60,10 +69,10 @@ def pathfind(start, end):
         if current_node == end:
             return
         
-        children = [node(current_node.get_y + 1, current_node.get_x),
-                    node(current_node.get_y - 1, current_node.get_x),
-                    node(current_node.get_y, current_node.get_x + 1),
-                    node(current_node.get_y, current_node.get_x - 1)]
+        children = [node(current_node.y + 1, current_node.x),
+                    node(current_node.y - 1, current_node.x),
+                    node(current_node.y, current_node.x + 1),
+                    node(current_node.y, current_node.x - 1)]
 
         for child in children:
             if child in closed_cells:
@@ -78,3 +87,7 @@ def pathfind(start, end):
                     continue
             
             open_cells.append(child)
+
+    return 1
+
+print(pathfind(node(1,0, None), node(5,0, None)))
