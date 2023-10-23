@@ -19,10 +19,12 @@ def get_neighbors(g: GameState):
         dirs.append(((y,x+1),'d'))
     if not g.wallAt(y,x-1):
         dirs.append(((y,x-1),'a'))
-    print(dirs)
+    return dirs
 
 class node:
-    def __init__ (self, f, g, parent_node=None):
+    def __init__ (self, y, x, f, g, parent_node=None):
+        self.y = y
+        self.x = x
         self.f = f
         self.g = g
         self.h = f + g
@@ -30,6 +32,12 @@ class node:
 
     def get_f():
         return f
+    
+    def get_y():
+        return y
+    
+    def get_x():
+        return x
 
 def pathfind(start, end):
     open_cells = []
@@ -50,6 +58,23 @@ def pathfind(start, end):
         closed_cells.append(current_node)
 
         if current_node == end:
+            return
+        
+        children = [node(current_node.get_y + 1, current_node.get_x),
+                    node(current_node.get_y - 1, current_node.get_x),
+                    node(current_node.get_y, current_node.get_x + 1),
+                    node(current_node.get_y, current_node.get_x - 1)]
 
+        for child in children:
+            if child in closed_cells:
+                continue
 
+            child.g = current_node.g + get_distance((child.x, child.y), (current_node.x, current_node.y))
+            child.f = get_distance((child.x, child.y), (end.x, end.y))
+            child.h = child.g + child.f
+
+            if child in open_cells:
+                if child.g > current_node.g:
+                    continue
             
+            open_cells.append(child)
