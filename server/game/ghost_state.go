@@ -13,6 +13,17 @@ const (
 	numColors uint8 = 4
 )
 
+/*
+The number of "active" ghosts (the others are invisible and don't affect
+the progression of the game)
+*/
+var numActiveGhosts uint8 = 4
+
+// Configure the number of active ghosts
+func ConfigNumActiveGhosts(_numActiveGhosts uint8) {
+	numActiveGhosts = _numActiveGhosts
+}
+
 // Names of the ghosts (not the nicknames, just the colors, for debugging)
 var ghostNames [numColors]string = [...]string{
 	"red",
@@ -39,7 +50,9 @@ type ghostState struct {
 
 // Create a new ghost state with given location and color values
 func newGhostState(_gameState *gameState, _color uint8) *ghostState {
-	return &ghostState{
+
+	// Ghost state object
+	g := ghostState{
 		loc:           newLocationStateCopy(emptyLoc),
 		nextLoc:       newLocationStateCopy(ghostSpawnLocs[_color]),
 		scatterTarget: newLocationStateCopy(ghostScatterTargets[_color]),
@@ -50,6 +63,14 @@ func newGhostState(_gameState *gameState, _color uint8) *ghostState {
 		spawning:      true,
 		eaten:         false,
 	}
+
+	// If the color is greater than the number of active ghosts, hide this ghost
+	if _color >= numActiveGhosts {
+		g.nextLoc = newLocationStateCopy(emptyLoc)
+	}
+
+	// Return the ghost state
+	return &g
 }
 
 /*************************** Ghost Frightened State ***************************/

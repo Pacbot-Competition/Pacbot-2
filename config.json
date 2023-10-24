@@ -8,5 +8,6 @@
     "localhost"
   ],
 
-  "GameFPS": 24
+  "GameFPS": 24,
+  "NumActiveGhosts": 4
 }

@@ -1,4 +1,4 @@
-To compile this client, you will need Node installed. 
+To compile this client, you will need Node (v18+) installed.
 
 Steps to get a development server (for displaying code updates in real-time) for internal testing:
 * `npm install` (only needs to be done once, after cloning)
