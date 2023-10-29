@@ -46,8 +46,13 @@
 
   // Creating a websocket client
   var socket = new WebSocket(`ws://${config.ServerIP}:${config.WebSocketPort}`);
+  var botSocket = new WebSocket(`ws://${config.ServerIP}:${config.BotSocketPort}`);
+
   socket.binaryType = 'arraybuffer';
+  //botSocket.binaryType = 'arraybuffer';
+
   let socketOpen = false;
+  let botSocketOpen = false;
 
   /*
     This generates an empty array of pellet states
@@ -147,6 +152,12 @@
     socketOpen = true;
   });
 
+  // Handling a new connection between webClient and bot 
+  botSocket.addEventListener('open', (_) => {
+    console.log('WebSocket connection established with Bot');
+    botSocketOpen = true;
+  });
+
   // Message events
   socket.addEventListener('message', (event) => {
     if (event.data instanceof ArrayBuffer) {
@@ -236,11 +247,56 @@
     }
   });
 
+  // Message events for bot-web client connection
+  botSocket.addEventListener('message', (event) => {
+    if (typeof event.data == String)
+    {
+      console.log('Received data string');
+      console.log(event.data);
+      let content = event.data.split(" "); // Split the string into an array of strings
+
+    // content will be an array of strings
+
+    let command = content[0];
+    switch (command) {
+      case 'move': {
+        // Handle 'move' command
+        break;
+      }
+      case 'changeColor': {
+        // HERE implement the i and j coordinates to 
+        let i = content[1];
+        let j = content[2];
+        let newColor = content[3];
+
+        // Handle 'changeColor' command by getting the coordinate of the robot and changing the grid element color there to red
+        const elem = document.getElementById(`grid-element-${i}-${j}`);
+        elem.style.color = newColor;
+        break;
+      }
+      // Add other cases as needed
+
+      default: {
+        // Handle unknown command
+        break;
+      }
+    }
+  }
+  });
+
+
   // Event on close
   socket.addEventListener('close', (_) => {
     socketOpen = false;
     gameMode = Modes.Offline;
     console.log('WebSocket connection closed');
+  });
+
+  // Event on close for bot-web client connection
+  botSocket.addEventListener('close', (_) => {
+    botSocketOpen = false;
+    gameMode = Modes.Offline;
+    console.log('WebSocket connection with robot closed');
   });
 
   // Track the size of the window, to determine the grid size

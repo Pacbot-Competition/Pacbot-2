@@ -102,6 +102,7 @@
       {#each {length:28} as _, j}
         <button
           on:click={() => hello(i, j)}
+          id={`grid-element-${i}-${j}`}
           class={'grid-element' + pelletMods[pelletGrid[i][j]]}
           style:--grid-size='{gridSize}px'
         >
