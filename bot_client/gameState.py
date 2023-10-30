@@ -59,6 +59,14 @@ class Directions(IntEnum):
 D_ROW: list[int] = [-1, -0, +1, +0, +0]
 D_COL: list[int] = [-0, -1, +0, +1, +0]
 
+reversedDirections: dict[Directions, Directions] = {
+	Directions.UP:    Directions.DOWN,
+	Directions.LEFT:  Directions.RIGHT,
+	Directions.DOWN:  Directions.UP,
+	Directions.RIGHT: Directions.LEFT,
+	Directions.NONE:  Directions.NONE
+}
+
 class Location:
 	'''
 	Location of an entity in the game engine
@@ -206,6 +214,13 @@ class Ghost:
 
 		return (self.spawning << 7) | (self.frightSteps)
 
+	def isFrightened(self) -> bool:
+		'''
+		Return whether this ghost is frightened
+		'''
+
+		return (self.frightSteps > 0)
+
 	def move(self) -> None:
 		'''
 		Update the ghost's position for simulation purposes
@@ -226,7 +241,7 @@ class Ghost:
 		self.location.setDirection(self.plannedDirection)
 
 		# If the ghost is frightened, drop its steps by 1
-		if self.frightSteps > 0:
+		if self.isFrightened():
 			self.frightSteps -= 1
 
 	def guessPlan(self) -> None:
@@ -320,7 +335,7 @@ class Ghost:
 							maxDist = distSqToTarget
 
 		# Update the best direction to be the plan
-		self.plannedDirection = minDir if (self.frightSteps == 0) else maxDir
+		self.plannedDirection = minDir if (not self.isFrightened()) else maxDir
 
 class GameState:
 	'''
@@ -391,6 +406,11 @@ class GameState:
 		# 2 byte location
 		self.fruitLoc: Location = Location(self)
 		self.format += 'H'
+
+		# 2 bytes
+		self.fruitSteps: int = 0
+		self.fruitDuration: int = 30
+		self.format += 'BB'
 
 		# 31 * 4 bytes = 31 * (32-bit integer bitset)
 		self.pelletArr: list[int] = [0 for _ in range(31)]
@@ -573,6 +593,7 @@ class GameState:
 		if superPellet:
 			for ghost in self.ghosts:
 				ghost.frightSteps = 40
+				ghost.plannedDirection = reversedDirections[ghost.plannedDirection]
 
 	def wallAt(self, row: int, col: int) -> bool:
 		'''
@@ -598,29 +619,29 @@ class GameState:
 
 				# Red ghost
 				if self.ghosts[GhostColors.RED].location.at(row, col):
-					scared = self.ghosts[GhostColors.RED].frightSteps > 0
+					scared = self.ghosts[GhostColors.RED].isFrightened()
 					print(f'{RED if not scared else BLUE}@{NORMAL}', end='')
 
 				# Pink ghost
 				elif self.ghosts[GhostColors.PINK].location.at(row, col):
-					scared = self.ghosts[GhostColors.PINK].frightSteps > 0
+					scared = self.ghosts[GhostColors.PINK].isFrightened()
 					print(f'{PINK if not scared else BLUE}@{NORMAL}', end='')
 
 				# Cyan ghost
 				elif self.ghosts[GhostColors.CYAN].location.at(row, col):
-					scared = self.ghosts[GhostColors.CYAN].frightSteps > 0
+					scared = self.ghosts[GhostColors.CYAN].isFrightened()
 					print(f'{CYAN if not scared else BLUE}@{NORMAL}', end='')
 
 				# Orange ghost
 				elif self.ghosts[GhostColors.ORANGE].location.at(row, col):
-					scared = self.ghosts[GhostColors.ORANGE].frightSteps > 0
+					scared = self.ghosts[GhostColors.ORANGE].isFrightened()
 					print(f'{ORANGE if not scared else BLUE}@{NORMAL}', end='')
 
 				# Pacman
 				elif self.pacmanLoc.at(row, col):
 					print(f'{YELLOW}P{NORMAL}', end='')
 
-			  # Fruit
+				# Fruit
 				elif self.fruitLoc.at(row, col):
 					print(f'{GREEN}f{NORMAL}', end='')
 
@@ -659,7 +680,7 @@ class GameState:
 		# Check for collisions
 		for ghost in self.ghosts:
 			if ghost.location.at(pacmanRow, pacmanCol):
-				if ghost.frightSteps <= 0: # Collision; Pacman loses
+				if not ghost.isFrightened(): # Collision; Pacman loses
 					return False
 				else: # 'Respawn' the ghost
 					ghost.location.row = 32
@@ -681,7 +702,7 @@ class GameState:
 				ghost.guessPlan()
 
 		# Loop over every tick
-		for tick in range(numTicks):
+		for tick in range(1, numTicks+1):
 
 			# Keep ticking until an update
 			if (self.currTicks + tick) % self.updatePeriod != 0:
@@ -698,10 +719,18 @@ class GameState:
 			# Update the mode steps counter, and change the mode if necessary
 			self.modeSteps -= 1
 			if self.modeSteps == 0:
+
+				# Scatter -> Chase
 				if self.gameMode == GameModes.SCATTER:
 					self.gameMode = GameModes.CHASE
+
+				# Chase -> Scatter
 				elif self.gameMode == GameModes.CHASE:
 					self.gameMode = GameModes.SCATTER
+
+				# Reverse the planned directions of all ghosts
+				for ghost in self.ghosts:
+						ghost.plannedDirection = reversedDirections[ghost.plannedDirection]
 
 			# Guess the next ghost moves (will likely be inaccurate, due to inferring
 			# unknown information from other features of the game state)
