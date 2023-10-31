@@ -529,7 +529,9 @@ func (gs *gameState) handleStepEvents() {
 	}
 
 	// Decrement the mode steps
-	gs.decrementModeSteps()
+	if gs.getNumPellets() >= angerThreshold1 {
+		gs.decrementModeSteps()
+	}
 
 	// Decrement the level steps
 	gs.decrementLevelSteps()

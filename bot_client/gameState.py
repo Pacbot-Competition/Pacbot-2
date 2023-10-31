@@ -634,6 +634,11 @@ class GameState:
 			self.fruitLoc.row = 17
 			self.fruitLoc.col = 13
 
+		# When <= 20 pellets are left, keep the game in chase mode
+		if numPellets <= 20:
+			if self.gameMode == GameModes.SCATTER:
+				self.gameMode = GameModes.CHASE
+
 		# Scare the ghosts, if applicable
 		if superPellet:
 			for ghost in self.ghosts:
@@ -777,7 +782,7 @@ class GameState:
 					self.modeDuration = 180
 
 				# Chase -> Scatter
-				elif self.gameMode == GameModes.CHASE:
+				elif self.gameMode == GameModes.CHASE and self.numPellets() > 20:
 					self.gameMode = GameModes.SCATTER
 					self.modeSteps = 60
 					self.modeDuration = 60

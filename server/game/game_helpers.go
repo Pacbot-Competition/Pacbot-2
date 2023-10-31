@@ -117,11 +117,11 @@ func (gs *gameState) collectPellet(row int8, col int8) {
 	if numPellets == angerThreshold1 { // Ghosts get angry (speeding up)
 		gs.setUpdatePeriod(uint8(max(1, int(gs.getUpdatePeriod())-2)))
 		gs.setMode(chase)
-		gs.setModeSteps(0xff)
+		gs.setModeSteps(modeDurations[chase])
 	} else if numPellets == angerThreshold2 { // Ghosts get angrier
 		gs.setUpdatePeriod(uint8(max(1, int(gs.getUpdatePeriod())-2)))
 		gs.setMode(chase)
-		gs.setModeSteps(0xff)
+		gs.setModeSteps(modeDurations[chase])
 	} else if numPellets == 0 {
 		gs.levelReset()
 		gs.incrementLevel()
