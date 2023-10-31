@@ -46,6 +46,11 @@
   export let fruitRowState;
   export let fruitColState;
 
+  // Fruit steps and duration
+  export let fruitSteps;
+  export let fruitDuration;
+  $: opacity = fruitSteps / fruitDuration;
+
   // Using the & operator to pick out the 5 lowest bits
   $: posX = fruitColState & 0b11111
   $: posY = fruitRowState & 0b11111
@@ -60,6 +65,7 @@
       style:--grid-size='{~~gridSize+1}px'
       style:left='{gridSize * posX}px'
       style:top='{gridSize * posY}px'
+      style:opacity='{opacity}'
   >
 
     <!-- Left cherry -->

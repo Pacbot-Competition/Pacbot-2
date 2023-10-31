@@ -176,6 +176,14 @@ func (gs *gameState) serFruit(outputBuf []byte, startIdx int) int {
 	}
 	gs.muFruit.RUnlock()
 
+	// Serialize the number of steps the fruit has been spawned
+	fruitSteps := gs.getFruitSteps()
+	startIdx = serUint8(fruitSteps, outputBuf, startIdx)
+
+	// Serialize the duration of the fruit
+	fruitDuration := fruitDuration
+	startIdx = serUint8(fruitDuration, outputBuf, startIdx)
+
 	// Return the starting index of the next field
 	return startIdx
 }
