@@ -38,8 +38,13 @@ class DecisionModule:
 
 			# self.state.update(self.state.serialize(), lockOverride=True)
 
+			print(self.state.getGhostPlans())
 			self.state.display()
-			print(self.state.simulateAction(3, Directions.RIGHT))
+			print(self.state.simulateAction(12, Directions.RIGHT))
+
+			decompressGameState(self.state, compressGameState(self.state))
+			print(self.state.getGhostPlans())
+
 			self.state.display()
 
 			# Unlock the game state
