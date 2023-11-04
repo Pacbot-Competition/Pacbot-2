@@ -255,6 +255,10 @@ class Ghost:
 		if self.spawning:
 			return
 
+		# If the ghost is at an empty location, ignore it
+		if self.location.row >= 32 or self.location.col >= 32:
+			return
+
 		# Row and column at the next step
 		nextRow: int = self.location.row + self.location.rowDir
 		nextCol: int = self.location.col + self.location.colDir
@@ -336,6 +340,26 @@ class Ghost:
 
 		# Update the best direction to be the plan
 		self.plannedDirection = minDir if (not self.isFrightened()) else maxDir
+
+class GameStateCompressed:
+	'''
+	Compressed copy of the game state, for easier storage for path planning.
+	'''
+
+	def __init__(
+		self,
+		serialized: bytes,
+		ghostPlans: dict[GhostColors, Directions]
+	) -> None:
+		'''
+		Construct a new compressed game state object
+		'''
+
+		# Serialization of the game state, in bytes
+		self.serialized: bytes = serialized
+
+		# Store tentative ghost plans
+		self.ghostPlans: dict[GhostColors, Directions] = ghostPlans
 
 class GameState:
 	'''
@@ -505,6 +529,13 @@ class GameState:
 			*self.pelletArr
 		)
 
+	def getGhostPlans(self) -> dict[GhostColors, Directions]:
+		'''
+		Return the ghosts' planned directions to compress the game state
+		'''
+
+		return {ghost.color: ghost.plannedDirection for ghost in self.ghosts}
+
 	def update(self, serializedState: bytes, lockOverride: bool = False) -> None:
 		'''
 		Update this game state, given a bytes object from the client
@@ -557,6 +588,14 @@ class GameState:
 		# Reset our guesses of the planned ghost directions
 		for ghost in self.ghosts:
 			ghost.plannedDirection = Directions.NONE
+
+	def updateGhostPlans(self, ghostPlans: dict[GhostColors, Directions]):
+		'''
+		Update this game state, given a list of ghost planned directions
+		'''
+
+		for ghost in self.ghosts:
+			ghost.plannedDirection = ghostPlans[ghost.color]
 
 	def pelletAt(self, row: int, col: int) -> bool:
 		'''
@@ -657,9 +696,9 @@ class GameState:
 		Helper function to display the game state in the terminal
 		'''
 
-		# Print the tick number, colored based on the mode
-		print(f'{GameModeColors[self.gameMode]}-------'\
-				f' time = {self.currTicks:5d} -------\033[0m')
+		# Begin by outputting the tick number, colored based on the mode
+		out: str = f'{GameModeColors[self.gameMode]}-------'\
+				f' time = {self.currTicks:5d} -------\033[0m\n'
 
 		# Loop over all 31 rows
 		for row in range(31):
@@ -670,52 +709,52 @@ class GameState:
 				# Red ghost
 				if self.ghosts[GhostColors.RED].location.at(row, col):
 					scared = self.ghosts[GhostColors.RED].isFrightened()
-					print(f'{RED if not scared else BLUE}@{NORMAL}', end='')
+					out += f'{RED if not scared else BLUE}@{NORMAL}'
 
 				# Pink ghost
 				elif self.ghosts[GhostColors.PINK].location.at(row, col):
 					scared = self.ghosts[GhostColors.PINK].isFrightened()
-					print(f'{PINK if not scared else BLUE}@{NORMAL}', end='')
+					out += f'{PINK if not scared else BLUE}@{NORMAL}'
 
 				# Cyan ghost
 				elif self.ghosts[GhostColors.CYAN].location.at(row, col):
 					scared = self.ghosts[GhostColors.CYAN].isFrightened()
-					print(f'{CYAN if not scared else BLUE}@{NORMAL}', end='')
+					out += f'{CYAN if not scared else BLUE}@{NORMAL}'
 
 				# Orange ghost
 				elif self.ghosts[GhostColors.ORANGE].location.at(row, col):
 					scared = self.ghosts[GhostColors.ORANGE].isFrightened()
-					print(f'{ORANGE if not scared else BLUE}@{NORMAL}', end='')
+					out += f'{ORANGE if not scared else BLUE}@{NORMAL}'
 
 				# Pacman
 				elif self.pacmanLoc.at(row, col):
-					print(f'{YELLOW}P{NORMAL}', end='')
+					out += f'{YELLOW}P{NORMAL}'
 
 				# Fruit
 				elif self.fruitLoc.at(row, col):
-					print(f'{GREEN}f{NORMAL}', end='')
+					out += f'{GREEN}f{NORMAL}'
 
 				# Wall
 				elif self.wallAt(row, col):
-					print(f'{DIM}#{NORMAL}', end='')
+					out += f'{DIM}#{NORMAL}'
 
 				# Super pellet
 				elif self.superPelletAt(row, col):
-					print('●', end='')
+					out += '●'
 
 				# Pellet
 				elif self.pelletAt(row, col):
-					print('·', end='')
+					out += '·'
 
 				# Empty space
 				else:
-					print(' ', end='')
+					out += ' '
 
 			# New line at end of row
-			print()
+			out += '\n'
 
-		# New line at end of display
-		print()
+		# Print the output, with a new line at end of display
+		print(out)
 
 	def safetyCheck(self) -> bool:
 		'''
@@ -735,6 +774,7 @@ class GameState:
 				else: # 'Respawn' the ghost
 					ghost.location.row = 32
 					ghost.location.col = 32
+					ghost.spawning = True
 
 		# Otherwise, Pacman is safe
 		return True
@@ -819,3 +859,21 @@ class GameState:
 
 		# Return that Pacman was safe during this transition
 		return True
+
+def compressGameState(state: GameState) -> GameStateCompressed:
+	'''
+	Function to compress the game state into a smaller object, for easier storage
+	'''
+
+	return GameStateCompressed(state.serialize(), state.getGhostPlans())
+
+def decompressGameState(state: GameState, compressed: GameStateCompressed):
+	'''
+	Function to de-compress game state information for path planning
+	'''
+
+	# Serialization (bytes) to state
+	state.update(compressed.serialized, lockOverride=True)
+
+	# Unpack the ghost plans
+	state.updateGhostPlans(compressed.ghostPlans)
