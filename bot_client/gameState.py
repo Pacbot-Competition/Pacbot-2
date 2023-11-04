@@ -696,9 +696,9 @@ class GameState:
 		Helper function to display the game state in the terminal
 		'''
 
-		# Print the tick number, colored based on the mode
-		print(f'{GameModeColors[self.gameMode]}-------'\
-				f' time = {self.currTicks:5d} -------\033[0m')
+		# Begin by outputting the tick number, colored based on the mode
+		out: str = f'{GameModeColors[self.gameMode]}-------'\
+				f' time = {self.currTicks:5d} -------\033[0m\n'
 
 		# Loop over all 31 rows
 		for row in range(31):
@@ -709,52 +709,52 @@ class GameState:
 				# Red ghost
 				if self.ghosts[GhostColors.RED].location.at(row, col):
 					scared = self.ghosts[GhostColors.RED].isFrightened()
-					print(f'{RED if not scared else BLUE}@{NORMAL}', end='')
+					out += f'{RED if not scared else BLUE}@{NORMAL}'
 
 				# Pink ghost
 				elif self.ghosts[GhostColors.PINK].location.at(row, col):
 					scared = self.ghosts[GhostColors.PINK].isFrightened()
-					print(f'{PINK if not scared else BLUE}@{NORMAL}', end='')
+					out += f'{PINK if not scared else BLUE}@{NORMAL}'
 
 				# Cyan ghost
 				elif self.ghosts[GhostColors.CYAN].location.at(row, col):
 					scared = self.ghosts[GhostColors.CYAN].isFrightened()
-					print(f'{CYAN if not scared else BLUE}@{NORMAL}', end='')
+					out += f'{CYAN if not scared else BLUE}@{NORMAL}'
 
 				# Orange ghost
 				elif self.ghosts[GhostColors.ORANGE].location.at(row, col):
 					scared = self.ghosts[GhostColors.ORANGE].isFrightened()
-					print(f'{ORANGE if not scared else BLUE}@{NORMAL}', end='')
+					out += f'{ORANGE if not scared else BLUE}@{NORMAL}'
 
 				# Pacman
 				elif self.pacmanLoc.at(row, col):
-					print(f'{YELLOW}P{NORMAL}', end='')
+					out += f'{YELLOW}P{NORMAL}'
 
 				# Fruit
 				elif self.fruitLoc.at(row, col):
-					print(f'{GREEN}f{NORMAL}', end='')
+					out += f'{GREEN}f{NORMAL}'
 
 				# Wall
 				elif self.wallAt(row, col):
-					print(f'{DIM}#{NORMAL}', end='')
+					out += f'{DIM}#{NORMAL}'
 
 				# Super pellet
 				elif self.superPelletAt(row, col):
-					print('●', end='')
+					out += '●'
 
 				# Pellet
 				elif self.pelletAt(row, col):
-					print('·', end='')
+					out += '·'
 
 				# Empty space
 				else:
-					print(' ', end='')
+					out += ' '
 
 			# New line at end of row
-			print()
+			out += '\n'
 
-		# New line at end of display
-		print()
+		# Print the output, with a new line at end of display
+		print(out)
 
 	def safetyCheck(self) -> bool:
 		'''
