@@ -386,7 +386,7 @@ class GameState:
 		self._connected: bool = False
 
 		# Buffer of messages to write back to the server
-		self.writeServerBuf: deque[ServerMessage] = deque[ServerMessage](maxlen=6)
+		self.writeServerBuf: deque[ServerMessage] = deque[ServerMessage](maxlen=64)
 
 		# Internal representation of walls:
 		# 31 * 4 bytes = 31 * (32-bit integer bitset)
