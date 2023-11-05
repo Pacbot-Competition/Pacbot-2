@@ -84,7 +84,27 @@ class AStarPolicy:
 	def hCost(self) -> int:
 
 		# Return the heuristic cost for this
-		return distL2(self.state.pacmanLoc, self.target)
+		hCost = distL2(self.state.pacmanLoc, self.target)
+
+		# Add a penalty for being close to the ghosts
+		for ghost in self.state.ghosts:
+			if not ghost.spawning:
+				if not ghost.isFrightened():
+					hCost += int(
+						64 / max(distSqL2(
+							self.state.pacmanLoc,
+							ghost.location
+						), 1)
+					)
+				else:
+					hCost += distL2(self.state.pacmanLoc, ghost.location)
+
+		# Check whether fruit exists, and add a target to it if so
+		if self.state.fruitSteps > 0:
+			hCost += distL2(self.state.pacmanLoc, self.state.fruitLoc)
+
+		# Return the heuristic cost
+		return hCost
 
 	async def act(self) -> None:
 
@@ -115,15 +135,15 @@ class AStarPolicy:
 
 			# If the g-cost of this node is high enough or we reached the target,
 			# make the moves and return
-			if len(currNode.directionBuf) >= 10 or \
-				distSqL2(self.state.pacmanLoc, self.target) == 0:
+			if currNode.bufLength >= 8 or self.hCost() <= 1:
 
-				for index in range(len(currNode.directionBuf)):
+				for index in range(min(2, currNode.bufLength)):
 					self.state.queueAction(
 						currNode.delayBuf[index],
 						currNode.directionBuf[index]
 					)
 
+				print('decided')
 				return
 
 			# Loop over the directions
@@ -137,7 +157,7 @@ class AStarPolicy:
 				decompressGameState(self.state, currNode.compressedState)
 
 				# Check whether the direction is valid
-				valid = self.state.simulateAction(3, direction)
+				valid = self.state.simulateAction(6, direction)
 
 				# If the state is valid, add it to the priority queue
 				if valid:
@@ -147,7 +167,7 @@ class AStarPolicy:
 						fCost = currNode.gCost + 1 + self.hCost(),
 						gCost = currNode.gCost + 1,
 						directionBuf = currNode.directionBuf + [direction],
-						delayBuf = currNode.delayBuf + [3],
+						delayBuf = currNode.delayBuf + [6],
 						bufLength = currNode.bufLength + 1
 					)
 
