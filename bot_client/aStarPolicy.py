@@ -83,28 +83,44 @@ class AStarPolicy:
 
 	def hCost(self) -> int:
 
-		# Return the heuristic cost for this
-		hCost = distL2(self.state.pacmanLoc, self.target)
+		# Heuristic cost for this location
+		hCostTarget = distL2(self.state.pacmanLoc, self.target)
+
+		# Heuristic cost to estimate ghost locations
+		hCostGhost = 0
+
+		# Catching frightened ghosts
+		hCostScaredGhost = 0
+
+		# Chasing fruit
+		hCostFruit = 0
 
 		# Add a penalty for being close to the ghosts
 		for ghost in self.state.ghosts:
 			if not ghost.spawning:
 				if not ghost.isFrightened():
-					hCost += int(
+					hCostGhost += int(
 						64 / max(distSqL2(
 							self.state.pacmanLoc,
 							ghost.location
 						), 1)
 					)
 				else:
-					hCost += distL2(self.state.pacmanLoc, ghost.location)
+					hCostScaredGhost = max(
+						distL2(self.state.pacmanLoc, ghost.location),
+						hCostScaredGhost
+					)
 
 		# Check whether fruit exists, and add a target to it if so
 		if self.state.fruitSteps > 0:
-			hCost += distL2(self.state.pacmanLoc, self.state.fruitLoc)
+			hCostFruit = distL2(self.state.pacmanLoc, self.state.fruitLoc)
 
-		# Return the heuristic cost
-		return hCost
+		# If there are frightened ghosts, chase them
+		if hCostScaredGhost > 0:
+			return hCostScaredGhost + hCostGhost + hCostFruit
+
+		# Otherwise, chase the target
+		return hCostTarget + hCostGhost + hCostFruit
 
 	async def act(self) -> None:
 
