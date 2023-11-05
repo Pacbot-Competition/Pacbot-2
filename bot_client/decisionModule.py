@@ -53,4 +53,4 @@ class DecisionModule:
 			self.state.unlock()
 
 			# Free up the event loop (a good chance to talk to the bot!)
-			await asyncio.sleep(0.1)
+			await asyncio.sleep(0)

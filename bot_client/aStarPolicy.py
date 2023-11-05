@@ -135,9 +135,9 @@ class AStarPolicy:
 
 			# If the g-cost of this node is high enough or we reached the target,
 			# make the moves and return
-			if currNode.bufLength >= 6 or self.hCost() <= 1:
+			if currNode.bufLength >= 8 or self.hCost() <= 1:
 
-				for index in range(min(2, currNode.bufLength)):
+				for index in range(min(4, currNode.bufLength)):
 					self.state.queueAction(
 						currNode.delayBuf[index],
 						currNode.directionBuf[index]
