@@ -141,14 +141,15 @@ class Location:
 		# Return the full serialization
 		return (row_uint8 << 8) | (col_uint8)
 
-	def advance(self) -> None:
+	def advance(self) -> bool:
 		'''
 		Advance this location state for simulating another step transition
+		Returns if the advance was successful
 		'''
 
 		# If the current position is out of bounds, ignore it
 		if (self.row > 31) or (self.col > 28):
-			return
+			return False
 
 		# Calculate the next row and column
 		newRow = self.row + self.rowDir
@@ -158,6 +159,10 @@ class Location:
 		if not self.state.wallAt(newRow, newCol):
 			self.row = newRow
 			self.col = newCol
+			return True
+
+		# Return false, if the update was not successful
+		return False
 
 	def setDirection(self, direction: Directions) -> None:
 		'''
@@ -850,13 +855,14 @@ class GameState:
 			for ghost in self.ghosts:
 				ghost.guessPlan()
 
-		# If Pacman is not given a direction to move towards, return
+		# If Pacman is not given a direction to move towards, return false
 		if pacmanDir == Directions.NONE:
-			return True
+			return False
 
 		# Set the direction of Pacman, as chosen, and try to move one step
 		self.pacmanLoc.setDirection(pacmanDir)
-		self.pacmanLoc.advance()
+		if not self.pacmanLoc.advance():
+			return False
 		self.collectFruit(self.pacmanLoc.row, self.pacmanLoc.col)
 		self.collectPellet(self.pacmanLoc.row, self.pacmanLoc.col)
 

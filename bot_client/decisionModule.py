@@ -4,6 +4,9 @@ import asyncio
 # Game state
 from gameState import *
 
+# A-Star Policy
+from aStarPolicy import *
+
 class DecisionModule:
 	'''
 	Sample implementation of a decision module for high-level
@@ -17,6 +20,9 @@ class DecisionModule:
 
 		# Game state object to store the game information
 		self.state = state
+
+		# Policy object, with the game state
+		self.policy = AStarPolicy(state, newLocation(5, 21))
 
 	async def decisionLoop(self) -> None:
 		'''
@@ -32,44 +38,19 @@ class DecisionModule:
 			client may fall behind on updating the game state!
 			'''
 
+			# If the current messages haven't been sent out yet, skip this iteration
+			if len(self.state.writeServerBuf):
+				await asyncio.sleep(0)
+				continue
+
 			# Lock the game state
 			self.state.lock()
 
-			# Replace this with the actual decisions for Pacbot
-			await asyncio.sleep(0.1)
-
-			# self.state.update(self.state.serialize(), lockOverride=True)
-
-			print(self.state.getGhostPlans())
-			self.state.display()
-			print(self.state.simulateAction(12, Directions.RIGHT))
-
-			decompressGameState(self.state, compressGameState(self.state))
-			print(self.state.getGhostPlans())
-
-			self.state.display()
+			# Figure out which actions to take, according to the policy
+			await self.policy.act()
 
 			# Unlock the game state
-			# self.state.unlock()
-
-			# Writing back to the server, as a test (move right)
-			self.state.queueAction(4, Directions.RIGHT)
-			self.state.queueAction(4, Directions.RIGHT)
-			self.state.queueAction(4, Directions.RIGHT)
-			self.state.queueAction(4, Directions.RIGHT)
-			self.state.queueAction(4, Directions.RIGHT)
-			self.state.queueAction(4, Directions.RIGHT)
-			self.state.queueAction(4, Directions.RIGHT)
-			self.state.queueAction(4, Directions.RIGHT)
-			self.state.queueAction(4, Directions.RIGHT)
-			self.state.queueAction(4, Directions.RIGHT)
-			self.state.queueAction(8, Directions.UP)
-			self.state.queueAction(4, Directions.UP)
-			self.state.queueAction(4, Directions.UP)
-			self.state.queueAction(4, Directions.UP)
+			self.state.unlock()
 
 			# Free up the event loop (a good chance to talk to the bot!)
-			await asyncio.sleep(1000)
-
-			# (REMOVE THIS) Unlock the game state
-			self.state.unlock()
+			await asyncio.sleep(0.1)
