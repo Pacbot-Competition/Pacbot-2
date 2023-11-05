@@ -15,6 +15,9 @@ from gameState import GameState
 # Decision module
 from decisionModule import DecisionModule
 
+# Server messages
+from serverMessage import *
+
 # Restore the ability to use Ctrl + C within asyncio
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -118,9 +121,6 @@ class PacbotClient:
 		Receive loop for capturing messages from the server
 		'''
 
-		# The number of ticks to keep
-		writeWaitTicks: int = 0
-
 		# Receive values as long as the connection is open
 		while self.isOpen():
 
@@ -141,11 +141,9 @@ class PacbotClient:
 				self.state.update(messageBytes)
 
 				# Write a response back to the server if necessary
-				if self.state.writeServerBuf and writeWaitTicks <= 0:
-					response: bytes = self.state.writeServerBuf.popleft()
+				if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
+					response: bytes = self.state.writeServerBuf.popleft().getBytes()
 					self.connection.send(response)
-					writeWaitTicks = 3
-				writeWaitTicks -= 1
 
 				# Free the event loop to allow another decision
 				await asyncio.sleep(0)

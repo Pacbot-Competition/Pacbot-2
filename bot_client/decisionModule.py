@@ -26,9 +26,11 @@ class DecisionModule:
 		# Receive values as long as we have access
 		while self.state.isConnected():
 
-			# WARNING: 'await' statements should be routinely placed
-			# to free the event loop to receive messages, or the
-			# client may fall behind on updating the game state!
+			'''
+			WARNING: 'await' statements should be routinely placed
+			to free the event loop to receive messages, or the
+			client may fall behind on updating the game state!
+			'''
 
 			# Lock the game state
 			self.state.lock()
@@ -51,7 +53,20 @@ class DecisionModule:
 			# self.state.unlock()
 
 			# Writing back to the server, as a test (move right)
-			# self.state.writeServerBuf.append(b'd')
+			self.state.queueAction(4, Directions.RIGHT)
+			self.state.queueAction(4, Directions.RIGHT)
+			self.state.queueAction(4, Directions.RIGHT)
+			self.state.queueAction(4, Directions.RIGHT)
+			self.state.queueAction(4, Directions.RIGHT)
+			self.state.queueAction(4, Directions.RIGHT)
+			self.state.queueAction(4, Directions.RIGHT)
+			self.state.queueAction(4, Directions.RIGHT)
+			self.state.queueAction(4, Directions.RIGHT)
+			self.state.queueAction(4, Directions.RIGHT)
+			self.state.queueAction(8, Directions.UP)
+			self.state.queueAction(4, Directions.UP)
+			self.state.queueAction(4, Directions.UP)
+			self.state.queueAction(4, Directions.UP)
 
 			# Free up the event loop (a good chance to talk to the bot!)
 			await asyncio.sleep(1000)

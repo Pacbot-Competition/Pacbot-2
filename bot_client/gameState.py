@@ -13,6 +13,9 @@ from collections import deque
 # Terminal colors for formatting output text
 from terminalColors import *
 
+# Server messages
+from serverMessage import ServerMessage
+
 class GameModes(IntEnum):
 	'''
 	Enum of possible game modes
@@ -55,9 +58,10 @@ class Directions(IntEnum):
 	RIGHT = 3
 	NONE  = 4
 
-# Directions:        U   L   D   R  None
-D_ROW: list[int] = [-1, -0, +1, +0, +0]
-D_COL: list[int] = [-0, -1, +0, +1, +0]
+# Directions:                 U     L     D     R  None
+D_ROW: list[int]        = [  -1,   -0,   +1,   +0,   +0]
+D_COL: list[int]        = [  -0,   -1,   +0,   +1,   +0]
+D_MESSAGES: list[bytes] = [b'w', b'a', b's', b'd', b'.']
 
 reversedDirections: dict[Directions, Directions] = {
 	Directions.UP:    Directions.DOWN,
@@ -382,7 +386,7 @@ class GameState:
 		self._connected: bool = False
 
 		# Buffer of messages to write back to the server
-		self.writeServerBuf: deque[bytes] = deque[bytes](maxlen=6)
+		self.writeServerBuf: deque[ServerMessage] = deque[ServerMessage](maxlen=64)
 
 		# Internal representation of walls:
 		# 31 * 4 bytes = 31 * (32-bit integer bitset)
@@ -778,6 +782,16 @@ class GameState:
 
 		# Otherwise, Pacman is safe
 		return True
+
+	def queueAction(self, numTicks: int, pacmanDir: Directions) -> None:
+		'''
+		Helper function to queue a message to be sent to the server, with a
+		given Pacbot direction and number of ticks until the message is sent.
+		'''
+
+		self.writeServerBuf.append(
+			ServerMessage(D_MESSAGES[pacmanDir], numTicks)
+		)
 
 	def simulateAction(self, numTicks: int, pacmanDir: Directions) -> bool:
 		'''
