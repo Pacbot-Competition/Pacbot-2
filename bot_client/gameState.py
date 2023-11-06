@@ -693,6 +693,11 @@ class GameState:
 		Helper function to check if a wall is at a given location
 		'''
 
+		# Check if the position is off the grid, and return true if so
+		if (row < 0 or row >= 31) or (col < 0 or col >= 28):
+			return True
+
+		# Return whether there is a wall at the location
 		return bool((self.wallArr[row] >> col) & 1)
 
 	def display(self):
