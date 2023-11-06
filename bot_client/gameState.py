@@ -698,7 +698,7 @@ class GameState:
 		Helper function to check if a wall is at a given location
 		'''
 
-		# Check if the compared position is on the grid, and return true if so
+		# Check if the position is off the grid, and return true if so
 		if (row < 0 or row >= 31) or (col < 0 or col >= 28):
 			return True
 

@@ -52,5 +52,5 @@ class DecisionModule:
 			# Unlock the game state
 			self.state.unlock()
 
-			# Free up the event loop (a good chance to talk to the bot!)
+			# Free up the event loop
 			await asyncio.sleep(0)
