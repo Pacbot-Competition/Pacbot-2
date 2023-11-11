@@ -4,6 +4,26 @@ from heapq import heappush, heappop
 # Game state
 from gameState import *
 
+
+'''
+Cost Explanations:
+
+Started at point	S
+Targetting point 	T
+Currently at point 	C
+
+gcost = cost from S to C (past, known)
+hcost = cost from C to T (future, predicted)
+
+fcost = gcost + hcost
+
+Start-------Current-------Target
+S--------------C---------------T
+|-----gcost----|-----hcost-----|
+|------------fcost-------------|
+
+'''
+
 '''
 Distance metrics
 '''
@@ -90,10 +110,10 @@ class AStarPolicy:
 		hCostGhost = 0
 
 		# Catching frightened ghosts
-		hCostScaredGhost = 0
+		hCostScaredGhost = 999999999
 
 		# Chasing fruit
-		hCostFruit = 0
+		hCostFruit = 999999999
 
 		# Add a penalty for being close to the ghosts
 		for ghost in self.state.ghosts:
@@ -106,7 +126,7 @@ class AStarPolicy:
 						), 1)
 					)
 				else:
-					hCostScaredGhost = max(
+					hCostScaredGhost = min(
 						distL2(self.state.pacmanLoc, ghost.location),
 						hCostScaredGhost
 					)
@@ -116,11 +136,15 @@ class AStarPolicy:
 			hCostFruit = distL2(self.state.pacmanLoc, self.state.fruitLoc)
 
 		# If there are frightened ghosts, chase them
-		if hCostScaredGhost > 0:
-			return hCostScaredGhost + hCostGhost + hCostFruit
+		if hCostScaredGhost < 999999999:
+			return min(hCostScaredGhost, hCostFruit) + hCostGhost
 
+		# Otherwise, if there is a fruit on the board, target fruit
+		if hCostFruit != 999999999:
+			return hCostFruit + hCostGhost
+		
 		# Otherwise, chase the target
-		return hCostTarget + hCostGhost + hCostFruit
+		return hCostTarget + hCostGhost
 
 	async def act(self) -> None:
 
