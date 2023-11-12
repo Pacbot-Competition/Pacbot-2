@@ -1,6 +1,7 @@
 {
   "ServerIP": "localhost",
   "WebSocketPort": 3002,
+  "BotSocketPort": 1000, 
   "OneClientPerIP": true,
 
   "TrustedClientIPs": [
