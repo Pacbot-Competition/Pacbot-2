@@ -91,6 +91,13 @@
   let modeSteps = 0;
   let modeDuration = 255;
 
+  /*
+    Keep track of the number of steps until the fruit disappears, as well as
+    the fruit duration (from the server)
+  */
+  let fruitSteps = 0;
+  let fruitDuration = 30;
+
   // Local object to encode the possible modes
   const Modes = {
     Paused:   0,
@@ -213,6 +220,10 @@
         // Parse fruit data
         fruitRowState     = view.getUint8(byteIdx++, false);
         fruitColState     = view.getUint8(byteIdx++, false);
+
+        // Get the fruit steps and duration from the server
+        fruitSteps        = view.getUint8(byteIdx++, false);
+        fruitDuration     = view.getUint8(byteIdx++, false);
 
         // Parse pellet data
         for (let row = 0; row < 31; row++) {
@@ -373,6 +384,8 @@
     {gridSize}
     {fruitRowState}
     {fruitColState}
+    {fruitSteps}
+    {fruitDuration}
   />
 
   <Pacman

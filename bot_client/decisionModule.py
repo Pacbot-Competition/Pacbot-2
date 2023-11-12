@@ -26,30 +26,28 @@ class DecisionModule:
 		# Receive values as long as we have access
 		while self.state.isConnected():
 
-			# WARNING: 'await' statements should be routinely placed
-			# to free the event loop to receive messages, or the
-			# client may fall behind on updating the game state!
+			'''
+			WARNING: 'await' statements should be routinely placed
+			to free the event loop to receive messages, or the
+			client may fall behind on updating the game state!
+			'''
+
+			# If the current messages haven't been sent out yet, skip this iteration
+			if len(self.state.writeServerBuf):
+				await asyncio.sleep(0)
+				continue
 
 			# Lock the game state
 			self.state.lock()
 
-			# Replace this with the actual decisions for Pacbot
-			await asyncio.sleep(0.1)
-
-			# self.state.update(self.state.serialize(), lockOverride=True)
-
-			self.state.display()
-			print(self.state.simulateAction(3, Directions.RIGHT))
-			self.state.display()
+			# Write back to the server, as a test (move right)
+			self.state.queueAction(4, Directions.RIGHT)
 
 			# Unlock the game state
-			# self.state.unlock()
-
-			# Writing back to the server, as a test (move right)
-			# self.state.writeServerBuf.append(b'd')
-
-			# Free up the event loop (a good chance to talk to the bot!)
-			await asyncio.sleep(1000)
-
-			# (REMOVE THIS) Unlock the game state
 			self.state.unlock()
+
+			# Print that a decision has been made
+			print('decided')
+
+			# Free up the event loop
+			await asyncio.sleep(0)
