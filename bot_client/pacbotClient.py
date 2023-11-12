@@ -1,3 +1,5 @@
+import pacbotServer
+
 # JSON (for reading config.json)
 import json
 
@@ -164,6 +166,9 @@ async def main():
 	client = PacbotClient(connectURL)
 	await client.run()
 
+	# Run pacbot server
+	pacbotServer.main()
+	
 	# Once the connection is closed, end the event loop
 	loop = asyncio.get_event_loop()
 	loop.stop()
