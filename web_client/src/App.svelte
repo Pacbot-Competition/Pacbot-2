@@ -46,7 +46,7 @@
 
   // Creating a websocket client
   var socket = new WebSocket(`ws://${config.ServerIP}:${config.WebSocketPort}`);
-  var botSocket = new WebSocket(`ws://${config.ServerIP}:${config.BotSocketPort}`);
+  var botSocket = new WebSocket(`ws://${config.BotIP}:${config.BotSocketPort}`);
 
   socket.binaryType = 'arraybuffer';
   //botSocket.binaryType = 'arraybuffer';
@@ -249,39 +249,33 @@
 
   // Message events for bot-web client connection
   botSocket.addEventListener('message', (event) => {
-    if (typeof event.data == String)
-    {
-      console.log('Received data string');
+    if (typeof event.data == 'string') {
+      console.log('Received data string from robot');
       console.log(event.data);
       let content = event.data.split(" "); // Split the string into an array of strings
 
-    // content will be an array of strings
+      // content will be an array of strings
+      let command = content[0];
+      switch (command) {
+        case 'changeColor': {
+          // HERE implement the i and j coordinates to 
+          let i = content[1];
+          let j = content[2];
+          let newColor = content[3];
+          
+          // Handle 'changeColor' command by getting the coordinate of the robot and changing the grid element color there to red
+          const elem = document.getElementById(`grid-element-${i}-${j}`);
+          elem.style.backgroundColor = newColor;
+          break;
+        }
+        // Add other cases as needed
 
-    let command = content[0];
-    switch (command) {
-      case 'move': {
-        // Handle 'move' command
-        break;
-      }
-      case 'changeColor': {
-        // HERE implement the i and j coordinates to 
-        let i = content[1];
-        let j = content[2];
-        let newColor = content[3];
-
-        // Handle 'changeColor' command by getting the coordinate of the robot and changing the grid element color there to red
-        const elem = document.getElementById(`grid-element-${i}-${j}`);
-        elem.style.color = newColor;
-        break;
-      }
-      // Add other cases as needed
-
-      default: {
-        // Handle unknown command
-        break;
+        default: {
+          // Handle unknown command
+          break;
+        }
       }
     }
-  }
   });
 
 
