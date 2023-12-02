@@ -13,7 +13,7 @@ from websockets.typing import Data # type: ignore
 from gameState import GameState
 
 # Decision module
-from decisionModule import DecisionModule
+from policies.astar.decisionModule import DecisionModule
 
 # Server messages
 from serverMessage import *

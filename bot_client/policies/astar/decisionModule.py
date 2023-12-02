@@ -5,7 +5,7 @@ import asyncio
 from gameState import *
 
 # A-Star Policy
-from aStarPolicy import *
+from policies.astar.aStarPolicy import *
 
 class DecisionModule:
 	'''

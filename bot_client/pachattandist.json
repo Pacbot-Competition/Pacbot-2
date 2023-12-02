@@ -1,4 +1,0 @@
-def getKey(loc1: Location, loc2: Location) -> int:
-    t1 = loc1.col << 5 + loc1.row
-    t2 = loc2.col << 5 + loc2.row
-    return min(t1, t2) << 10 + max(t1, t2)

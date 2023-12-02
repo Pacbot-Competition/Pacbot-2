@@ -5,9 +5,8 @@ from heapq import heappush, heappop
 from gameState import *
 
 # Location mapping
-import bitstruct.c as bitstruct
-import genPachattanDistDict as pacdist
-import example as ex
+import policies.astar.genPachattanDistDict as pacdist
+import policies.astar.example as ex
 
 
 

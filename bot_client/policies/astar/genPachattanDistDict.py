@@ -1,5 +1,4 @@
 
-import json
 import bitstruct.c as bitstruct
 from gameState import Directions, Location, GameState
 
@@ -67,7 +66,6 @@ def getDistance(loc: Location, state: GameState, dist_dict, count):
                 dist_dict[getKey(loc, nextNode.loc)] = nextNode.dist
                 queue.append(nextNode)
                 visited.add(str(nextNode.loc))
-
     return count
 
 
@@ -89,8 +87,6 @@ def main():
             loc.col = col
             loc.row = row
             count = getDistance(loc, state, dist_dict, count)
-    # print(count)
-    # print(len(dist_dict))
     print(dist_dict)
 
         
