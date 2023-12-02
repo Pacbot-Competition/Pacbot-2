@@ -38,9 +38,23 @@ Test D3:
 Distance metrics
 '''
 
+class DistTypes(IntEnum):
+	'''
+	Enum of distance types
+	'''
+	MANHATTAN_DISTANCE = 0
+	EUCLIDEAN_DISTANCE = 1
+	PACHATTAN_DISTANCE = 2
+
 # Manhattan distance
 def distL1(loc1: Location, loc2: Location) -> int:
 	return abs(loc1.row - loc2.row) + abs(loc1.col - loc2.col)
+
+# Manhattan distance
+def distSqL1(loc1: Location, loc2: Location) -> int:
+	dr = abs(loc1.row - loc2.row)
+	dc = abs(loc1.col - loc2.col)
+	return dr*dr + dc*dc
 
 # Squared Euclidean distance
 def distSqL2(loc1: Location, loc2: Location) -> int:
@@ -113,7 +127,8 @@ class AStarPolicy:
 	def __init__(
 		self,
 		state: GameState,
-		target: Location
+		target: Location,
+		distType: DistTypes = DistTypes.PACHATTAN_DISTANCE
 	) -> None:
 
 		# Game state
@@ -122,13 +137,31 @@ class AStarPolicy:
 		# Target location
 		self.target: Location = target
 
+		# Distance metrics
+		self.distType = distType
+		match self.distType:
+			case DistTypes.MANHATTAN_DISTANCE:
+				self.dist = distL1
+				self.distSq = distSqL1
+			case DistTypes.EUCLIDEAN_DISTANCE:
+				self.dist = distL2
+				self.distSq = distSqL2
+			case DistTypes.PACHATTAN_DISTANCE:
+				self.dist = distL3
+				self.distSq = distSqL3
+			case _: # pachattan
+				self.distType = DistTypes.PACHATTAN_DISTANCE
+				self.dist = distL3
+				self.distSq = distSqL3
+
+
 	def hCost(self) -> int:
 
 		if 0 > self.state.pacmanLoc.row or 32 <= self.state.pacmanLoc.row or 0 > self.state.pacmanLoc.col or 28 <= self.state.pacmanLoc.col:
 			return 999999999
 
 		# Heuristic cost for this location
-		hCostTarget = distL3(self.state.pacmanLoc, self.target)
+		hCostTarget = self.dist(self.state.pacmanLoc, self.target)
 
 		# Heuristic cost to estimate ghost locations
 		hCostGhost = 0
@@ -144,20 +177,20 @@ class AStarPolicy:
 			if not ghost.spawning:
 				if not ghost.isFrightened():
 					hCostGhost += int(
-						64 / max(distSqL3(
+						64 / max(self.distSq(
 							self.state.pacmanLoc,
 							ghost.location
 						), 1)
 					)
 				else:
 					hCostScaredGhost = min(
-						distL3(self.state.pacmanLoc, ghost.location),
+						self.dist(self.state.pacmanLoc, ghost.location),
 						hCostScaredGhost
 					)
 
 		# Check whether fruit exists, and add a target to it if so
 		if self.state.fruitSteps > 0:
-			hCostFruit = distL3(self.state.pacmanLoc, self.state.fruitLoc)
+			hCostFruit = self.dist(self.state.pacmanLoc, self.state.fruitLoc)
 
 		# If there are frightened ghosts, chase them
 		if hCostScaredGhost < 999999999:
@@ -232,7 +265,7 @@ class AStarPolicy:
 
 			# Loop over the directions
 			for direction in Directions:
-				
+
 				# Reset to the current compressed state
 				decompressGameState(self.state, currNode.compressedState)
 
