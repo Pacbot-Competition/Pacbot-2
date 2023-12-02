@@ -47,7 +47,7 @@ class DecisionModule:
 			self.state.lock()
 
 			# Figure out which actions to take, according to the policy
-			await self.policy.act()
+			if self.state.gameMode != GameModes.PAUSED: await self.policy.act()
 
 			# Unlock the game state
 			self.state.unlock()

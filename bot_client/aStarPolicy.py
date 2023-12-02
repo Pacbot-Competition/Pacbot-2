@@ -4,6 +4,12 @@ from heapq import heappush, heappop
 # Game state
 from gameState import *
 
+# Location mapping
+import bitstruct.c as bitstruct
+import genPachattanDistDict as pacdist
+import example as ex
+
+
 
 '''
 Cost Explanations:
@@ -21,6 +27,11 @@ Start-------Current-------Target
 S--------------C---------------T
 |-----gcost----|-----hcost-----|
 |------------fcost-------------|
+
+Test D3:
+4720
+1330
+3640
 
 '''
 
@@ -41,6 +52,17 @@ def distSqL2(loc1: Location, loc2: Location) -> int:
 def distL2(loc1: Location, loc2: Location) -> int:
 	return ((loc1.row - loc2.row) * (loc1.row - loc2.row) + \
 		(loc1.col - loc2.col) * (loc1.col - loc2.col)) ** 0.5
+
+# Pachattan distance
+def distL3(loc1: Location, loc2: Location) -> int:
+	key = pacdist.getKey(loc1, loc2)
+	return ex.PACHATTAN[key]
+
+# Squared Pachattan distance
+def distSqL3(loc1: Location, loc2: Location) -> int:
+	pacDist = distL3(loc1, loc2)
+	return pacDist * pacDist
+
 
 class AStarNode:
 	'''
@@ -103,8 +125,11 @@ class AStarPolicy:
 
 	def hCost(self) -> int:
 
+		if 0 > self.state.pacmanLoc.row or 32 <= self.state.pacmanLoc.row or 0 > self.state.pacmanLoc.col or 28 <= self.state.pacmanLoc.col:
+			return 999999999
+
 		# Heuristic cost for this location
-		hCostTarget = distL2(self.state.pacmanLoc, self.target)
+		hCostTarget = distL3(self.state.pacmanLoc, self.target)
 
 		# Heuristic cost to estimate ghost locations
 		hCostGhost = 0
@@ -120,20 +145,20 @@ class AStarPolicy:
 			if not ghost.spawning:
 				if not ghost.isFrightened():
 					hCostGhost += int(
-						64 / max(distSqL2(
+						64 / max(distSqL3(
 							self.state.pacmanLoc,
 							ghost.location
 						), 1)
 					)
 				else:
 					hCostScaredGhost = min(
-						distL2(self.state.pacmanLoc, ghost.location),
+						distL3(self.state.pacmanLoc, ghost.location),
 						hCostScaredGhost
 					)
 
 		# Check whether fruit exists, and add a target to it if so
 		if self.state.fruitSteps > 0:
-			hCostFruit = distL2(self.state.pacmanLoc, self.state.fruitLoc)
+			hCostFruit = distL3(self.state.pacmanLoc, self.state.fruitLoc)
 
 		# If there are frightened ghosts, chase them
 		if hCostScaredGhost < 999999999:
@@ -164,6 +189,21 @@ class AStarPolicy:
 		# Add the initial node to the priority queue
 		heappush(priorityQueue, initialNode)
 
+		if self.state.superPelletAt(3, 26):
+			self.target = newLocation(5, 21)
+
+        # check if top left pellet exists
+		elif self.state.superPelletAt(3, 1):
+			self.target = newLocation(5, 6)
+
+        # check if bottom left pellet exists
+		elif self.state.superPelletAt(23, 1):
+			self.target = newLocation(20, 1)
+
+        # check if bottom right pellet exists
+		elif self.state.superPelletAt(23, 26):
+			self.target = newLocation(20, 26)
+
 		# Keep proceeding until a break point is hit
 		while len(priorityQueue):
 
@@ -176,8 +216,10 @@ class AStarPolicy:
 			# If the g-cost of this node is high enough or we reached the target,
 			# make the moves and return
 			if currNode.bufLength >= 8 or self.hCost() <= 1:
-
-				for index in range(min(4, currNode.bufLength)):
+				for index in range(min(2, currNode.bufLength)):
+					# TODO: Avoid sending same command twice. Sometimes, there is a delay
+					# before algo can recognize that an instruction has been executed,
+					# so it might send the same action multiple times.
 					self.state.queueAction(
 						currNode.delayBuf[index],
 						currNode.directionBuf[index]

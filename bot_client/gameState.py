@@ -90,6 +90,9 @@ class Location:
 		self.colDir: int  = 0
 		self.col: int     = 32
 
+	def __str__(self):
+		return str(self.col) + "," + str(self.row)
+
 	def update(self, loc_uint16: int) -> None:
 		'''
 		Update a location, based on a 2-byte serialization
@@ -825,7 +828,7 @@ class GameState:
 			if (self.currTicks + tick) % self.updatePeriod != 0:
 				continue
 
-			# Update the ghost positions (and reduce frightened steps if applicable)
+			# Update the ghost positions (and reduce frightened steps if applicable) # UNCOMMENT
 			for ghost in self.ghosts:
 				ghost.move()
 
