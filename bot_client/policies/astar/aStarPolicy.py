@@ -252,6 +252,7 @@ class AStarPolicy:
 					# TODO: Avoid sending same command twice. Sometimes, there is a delay
 					# before algo can recognize that an instruction has been executed,
 					# so it might send the same action multiple times.
+					# ASK IAN
 					self.state.queueAction(
 						currNode.delayBuf[index],
 						currNode.directionBuf[index]
@@ -274,7 +275,7 @@ class AStarPolicy:
 
 				# If the state is valid, add it to the priority queue
 				if valid:
-					changeDirCost = 0 if (currDir != self.state.pacmanLoc.getDirection()) else 3
+					changeDirCost = 0 if (currDir == self.state.pacmanLoc.getDirection()) else 4
 
 					nextNode = AStarNode(
 						compressGameState(self.state),
