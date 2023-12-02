@@ -226,14 +226,13 @@ class AStarPolicy:
 
 				print('decided')
 				return
+			
+			# get current direction (we will use this to negatively weight changing directions)
+			currDir = self.state.pacmanLoc.getDirection()
 
 			# Loop over the directions
 			for direction in Directions:
-
-				# If the direction is none, skip it
-				if direction == Directions.NONE:
-					continue
-
+				
 				# Reset to the current compressed state
 				decompressGameState(self.state, currNode.compressedState)
 
@@ -242,11 +241,12 @@ class AStarPolicy:
 
 				# If the state is valid, add it to the priority queue
 				if valid:
+					changeDirCost = 0 if (currDir != self.state.pacmanLoc.getDirection()) else 3
 
 					nextNode = AStarNode(
 						compressGameState(self.state),
-						fCost = currNode.gCost + 1 + self.hCost(),
-						gCost = currNode.gCost + 1,
+						fCost = currNode.gCost + 1 + changeDirCost + self.hCost(),
+						gCost = currNode.gCost + 1 + changeDirCost,
 						directionBuf = currNode.directionBuf + [direction],
 						delayBuf = currNode.delayBuf + [6],
 						bufLength = currNode.bufLength + 1
