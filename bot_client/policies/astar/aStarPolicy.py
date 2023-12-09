@@ -89,7 +89,7 @@ class AStarNode:
 		gCost: int,
 		directionBuf: list[Directions],
 		delayBuf: list[int],
-		bufLength: int
+		bufLength: int,
 	) -> None:
 
 		# Compressed game state
@@ -133,6 +133,7 @@ class AStarPolicy:
 
 		# Game state
 		self.state: GameState = state
+		self.stateCopy: GameState = state
 
 		# Target location
 		self.target: Location = target
@@ -154,8 +155,13 @@ class AStarPolicy:
 				self.dist = distL3
 				self.distSq = distSqL3
 
+	def pelletTarget(self) -> Location:
+		# calc vectors from every pellet in quad to pacman
+		# target median pellet
+		return Location(self.state)
 
-	def hCost(self) -> int:
+
+	def hCost(self, pelletExists=False) -> int:
 
 		if 0 > self.state.pacmanLoc.row or 32 <= self.state.pacmanLoc.row or 0 > self.state.pacmanLoc.col or 28 <= self.state.pacmanLoc.col:
 			return 999999999
@@ -171,6 +177,12 @@ class AStarPolicy:
 
 		# Chasing fruit
 		hCostFruit = 999999999
+		
+		# Pellet heuristic
+		hCostPellet = 1
+
+		# Pellet heuristic within quad
+		hCostPelletQuadrant= 999999999
 
 		# Add a penalty for being close to the ghosts
 		for ghost in self.state.ghosts:
@@ -192,16 +204,23 @@ class AStarPolicy:
 		if self.state.fruitSteps > 0:
 			hCostFruit = self.dist(self.state.pacmanLoc, self.state.fruitLoc)
 
+		# Check if pellet at current node
+		self.state.pelletAt(row=self.state.pacmanLoc.row, col=self.state.pacmanLoc.col)
+
+		# Compute hCostPellet
+		if pelletExists:
+			hCostPellet = 0
+
 		# If there are frightened ghosts, chase them
 		if hCostScaredGhost < 999999999:
-			return min(hCostScaredGhost, hCostFruit) + hCostGhost
+			return min(hCostScaredGhost, hCostFruit) + hCostGhost + hCostPellet
 
 		# Otherwise, if there is a fruit on the board, target fruit
 		if hCostFruit != 999999999:
-			return hCostFruit + hCostGhost
+			return hCostFruit + hCostGhost + hCostPellet
 		
 		# Otherwise, chase the target
-		return hCostTarget + hCostGhost
+		return hCostTarget + hCostGhost + hCostPellet
 
 	async def act(self) -> None:
 
@@ -220,9 +239,11 @@ class AStarPolicy:
 
 		# Add the initial node to the priority queue
 		heappush(priorityQueue, initialNode)
-
+		
 		if self.state.superPelletAt(3, 26):
 			self.target = newLocation(5, 21)
+			#TODO: if you target a pellet in the quadrant, reduce hCostPelletQuad1 from arbitrarily high to low
+			
 
         # check if top left pellet exists
 		elif self.state.superPelletAt(3, 1):
@@ -270,16 +291,29 @@ class AStarPolicy:
 				# Reset to the current compressed state
 				decompressGameState(self.state, currNode.compressedState)
 
+				# Check if there's a pellet at curr location + direction				
+				if direction == Directions.UP:
+					pelletExists = self.state.pelletAt(row=self.state.pacmanLoc.row - 1, col=self.state.pacmanLoc.col)
+				elif direction == Directions.LEFT:
+					pelletExists = self.state.pelletAt(row=self.state.pacmanLoc.row, col=self.state.pacmanLoc.col - 1)
+				elif direction == Directions.DOWN:
+					pelletExists = self.state.pelletAt(row=self.state.pacmanLoc.row + 1, col=self.state.pacmanLoc.col)
+				elif direction == Directions.RIGHT:
+					pelletExists = self.state.pelletAt(row=self.state.pacmanLoc.row, col=self.state.pacmanLoc.col + 1)
+				else:
+					pelletExists = self.state.pelletAt(row=self.state.pacmanLoc.row, col=self.state.pacmanLoc.col)
+
 				# Check whether the direction is valid
 				valid = self.state.simulateAction(6, direction)
-
+				
 				# If the state is valid, add it to the priority queue
 				if valid:
+					# calculate the cost of changing direction
 					changeDirCost = 0 if (currDir == self.state.pacmanLoc.getDirection()) else 4
 
 					nextNode = AStarNode(
 						compressGameState(self.state),
-						fCost = currNode.gCost + 1 + changeDirCost + self.hCost(),
+						fCost = currNode.gCost + 1 + changeDirCost + self.hCost(pelletExists),
 						gCost = currNode.gCost + 1 + changeDirCost,
 						directionBuf = currNode.directionBuf + [direction],
 						delayBuf = currNode.delayBuf + [6],
