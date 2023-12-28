@@ -1,10 +1,27 @@
-from gpiozero import Motor
+from gpiozero import PhaseEnableMotor
 from time import sleep
 
-forward = 4
-backward = 14
+RightEnable = 18   # BEN, GPIO18
+RightPhase = 19  # BPH, GPIO19
+LeftEnable = 12    # AEN, GPIO12
+LeftPhase = 6    # APH, GPIO6
+RightSpeed = 1
+LeftSpeed = 1
 
-motor = Motor(orward=forward, backward=backward)
+RightMotor = PhaseEnableMotor(phase=RightPhase, enable=RightEnable)
+LeftMotor = PhaseEnableMotor(phase=LeftPhase, enable=LeftEnable)
+
+# RightMotor.forward(speed=RightSpeed)
+# LeftMotor.forward(speed=LeftSpeed)
 
 while True:
-    motor.forward()
+    RightMotor.forward(speed=RightSpeed)
+    LeftMotor.forward(speed=LeftSpeed)
+    # RightMotor.backward()
+    # LeftMotor.backward()
+    # RightMotor.stop()
+    # LeftMotor.stop()
+    # sleep(1)
+    # RightMotor.forward()
+    # LeftMotor.forward()
+    # sleep(1)
