@@ -1,3 +1,7 @@
+from gpiozero import Robot, DigitalInputDevice
+from time import sleep
+
+# use this code to get the number of tick's per sample
 class QuadratureEncoder(object):
     """
     A simple quadrature encoder class
@@ -27,9 +31,21 @@ class QuadratureEncoder(object):
 
 SAMPLETIME = 1
 
-r = Robot((19,21), (24,26)) 
-e1 = QuadratureEncoder(16, 17
-e2 = QuadratureEncoder(18, 19)
+# motor pins
+RightEnable = 18   # BEN, GPIO18
+RightPhase = 19  # BPH, GPIO19
+LeftEnable = 12    # AEN, GPIO12
+LeftPhase = 6    # APH, GPIO6
+
+# magnetic encoder pins
+RightOutA = 7   # GPIO7
+RightOutB = 8   # GPIO8
+LeftOutA = 24   # GPIO24
+LeftOutB = 23   # GPIO23
+
+r = Robot(left=(LeftPhase, LeftEnable), right=(RightPhase, RightEnable))
+e1 = QuadratureEncoder(RightOutA, RightOutB)
+e2 = QuadratureEncoder(LeftOutA, LeftOutB)
 
 r.value = (1,1)
 

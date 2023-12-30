@@ -1,13 +1,22 @@
-from gpiozero import DigitalInputDevice, Robot
+from gpiozero import DigitalInputDevice, PhaseEnableRobot
 from time import sleep
 
-class Encoder(object):
-    def __init__(self, pin):
+class QuadratureEncoder(object):
+    """
+    A simple quadrature encoder class
+
+    Note - this class does not determine direction
+    """
+    def __init__(self, pin_a, pin_b):
         self._value = 0
 
-        encoder = DigitalInputDevice(pin)
-        encoder.when_activated = self._increment
-        encoder.when_deactivated = self._increment
+        encoder_a = DigitalInputDevice(pin_a)
+        encoder_a.when_activated = self._increment
+        encoder_a.when_deactivated = self._increment
+
+        encoder_b = DigitalInputDevice(pin_b)
+        encoder_b.when_activated = self._increment
+        encoder_b.when_deactivated = self._increment
         
     def reset(self):
         self._value = 0
@@ -22,48 +31,62 @@ class Encoder(object):
 def clamp(value):
     return max(min(1, value), 0)
 
+# PID parameters
 SAMPLETIME = 0.5
-TARGET = 20
-KP = 0.02
-KD = 0.01
-KI = 0.005
+TARGET = 20         # about 75% of the encoder's tick per sample
+KP = 0.02           # start at 1 divided by the encoder's tick per sample
+KD = 0.01           # start at 0.5*KP
+KI = 0.005          # start at 0.5*KD
 
-r = Robot((10,9), (8,7)) 
-e1 = Encoder(17)
-e2 = Encoder(18)
+# motor pins
+RightEnable = 18   # BEN, GPIO18
+RightPhase = 19  # BPH, GPIO19
+LeftEnable = 12    # AEN, GPIO12
+LeftPhase = 6    # APH, GPIO6
 
-m1_speed = 1
-m2_speed = 1
-r.value = (m1_speed, m2_speed)
+robot = PhaseEnableRobot(left=(LeftPhase, LeftEnable), right=(RightPhase, RightEnable))
 
-e1_prev_error = 0
-e2_prev_error = 0
+# magnetic encoder pins
+RightOutA = 7   # GPIO7
+RightOutB = 8   # GPIO8
+LeftOutA = 24   # GPIO24
+LeftOutB = 23   # GPIO23
 
-e1_sum_error = 0
-e2_sum_error = 0
+rightEncoder = QuadratureEncoder(RightOutA, RightOutB)
+leftEncoder = QuadratureEncoder(LeftOutA, LeftOutB)
+
+rightMotorSpeed = 1
+leftMotorSpeed = 1
+robot.value = (rightMotorSpeed, leftMotorSpeed)
+
+rightEncoderPrevError = 0
+leftEncoderPrevError = 0
+
+rightEncoderSumError = 0
+leftEncoderSumError = 0
 
 while True:
 
-    e1_error = TARGET - e1.value
-    e2_error = TARGET - e2.value
+    rightEncoderError = TARGET - rightEncoder.value
+    leftEncoderError = TARGET - leftEncoder.value
 
-    m1_speed += (e1_error * KP) + (e1_prev_error * KD) + (e1_sum_error * KI)
-    m2_speed += (e2_error * KP)  + (e1_prev_error * KD) + (e2_sum_error * KI)
+    rightMotorSpeed += (rightEncoderError * KP) + (rightEncoderPrevError * KD) + (rightEncoderSumError * KI)
+    leftMotorSpeed += (leftEncoderError * KP)  + (rightEncoderPrevError * KD) + (leftEncoderSumError * KI)
 
-    m1_speed = max(min(1, m1_speed), 0)
-    m2_speed = max(min(1, m2_speed), 0)
-    r.value = (m1_speed, m2_speed)
+    rightMotorSpeed = clamp(rightMotorSpeed)
+    leftMotorSpeed = clamp(leftMotorSpeed)
+    robot.value = (rightMotorSpeed, leftMotorSpeed)
 
-    print("e1 {} e2 {}".format(e1.value, e2.value))
-    print("m1 {} m2 {}".format(m1_speed, m2_speed))
+    print("right encoder {} left encoder {}".format(rightEncoder.value, leftEncoder.value))
+    print("right motor {} left motor {}".format(rightMotorSpeed, leftMotorSpeed))
 
-    e1.reset()
-    e2.reset()
+    rightEncoder.reset()
+    leftEncoder.reset()
 
     sleep(SAMPLETIME)
 
-    e1_prev_error = e1_error
-    e2_prev_error = e2_error
+    rightEncoderPrevError = rightEncoderError
+    leftEncoderPrevError = leftEncoderError
 
-    e1_sum_error += e1_error
-    e2_sum_error += e2_error
+    rightEncoderSumError += rightEncoderError
+    leftEncoderSumError += leftEncoderError

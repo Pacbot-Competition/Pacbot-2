@@ -48,5 +48,5 @@ LeftEncoderOutA = DigitalInputDevice(pin=LeftOutA)
 LeftEncoderOutB = DigitalInputDevice(pin=LeftOutB)
 
 while True:
-    robot.backward(speed=speed)
+    robot.forward(speed=speed)
     print("Left Encoder  OUTA={}, OUTB={}".format(LeftEncoderOutA.value, LeftEncoderOutB.value))
