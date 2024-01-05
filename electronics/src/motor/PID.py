@@ -66,7 +66,8 @@ rightEncoderSumError = 0
 leftEncoderSumError = 0
 
 while True:
-
+    # make left and right motor run at the same speed
+    # i.e. make robot go in straight line
     rightEncoderError = TARGET - rightEncoder.value
     leftEncoderError = TARGET - leftEncoder.value
 
