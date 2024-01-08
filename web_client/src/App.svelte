@@ -49,7 +49,6 @@
   var botSocket = new WebSocket(`ws://${config.BotIP}:${config.BotSocketPort}`);
 
   socket.binaryType = 'arraybuffer';
-  //botSocket.binaryType = 'arraybuffer';
 
   let socketOpen = false;
   let botSocketOpen = false;
@@ -263,26 +262,28 @@
     if (typeof event.data == 'string') {
       console.log('Received data string from robot');
       console.log(event.data);
-      let content = event.data.split(" "); // Split the string into an array of strings
+      let content = event.data.split(" "); 
 
-      // content will be an array of strings
       let command = content[0];
       switch (command) {
-        case 'changeColor': {
-          // HERE implement the i and j coordinates to 
-          let i = content[1];
-          let j = content[2];
+        case 'set_cell_color':
+          let row = content[1];
+          let col = content[2];
           let newColor = content[3];
           
-          // Handle 'changeColor' command by getting the coordinate of the robot and changing the grid element color there to red
-          const elem = document.getElementById(`grid-element-${i}-${j}`);
+          const elem = document.getElementById(`grid-element-${row}-${col}`);
           elem.style.backgroundColor = newColor;
           break;
-        }
-        // Add other cases as needed
-
+        
+        case 'reset_all_cell_colors': 
+          const gridElements = document.getElementsByClassName('grid-element');
+          for (let i = 0; i < gridElements.length; i++) {
+            gridElements[i].style.backgroundColor = '';
+          }
+          break;
+        
         default: {
-          // Handle unknown command
+          console.log('Unknown command received from robot');
           break;
         }
       }
@@ -428,6 +429,7 @@
   <Pellets
     {pelletGrid}
     {gridSize}
+    {botSocket}
   />
 
   <Fruit

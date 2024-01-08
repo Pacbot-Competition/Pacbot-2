@@ -2,8 +2,8 @@
 import asyncio
 
 # Game state
-from gameState import GameState
-from a_star import get_neighbors
+from gameState import * 
+from pathfinding import get_neighbors
 
 class DecisionModule:
 	'''
@@ -48,7 +48,7 @@ class DecisionModule:
 			self.state.unlock()
 
 			# Print that a decision has been made
-			print('decided')
+			# print('decided')
 
 			# Free up the event loop
 			await asyncio.sleep(0)

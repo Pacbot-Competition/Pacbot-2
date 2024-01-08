@@ -1,5 +1,3 @@
-import pacbotServer
-
 # JSON (for reading config.json)
 import json
 
@@ -26,6 +24,11 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 # Terminal colors for formatting output text
 from terminalColors import *
+
+# Debug server
+from debugServer import DebugServer
+
+from pathfinding import find_path
 
 # Get the connect URL from the config.json file
 def getConnectURL() -> str:
@@ -151,21 +154,38 @@ class PacbotClient:
 				await asyncio.sleep(0)
 
 			# Break once the connection is closed
-			except ConnectionClosedError:
-				print('Connection lost...')
+			except ConnectionClosedError as e:
+				print('Connection lost...', e)
 				self.state.setConnectionStatus(False)
 				break
 
+last_selected_pos = (1,1)
 # Main function
 async def main():
+	# Start the debug server in the background
+	debugServer = DebugServer()
+	asyncio.create_task(debugServer.run())
+
+	def cell_clicked(row, col):
+		global last_selected_pos
+		g = GameState()
+		path = find_path(last_selected_pos, (row, col), g, debugServer)
+
+		if path is not None:
+			for node in path:
+				debugServer.set_cell_color(node[0], node[1], 'lime')
+
+		debugServer.set_cell_color(last_selected_pos[0], last_selected_pos[1], 'cyan')
+		debugServer.set_cell_color(row, col, 'red')
+		last_selected_pos = (row, col)
+
+
+	debugServer.on_cell_clicked = cell_clicked
 
 	# Get the URL to connect to
 	connectURL = getConnectURL()
 	client = PacbotClient(connectURL)
 	await client.run()
-
-	# Run pacbot server
-	pacbotServer.main()
 	
 	# Once the connection is closed, end the event loop
 	loop = asyncio.get_event_loop()
