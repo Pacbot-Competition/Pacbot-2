@@ -2,7 +2,8 @@
 import asyncio
 
 # Game state
-from gameState import *
+from gameState import GameState
+from a_star import get_neighbors
 
 class DecisionModule:
 	'''
