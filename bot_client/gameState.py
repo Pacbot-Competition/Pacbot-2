@@ -76,7 +76,7 @@ class Location:
 	Location of an entity in the game engine
 	'''
 
-	def __init__(self, state) -> None: # type: ignore
+	def __init__(self, state, row = 32, col = 32) -> None: # type: ignore
 		'''
 		Construct a new location state object
 		'''
@@ -86,9 +86,9 @@ class Location:
 
 		# Row and column information
 		self.rowDir: int  = 0
-		self.row: int     = 32
+		self.row: int     = row
 		self.colDir: int  = 0
-		self.col: int     = 32
+		self.col: int     = col
 
 	def update(self, loc_uint16: int) -> None:
 		'''
@@ -180,6 +180,12 @@ class Location:
 
 		# Return none if no direction matches
 		return Directions.NONE
+	
+	def __eq__(self, other):
+		return self.row == other.row and self.col == other.col and self.rowDir == other.rowDir and self.colDir == other.colDir
+	
+	def __hash__(self):
+		return hash((self.row, self.col, self.rowDir, self.colDir))
 
 class Ghost:
 	'''

@@ -11,8 +11,8 @@ def get_distance(posA, posB):
     dist = math.sqrt(dcol * dcol + drow * drow)
     return dist
 
-def estimate_heuristic(node_pos, target_pos):
-    return get_distance(node_pos, target_pos) # For now, just use the euclidean distance
+def estimate_heuristic(node_pos, target_pos, cell_avoidance_map):
+    return get_distance(node_pos, target_pos) + (cell_avoidance_map[node_pos] if cell_avoidance_map is not None else 0)
 
 def get_neighbors(g: GameState, location=None):
     if location is None:
@@ -30,9 +30,50 @@ def get_neighbors(g: GameState, location=None):
         neighbors.append((row, col - 1))
     return neighbors
 
-def find_path(start, target, g: GameState, debug_server: DebugServer = None):
-    if debug_server is not None:
-        debug_server.reset_cell_colors()
+def get_walkable_tiles(g: GameState):
+	walkable_cells = set()
+	for row in range(31):
+		for col in range(28):
+			if not g.wallAt(row, col):
+				walkable_cells.add((row, col))
+	return walkable_cells
+
+def build_cell_avoidance_map(g: GameState):
+    cell_avoidance_map = {}
+
+    ghost_positions = list(map(lambda ghost: (ghost.location.row, ghost.location.col), g.ghosts))
+
+    for tile in get_walkable_tiles(g):
+        ghost_proximity = 0
+        for ghost_pos in ghost_positions:
+            dist = get_distance(tile, ghost_pos)
+            if dist == 0:
+                ghost_proximity += 1000
+            else:
+                ghost_proximity += 1 / dist * 500
+
+        pellet_boost = 0
+        if g.pelletAt(tile[0], tile[1]):
+            pellet_boost = 50
+        if g.superPelletAt(tile[0], tile[1]):
+            pellet_boost = 200
+
+        cell_avoidance_map[tile] = ghost_proximity - pellet_boost
+
+    return cell_avoidance_map
+
+def show_cell_avoidance_map(cell_avoidance_map):
+    new_cell_colors = []
+    for cell, score in cell_avoidance_map.items():
+        score = min(max(-255, score), 255)
+        color = (score, 0, 0) if score > 0 else (0, -score, 0)
+        new_cell_colors.append((cell, color))
+
+    DebugServer.instance.set_cell_colors(new_cell_colors)
+
+def find_path(start, target, g: GameState):
+    cell_avoidance_map = build_cell_avoidance_map(g)
+    show_cell_avoidance_map(cell_avoidance_map)
 
     open_nodes = set()
     open_nodes.add(start)
@@ -43,7 +84,7 @@ def find_path(start, target, g: GameState, debug_server: DebugServer = None):
     g_map[start] = 0
 
     f_map = {}
-    f_map[start] = estimate_heuristic(start, target)
+    f_map[start] = estimate_heuristic(start, target, cell_avoidance_map)
 
     while len(open_nodes) > 0:
         # Find the node with the lowest f score
@@ -60,22 +101,17 @@ def find_path(start, target, g: GameState, debug_server: DebugServer = None):
                 path.append(current)
                 current = parents[current]
             path.reverse()
-            return path
+            return tuple(path)
         
         open_nodes.remove(current)
-        if debug_server is not None:
-            debug_server.set_cell_color(current[0], current[1], 'orange')
 
         for neighbor in get_neighbors(g, current):
             tentative_gScore = g_map[current] + get_distance(current, neighbor)
             if neighbor not in g_map or tentative_gScore < g_map[neighbor]:
                 parents[neighbor] = current
                 g_map[neighbor] = tentative_gScore
-                f_map[neighbor] = tentative_gScore + estimate_heuristic(neighbor, target)
+                f_map[neighbor] = tentative_gScore + estimate_heuristic(neighbor, target, cell_avoidance_map)
                 open_nodes.add(neighbor)
-
-                if debug_server is not None:
-                    debug_server.set_cell_color(neighbor[0], neighbor[1], 'yellow')
 
     return None
 

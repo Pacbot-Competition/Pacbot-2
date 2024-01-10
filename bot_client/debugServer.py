@@ -10,6 +10,12 @@ def get_server_port():
         config = json.load(configFile)
     return config["BotSocketPort"]
 
+def format_color(color):
+    if type(color) == tuple:
+        return f"rgb({color[0]},{color[1]},{color[2]})"
+    else:
+        return color
+
 class DebugServer:
     def __init__(self) -> None:
         self.clients = []
@@ -46,10 +52,16 @@ class DebugServer:
             await client.send(message)
 
     def set_cell_color(self, row, col, color):
-        if type(color) == tuple:
-            color = f"rgb({color[0]}, {color[1]}, {color[2]})"
-
-        asyncio.create_task(self.broadcast(f"set_cell_color {row} {col} {color}"))
+        asyncio.create_task(self.broadcast(f"set_cell_color {row} {col} {format_color(color)}"))
 
     def reset_cell_colors(self):
         asyncio.create_task(self.broadcast("reset_all_cell_colors"))
+
+    def set_cell_color_multiple(self, positions, color):
+        asyncio.create_task(self.broadcast(f"set_cell_colors {' '.join(map(lambda pos: f'{pos[0]} {pos[1]}', positions))} {format_color(color)}"))
+
+    def set_cell_colors(self, new_cell_colors):
+        asyncio.create_task(self.broadcast(f"set_cell_colors {' '.join(map(lambda ncc: f'{ncc[0][0]} {ncc[0][1]} {format_color(ncc[1])}', new_cell_colors))}"))
+
+    def set_path(self, path):
+        asyncio.create_task(self.broadcast(f"set_path {' '.join(map(lambda pos: f'{pos[0]} {pos[1]}', path))}"))
