@@ -22,6 +22,10 @@
     left: 10vw;
   }
 
+  :global(.path) {
+    border: 1px solid cyan !important;
+  }
+
 </style>
 
 <script>
@@ -260,13 +264,11 @@
   // Message events for bot-web client connection
   botSocket.addEventListener('message', (event) => {
     if (typeof event.data == 'string') {
-      console.log('Received data string from robot');
-      console.log(event.data);
       let content = event.data.split(" "); 
 
       let command = content[0];
       switch (command) {
-        case 'set_cell_color':
+        case 'set_cell_color': {
           let row = content[1];
           let col = content[2];
           let newColor = content[3];
@@ -274,16 +276,52 @@
           const elem = document.getElementById(`grid-element-${row}-${col}`);
           elem.style.backgroundColor = newColor;
           break;
-        
-        case 'reset_all_cell_colors': 
+        }
+        case 'set_cell_color_multiple': { // One color, multiple cells
+          const newColor = content[content.length - 1];
+          for (let i = 1; i < content.length - 1; i += 2) {
+            let row = content[i];
+            let col = content[i + 1];
+            
+            const elem = document.getElementById(`grid-element-${row}-${col}`);
+            elem.style.backgroundColor = newColor;
+          }
+          break;
+        }
+        case 'set_cell_colors': { // Multiple colors, multiple cells
+          for (let i = 1; i < content.length; i += 3) {
+            let row = content[i];
+            let col = content[i + 1];
+            let newColor = content[i + 2];
+            
+            const elem = document.getElementById(`grid-element-${row}-${col}`);
+            elem.style.backgroundColor = newColor;
+          }
+          break;
+        }
+        case 'reset_all_cell_colors': {
           const gridElements = document.getElementsByClassName('grid-element');
           for (let i = 0; i < gridElements.length; i++) {
             gridElements[i].style.backgroundColor = '';
           }
           break;
-        
+        }
+        case 'set_path': {
+          const currentPathCells = document.getElementsByClassName('path');
+          for (let i = 0; i < currentPathCells.length; i++) {
+            currentPathCells[i].classList.remove('path');
+          }
+          
+          for (let i = 1; i < content.length; i += 2) {
+            let row = content[i];
+            let col = content[i + 1];
+            
+            const elem = document.getElementById(`grid-element-${row}-${col}`);
+            elem.classList.add('path');
+          }
+        }
         default: {
-          console.log('Unknown command received from robot');
+          console.log('Unknown command received from robot: ' + command);
           break;
         }
       }
