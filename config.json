@@ -3,7 +3,7 @@
   "WebSocketPort": 3002,
   "BotIP": "localhost",
   "BotSocketPort": 3003, 
-  "OneClientPerIP": true,
+  "OneClientPerIP": false,
 
   "TrustedClientIPs": [
     "[::1]",

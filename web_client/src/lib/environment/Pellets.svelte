@@ -80,12 +80,14 @@
 
   export let gridSize;
   export let pelletGrid;
+  export let botSocket;
 
   let innerWidth = 0
   let innerHeight = 0
 
   const hello = (i, j) => {
     console.log("hello from " + i + " , " + j)
+    botSocket.send(`clicked ${i} ${j}`)
   }
 
   const pelletMods = [' hidden', '', ' super']
