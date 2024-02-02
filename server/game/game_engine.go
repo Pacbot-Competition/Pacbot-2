@@ -104,52 +104,41 @@ func (ge *GameEngine) RunLoop() {
 			If the game did not just tick, we know it was paused, so we can skip
 			these steps as they were already done during the first paused tick
 		*/
-		if justTicked {
-
+		if justTicked && ge.state.updateReady() {
 			/* STEP 1: Update the ghost positions if necessary */
 
-			// If the game state is ready to update, update the ghost positions
-			if ge.state.updateReady() {
+			// Update all ghosts at once
+			ge.state.updateAllGhosts()
 
-				// Update all ghosts at once
-				ge.state.updateAllGhosts()
+			// Try to respawn Pacman (if it is at an empty location)
+			ge.state.tryRespawnPacman()
 
-				// Try to respawn Pacman (if it is at an empty location)
-				ge.state.tryRespawnPacman()
-
-				// If we should pause upon updating, do so
-				if ge.state.getPauseOnUpdate() {
-					ge.state.pause()
-					ge.state.setPauseOnUpdate(false)
-				}
-
-				// Check for collisions
-				ge.state.checkCollisions()
-
-				/*
-					Decrement all step counters, and decide if the mode, penalty,
-					or fruit states should change
-				*/
-				ge.state.handleStepEvents()
+			// If we should pause upon updating, do so
+			if ge.state.getPauseOnUpdate() {
+				ge.state.pause()
+				ge.state.setPauseOnUpdate(false)
 			}
 
-			/* STEP 2: Serialize the current game state to the output buffer */
+			// Check for collisions
+			ge.state.checkCollisions()
 
-			// Re-serialize the current state
-			serLen = ge.state.serFull(outputBuf, 0)
+			/*
+				Decrement all step counters, and decide if the mode, penalty,
+				or fruit states should change
+			*/
+			ge.state.handleStepEvents()
 
-			/* STEP 3: Start planning the next ghost moves if an update happened */
+			/* STEP 2: Start planning the next ghost moves if an update happened */
 
-			// If we're ready for an update, plan the next ghost moves
-			if ge.state.updateReady() {
-
-				/*
-					Acquire the ghost control lock, to prevent other actions like
-					respawns/resets while updating the ghost state
-				*/
-				ge.state.planAllGhosts()
-			}
+			// Plan the next ghost moves
+			ge.state.planAllGhosts()
 		}
+
+		/* STEP 3: Serialize the current game state to the output buffer */
+
+		// Re-serialize the current state
+		serLen = ge.state.serFull(outputBuf, 0)
+
 
 		/* STEP 4: Write the serialized game state to the output channel */
 
