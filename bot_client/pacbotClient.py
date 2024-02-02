@@ -141,7 +141,10 @@ class PacbotClient:
 				self.state.update(messageBytes)
 
 				# Write a response back to the server if necessary
-				while self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
+				alreadySent = False
+				while self.state.writeServerBuf and \
+					self.state.writeServerBuf[0].tick(alreadySent):
+					alreadySent = True
 					response: bytes = self.state.writeServerBuf.popleft().getBytes()
 					self.connection.send(response)
 
