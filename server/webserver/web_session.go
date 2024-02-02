@@ -108,7 +108,6 @@ func (ws *webSession) unregister() {
 	ip := getIP(ws.conn)
 	_, trusted := trustedClientIPs[ip]
 
-
 	/*
 		Lock the mutex so that other channels will not read the open web
 		sessions map until this is complete
@@ -211,14 +210,8 @@ func (ws *webSession) readLoop() {
 			return
 		}
 
-		// Skip this message if it is empty or we should not read from this client
+		// Skip this message if it is empty
 		if len(msg) == 0 {
-			continue
-		}
-
-		// Relay the message immediately if it was a pause or play command
-		if msg[0] == 'p' || msg[0] == 'P' {
-			responseCh <- msg
 			continue
 		}
 
