@@ -36,12 +36,12 @@ func main() {
 	wb := webserver.NewWebBroker(webBroadcastCh, webResponseCh, &wgQuit)
 	go wb.RunLoop() // Run the web broker loop asynchronously
 	http.HandleFunc("/", webserver.WebSocketHandler)
-    go func() {
-        if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-            log.Fatalf("HTTP server error: %e", err)
-        }
+	go func() {
+		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("HTTP server error: %e", err)
+		}
 		log.Println("\033[35mLOG:  HTTP server successfully quit\033[0m")
-    }()
+	}()
 
 	// Game engine setup (package game)
 	game.ConfigNumActiveGhosts(min(conf.NumActiveGhosts, 4))
@@ -65,9 +65,9 @@ func main() {
 	}
 
 	// Shutdown HTTP server to prevent new and finish old connections
-    shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 2*time.Second)
-    defer shutdownRelease()
-    server.Shutdown(shutdownCtx)
+	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 2*time.Second)
+	defer shutdownRelease()
+	server.Shutdown(shutdownCtx)
 
 	// Quit the web server and game engine once complete
 	wb.Quit()
