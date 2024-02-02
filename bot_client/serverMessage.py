@@ -11,14 +11,13 @@ class ServerMessage:
     self.messageBytes = messageBytes
     self.waitTicks = numTicks
 
-  def tick(self, staleTick=False):
+  def tick(self):
     '''
 		Each tick, decrement the waiting ticks, and return whether the message
     is ready to send to the server.
 		'''
-    if not staleTick:
-      self.waitTicks -= 1
-    return (self.waitTicks <= 0)
+    self.waitTicks -= 1
+    return (self.waitTicks == 0)
 
   def getBytes(self):
     '''
