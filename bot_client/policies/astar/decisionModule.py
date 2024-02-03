@@ -53,4 +53,4 @@ class DecisionModule:
 			self.state.unlock()
 
 			# Free up the event loop
-			await asyncio.sleep(0)
+			await asyncio.sleep(0.005)
