@@ -34,7 +34,8 @@ var responseCh chan<- []byte
 Map to keep track of websocket client IPs; if only
 one client connection is allowed per IP, kick the oldest
 */
-var ipQuitMap = make(map[string](chan struct{}))
+var ipSessionMap = make(map[string]*webSession)
+var muISM sync.Mutex
 
 /*
 Get the IP address by taking the part of the remote address
@@ -48,10 +49,8 @@ func getIP(conn *websocket.Conn) string {
 
 // Web session object, for keeping track of individual websocket sessions
 type webSession struct {
-	quitCh chan struct{}
 	sendCh chan []byte
 	readEn bool // read enabled (allowed by IP whitelist)
-	readOk bool // read ready (rate limiting)
 	conn   *websocket.Conn
 	sync.Mutex
 }
@@ -59,31 +58,24 @@ type webSession struct {
 // Create a new web session object
 func newWebSession(conn *websocket.Conn) *webSession {
 	return &webSession{
-		quitCh: make(chan struct{}, 2),
 		sendCh: make(chan []byte, 10),
 		readEn: true,
-		readOk: false,
 		conn:   conn,
 	}
 }
 
 // Register this web session in the active connections
 func (ws *webSession) register() {
-
-	// Increment the web broker quit wait group counter
-	wgQuit.Add(1)
-
-	// If we're not allowing new connections, kick the connection
-	if !newConnectionsAllowed {
-		ws.quitCh <- struct{}{}
-		return
-	}
-
+	muISM.Lock()
 	// If we've seen this IP address before, kick the old one and start a new one
 	ip := getIP(ws.conn)
-	if oldQuitCh, ok := ipQuitMap[ip]; ok && oneClientPerIP {
-		oldQuitCh <- struct{}{}
+	if oldSession, ok := ipSessionMap[ip]; ok && oneClientPerIP {
+		oldSession.quit()
 	}
+
+	// Connect this quit channel to the IP address
+	ipSessionMap[ip] = ws
+	muISM.Unlock()
 
 	/*
 		Determine if we trust this new connection, by checking against configured
@@ -93,9 +85,6 @@ func (ws *webSession) register() {
 	if !trusted {
 		ws.readEn = false
 	}
-
-	// Connect this quit channel to the IP address
-	ipQuitMap[ip] = ws.quitCh
 
 	// Lock the mutex so we can keep track of the number of open clients
 	muOWS.Lock()
@@ -115,12 +104,6 @@ func (ws *webSession) register() {
 
 // Unregister this web session in the active connections
 func (ws *webSession) unregister() {
-
-	// Close the connection and data channels
-	ws.readEn = false // Prevent this session from reading anymore
-	ws.conn.Close()
-	close(ws.sendCh)
-
 	// Record the IP address of the disconnecting client
 	ip := getIP(ws.conn)
 	_, trusted := trustedClientIPs[ip]
@@ -132,7 +115,7 @@ func (ws *webSession) unregister() {
 	muOWS.Lock()
 	{
 		// Print information regarding the disconnect
-		if newConnectionsAllowed || (len(openWebSessions) > 0) {
+		if len(openWebSessions) > 0 {
 			if trusted {
 				log.Printf("\033[33m[%d -> %d] trusted client disconnected (%s)\033[0m\n",
 					len(openWebSessions), len(openWebSessions)-1, ip)
@@ -149,8 +132,48 @@ func (ws *webSession) unregister() {
 	}
 	muOWS.Unlock()
 
-	// Decrement the web broker quit wait group counter
-	wgQuit.Done()
+	// We aren't active anymore, don't need to remember us in IP session map
+	muISM.Lock()
+	if ipSessionMap[ip] == ws {
+		delete(ipSessionMap, ip)
+	}
+	muISM.Unlock()
+
+	// Wait until deregister to prevent write to closed channel
+	close(ws.sendCh)
+}
+
+// Close the websocket client (causes loop to unblock)
+func (ws *webSession) quit() {
+	ws.conn.Close()
+	// Wake the send loop, if it needs to be reminded to exit
+	// Any message will cause readLoop to exit as the socket is closed
+	select {
+	case ws.sendCh <- nil:
+	default:
+	}
+}
+
+// Runs all loops to service the connection and blocks until complete
+func (ws *webSession) loop() {
+	if !ws.readEn {
+		defer ws.quit()
+		ws.sendLoop()
+		return
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer ws.quit()
+		defer wg.Done()
+		ws.readLoop()
+	}()
+	go func() {
+		defer ws.quit()
+		defer wg.Done()
+		ws.sendLoop()
+	}()
+	wg.Wait()
 }
 
 /*
@@ -158,21 +181,8 @@ Run a read-loop go-routine to keep track of the incoming messages
 for a given session
 */
 func (ws *webSession) readLoop() {
-
-	// If we ever stop receiving messages (due to some error), kill the connection
-	defer func() { ws.quitCh <- struct{}{} }()
-
-	// Local variable, to keep track of whether a message is discarded
-	ignored := false
-
 	// "While" loop, keep reading until the connection closes
 	for {
-
-		// Block indefinitely if we should not be reading from this client
-		if !ws.readEn {
-			select {}
-		}
-
 		// Read a message (discard the type since we don't need it)
 		_, msg, err := ws.conn.ReadMessage()
 		if err != nil {
@@ -200,49 +210,31 @@ func (ws *webSession) readLoop() {
 			return
 		}
 
-		// Skip this message if it is empty or we should not read from this client
+		// Skip this message if it is empty
 		if len(msg) == 0 {
 			continue
 		}
 
-		// Relay the message immediately if it was a pause or play command
-		if msg[0] == 'p' || msg[0] == 'P' {
-			responseCh <- msg
-			continue
-		}
-
-		// Determine whether this message should be ignored
-		ws.Lock()
-		{
-			// Ignore the message if rate limiting applies
-			ignored = !ws.readOk
-
-			// Rate limiting - discard all incoming messages until we send a message
-			ws.readOk = false
-		}
-		ws.Unlock()
-
-		// If the message shouldn't be ignored, relay it, otherwise warn the user
-		if !ignored {
-			responseCh <- msg
-		} else {
-			log.Println("\033[35mWARN: An incoming message was ignored " +
-				"(reason: rate limiting)\033[0m")
+		responseCh <- msg
+		if cap(responseCh) == len(responseCh) {
+			log.Println("\033[35mWARN: Incoming messages " +
+				"full, server not keeping up \033[0m")
 		}
 	}
 }
 
 // Sending websocket data (binary)
 func (ws *webSession) sendLoop() {
-
-	// If we ever stop sending messages (due to some error), kill the connection
-	defer func() { ws.quitCh <- struct{}{} }()
-
 	// "While" loop, keep sending until the connection closes
 	for {
 
 		// Block until the next message is ready
 		msg := <-ws.sendCh
+
+		// nil means we are told to exit
+		if msg == nil {
+			return
+		}
 
 		// Try writing the message
 		if err := ws.conn.WriteMessage(websocket.BinaryMessage, msg); err != nil {
@@ -264,12 +256,5 @@ func (ws *webSession) sendLoop() {
 			log.Println("write error:", err)
 			return
 		}
-
-		// Update the read ready state, to allow another read after this write
-		ws.Lock()
-		{
-			ws.readOk = true
-		}
-		ws.Unlock()
 	}
 }

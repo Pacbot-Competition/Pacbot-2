@@ -44,5 +44,9 @@ func (gs *gameState) interpretCommand(msg []byte) {
 	// Move right (increase column index)
 	case 'd':
 		gs.movePacmanDir(right)
+	
+	// Absolute position (from tracking)
+	case 'x':
+		gs.movePacmanAbsolute(int8(msg[1]), int8(msg[2]))
 	}
 }
