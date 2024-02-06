@@ -1,5 +1,10 @@
 package game
 
+import (
+	"log"
+	"slices"
+)
+
 /***************************** Bitwise Operations *****************************/
 
 /*
@@ -297,9 +302,137 @@ func (gs *gameState) movePacmanDir(dir uint8) {
 	gs.collectPellet(nextRow, nextCol)
 }
 
+// Move pacman to destination along shortest path (CV update)
+func (gs *gameState) movePacmanAbsolute(newRow, newCol int8) {
+	// Lock control over Pacman object and release at end
+	gs.muPacman.Lock()
+	defer gs.muPacman.Unlock()
+
+
+	// Don't update position if we're paused
+	if gs.isPaused() || gs.getPauseOnUpdate() {
+		return
+	}
+	
+	// Reject invalid coords
+	if gs.wallAt(newRow, newCol) {
+		return
+	}
+
+	pLoc := gs.pacmanLoc
+
+	// Reject same coords
+	if pLoc.row == newRow && pLoc.col == newCol {
+		return
+	}
+
+	// Find likely path
+	path := gs.findLikelyPath(newRow, newCol)
+
+	// This really shouldn't happen but somehow the pathfinding has failed
+	if path == nil {
+		log.Println("\033[31mERR: Failed to find correct path\033[0m")
+		return
+	}
+
+	// The new position is far from the old one, let's not traverse the path
+	if len(path) > 5 {
+		log.Println("\033[33mWARN: Interpolated path too long! "+
+			"Tracking performance is likely degraded\033[0m")
+
+		pLoc.updateCoords(newRow, newCol)
+		gs.collectPellet(newRow, newCol)
+
+		// Check collisions with ghosts
+		gs.checkCollisions()
+		return
+	}
+
+	// Move Pacman along the detected route
+	for i := range path {
+		nextPos := path[i]
+		r, c := nextPos.r, nextPos.c
+		pLoc.updateCoords(r, c)
+		gs.collectPellet(r, c)
+
+		// Check collisions with ghosts
+		gs.checkCollisions()
+	}
+}
+
+type pos struct {r, c int8}
+
+func (p pos) getAdjacent() [4]pos {
+	return [...]pos{
+		{p.r + 1, p.c},
+		{p.r, p.c + 1},
+		{p.r - 1, p.c},
+		{p.r, p.c - 1},
+	}
+}
+
+// Find likely/shortest path to new coords
+// precondition: lock pacman pos
+func (gs *gameState) findLikelyPath(newRow, newCol int8) []pos {
+	// Begin breadth-first search
+	start := pos{gs.pacmanLoc.row, gs.pacmanLoc.col}
+	queue := []pos{start}
+	parent := make(map[pos]pos)
+	parent[start] = pos{-1, -1}
+
+	// Define target position
+	target := pos{newRow, newCol}
+
+	// Keep searching until we have exhausted all options or found it
+	search_loop: for len(queue) != 0 {
+		// Peek top, and remove
+		curr := queue[0]
+		queue = queue[1:]
+		
+		// Find adjacencies/neighbors of current cell
+		neighbors := curr.getAdjacent()
+		for i := range neighbors {
+			adj := neighbors[i]
+
+			// Already searched this one, continue
+			if _, ok := parent[adj]; ok {
+				continue
+			}
+
+			// Skip walls
+			if gs.wallAt(adj.r, adj.c) {
+				continue
+			}
+
+			// We can validly travel to the destination cell from curr
+			parent[adj] = curr
+
+			// We found the correct node
+			if adj == target {
+				break search_loop
+			}
+
+			// Search this later
+			queue = append(queue, adj)
+		}
+	}
+
+	// Backtrack the path
+	path := []pos{target}
+	for last, ok := target, true; ok && last != start; last, ok = parent[last] {
+		path = append(path, last)
+	}
+
+	// Something has gone horribly wrong, last node doesnt backtrack to start
+	if parent[path[len(path) - 1]] != start {
+		return nil
+	} 
+	slices.Reverse(path)
+	return path
+}
+
 // Move Pacman back to its spawn point, if necessary
 func (gs *gameState) tryRespawnPacman() {
-
 	// Acquire the Pacman control lock, to prevent other Pacman movement
 	gs.muPacman.Lock()
 	defer gs.muPacman.Unlock()

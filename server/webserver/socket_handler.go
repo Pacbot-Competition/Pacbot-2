@@ -44,6 +44,10 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create a websocket session object
 	ws := newWebSession(conn)
+	
+	// Ensure we wait for clients to finish
+	wgQuit.Add(1)
+	defer wgQuit.Done()
 
 	// Register the websocket session
 	ws.register()
@@ -52,16 +56,7 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	  Close the connection at the end of the function, or if
 	  something goes wrong.
 	*/
-	defer func() {
-		ws.unregister()
-	}()
+	defer ws.unregister()
 
-	// Goroutine: handles reads for the websocket session
-	go ws.readLoop()
-
-	// Goroutine: handles writes for the websocket session
-	go ws.sendLoop()
-
-	// Wait until the quit channel has items before stopping the program
-	<-ws.quitCh
+	ws.loop()
 }
