@@ -14,12 +14,19 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  :global(body) {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
   .maze-space {
 
     /* Positioning */
     position: absolute;
-    top: 5vh;
-    left: 10vw;
+    transform: translate(50%, 50%);
+    bottom: 50%;
+    right: 50%;
   }
 
 </style>
@@ -257,8 +264,7 @@
   // Track the size of the window, to determine the grid size
   let innerWidth = 0;
   let innerHeight = 0;
-  $: gridSize = 0.8 * ((innerHeight * 28 < innerWidth * 31) ?
-    (innerHeight / 31) : (innerWidth / 28))
+  $: gridSize = Math.min(innerHeight / 31, innerWidth / 28)
 
   // Calculate the remainder when currTicks is divided by updatePeriod
   $: modTicks = currTicks % updatePeriod
