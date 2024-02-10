@@ -57,9 +57,6 @@ class DistTypes(IntEnum):
 # 	"17,9","17,10","17,11","17,12","17,13","17,14","17,15","17,16","17,17","17,18",
 # }
 
-
-
-
 # Create new location with row, col
 def newLocation(row: int, col: int):
 	'''
@@ -114,6 +111,8 @@ class AStarNode:
 		compressedState: GameStateCompressed,
 		fCost: int,
 		gCost: int,
+		estSpeed: float,
+		direction: Directions,
 		directionBuf: list[Directions],
 		delayBuf: list[int],
 		bufLength: int,
@@ -125,6 +124,10 @@ class AStarNode:
 		# Costs
 		self.fCost = fCost
 		self.gCost = gCost
+
+		# Estimated velocity
+		self.estSpeed = 0
+		self.direction = Directions.NONE
 
 		# Message buffer
 		self.directionBuf = directionBuf
@@ -229,7 +232,18 @@ class AStarPolicy:
 		# calc vectors from every pellet in quad to pacman
 		# target median pellet
 		return Location(self.state)
+	
+	def gCost_turns(self, currCost, currDir, nextDir):
+		# constants
+		TRAVEL_TIME = 3
+		STOP_TIME = 3 
 
+		if (currDir == nextDir): # same dir
+			changeDirCost = TRAVEL_TIME
+		else: # diff dir
+			changeDirCost = TRAVEL_TIME + STOP_TIME
+
+		return int(0.25*(currCost + changeDirCost))
 
 	def hCost(self, realPacLoc, pelletExists=False) -> int:
 
@@ -325,10 +339,14 @@ class AStarPolicy:
 			compressGameState(self.state),
 			fCost = self.hCost(self.state.pacmanLoc),
 			gCost = 0,
+			direction = Directions.NONE,
+			estSpeed = 0,
 			directionBuf = [],
 			delayBuf = [],
 			bufLength = 0
 		)
+		
+		# TODO: figure out the original speed and direction
 
 		# counter to avoid calc nearest pellet a bunch of times
 		counter = 1
@@ -432,21 +450,27 @@ class AStarPolicy:
 				else:
 					pelletExists = self.pelletAtSafe(row=self.state.pacmanLoc.row, col=self.state.pacmanLoc.col)
 
+				# Calculate time/energy to move to next node
+				gCost = self.gCost_turns(currNode.gCost, currDir, self.state.pacmanLoc.getDirection())
+				timeToNextNode = gCost - currNode.gCost
+
 				# Check whether the direction is valid
+				# predicted_delay += timeToNextNode
 				valid = self.state.simulateAction(predicted_delay, direction)
 				
 				# If the state is valid, add it to the priority queue
 				if valid:
-					# calculate the cost of changing direction
-					changeDirCost = 0 if (currDir == self.state.pacmanLoc.getDirection()) else 4
 
 					nextNode = AStarNode(
 						compressGameState(self.state),
-						fCost = currNode.gCost + 1 + changeDirCost + self.hCost(realPacLoc, pelletExists),
-						gCost = currNode.gCost + 1 + changeDirCost,
+						fCost = self.hCost(realPacLoc, pelletExists) + gCost,
+						# gCost = currNode.gCost + 1 + changeDirCost,
+						gCost = gCost,
 						directionBuf = currNode.directionBuf + [direction],
 						delayBuf = currNode.delayBuf + [predicted_delay],
-						bufLength = currNode.bufLength + 1
+						bufLength = currNode.bufLength + 1,
+						estSpeed=1, # filler value, replace later, ian
+						direction=self.state.pacmanLoc.getDirection() # filler value, replace later, ian
 					)
 
 					# Add the next node to the priority queue
