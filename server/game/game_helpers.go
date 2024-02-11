@@ -337,14 +337,18 @@ func (gs *gameState) movePacmanAbsolute(newRow, newCol int8) {
 
 		// Acquire the Pacman control lock, to prevent other Pacman movement
 		gs.muPacman.Lock()
-		defer gs.muPacman.Unlock()
+		defer func() {
+			// Unlock when we return
+			gs.muPacman.Unlock()
+
+			// Check collisions with all the ghosts
+			gs.checkCollisions()
+		}()
 
 		// Move Pacman directly to the given position
 		pLoc.updateCoords(newRow, newCol)
 		gs.collectPellet(newRow, newCol)
 
-		// Check collisions with ghosts
-		gs.checkCollisions()
 		return
 	}
 
