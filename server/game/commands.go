@@ -47,6 +47,11 @@ func (gs *gameState) interpretCommand(msg []byte) {
 	
 	// Absolute position (from tracking)
 	case 'x':
+		if len(msg) != 3 {
+			log.Println("\033[35m\033[1mERR:  Invalid position update " +
+				"(message type 'x'). Ignoring...\033[0m")
+			return
+		}
 		gs.movePacmanAbsolute(int8(msg[1]), int8(msg[2]))
 	}
 }
