@@ -33,7 +33,7 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte,
 	// Time between ticks
 	_tickTime := 1000000 * time.Microsecond / time.Duration(clockRate)
 	ge := GameEngine{
-		quitCh:      make(chan struct{}),
+		quitCh:      make(chan struct{}, 0),
 		webOutputCh: _webOutputCh,
 		webInputCh:  _webInputCh,
 		state:       newGameState(),
@@ -53,20 +53,21 @@ func (ge *GameEngine) quit() {
 
 	// Decrement the quit wait group counter
 	ge.wgQuit.Done()
+
+	// Free up the ticker
+	ge.ticker.Stop()
 }
 
 // Quit function exported to other packages
 func (ge *GameEngine) Quit() {
-	ge.quitCh <- struct{}{}
+	close(ge.quitCh)
 }
 
 // Start the game engine - should be launched as a go-routine
 func (ge *GameEngine) RunLoop() {
 
 	// Quit if we ever run into an error or the program ends
-	defer func() {
-		ge.quit()
-	}()
+	defer ge.quit()
 
 	// Increment the quit wait group counter
 	ge.wgQuit.Add(1)
@@ -103,52 +104,41 @@ func (ge *GameEngine) RunLoop() {
 			If the game did not just tick, we know it was paused, so we can skip
 			these steps as they were already done during the first paused tick
 		*/
-		if justTicked {
-
+		if justTicked && ge.state.updateReady() {
 			/* STEP 1: Update the ghost positions if necessary */
 
-			// If the game state is ready to update, update the ghost positions
-			if ge.state.updateReady() {
+			// Update all ghosts at once
+			ge.state.updateAllGhosts()
 
-				// Update all ghosts at once
-				ge.state.updateAllGhosts()
+			// Try to respawn Pacman (if it is at an empty location)
+			ge.state.tryRespawnPacman()
 
-				// Try to respawn Pacman (if it is at an empty location)
-				ge.state.tryRespawnPacman()
-
-				// If we should pause upon updating, do so
-				if ge.state.getPauseOnUpdate() {
-					ge.state.pause()
-					ge.state.setPauseOnUpdate(false)
-				}
-
-				// Check for collisions
-				ge.state.checkCollisions()
-
-				/*
-					Decrement all step counters, and decide if the mode, penalty,
-					or fruit states should change
-				*/
-				ge.state.handleStepEvents()
+			// If we should pause upon updating, do so
+			if ge.state.getPauseOnUpdate() {
+				ge.state.pause()
+				ge.state.setPauseOnUpdate(false)
 			}
 
-			/* STEP 2: Serialize the current game state to the output buffer */
+			// Check for collisions
+			ge.state.checkCollisions()
 
-			// Re-serialize the current state
-			serLen = ge.state.serFull(outputBuf, 0)
+			/*
+				Decrement all step counters, and decide if the mode, penalty,
+				or fruit states should change
+			*/
+			ge.state.handleStepEvents()
 
-			/* STEP 3: Start planning the next ghost moves if an update happened */
+			/* STEP 2: Start planning the next ghost moves if an update happened */
 
-			// If we're ready for an update, plan the next ghost moves
-			if ge.state.updateReady() {
-
-				/*
-					Acquire the ghost control lock, to prevent other actions like
-					respawns/resets while updating the ghost state
-				*/
-				ge.state.planAllGhosts()
-			}
+			// Plan the next ghost moves
+			ge.state.planAllGhosts()
 		}
+
+		/* STEP 3: Serialize the current game state to the output buffer */
+
+		// Re-serialize the current state
+		serLen = ge.state.serFull(outputBuf, 0)
+
 
 		/* STEP 4: Write the serialized game state to the output channel */
 
@@ -170,25 +160,13 @@ func (ge *GameEngine) RunLoop() {
 		}
 
 		/* STEP 5: Read the input channel and update the game state accordingly */
-		select {
-
-		// If we get a message from the web broker, handle it
-		case msg := <-ge.webInputCh:
-			go ge.state.interpretCommand(msg)
-
-		// If we get a quit signal, quit this broker
-		case <-ge.quitCh:
-			return
-
-		/*
-			If the web input channel hits full capacity, send a terminal warning
-
-			What this means: either the clients are sending too much input,
-			or the game loop can't keep up
-		*/
-		default:
-			if len(ge.webInputCh) == cap(ge.webInputCh) {
-				log.Println("\033[35mWARN: Game engine input channel full\033[0m")
+		read_loop: for {
+			select {
+			// If we get a message from the web broker, handle it
+			case msg := <-ge.webInputCh:
+				ge.state.interpretCommand(msg)
+			default:
+				break read_loop
 			}
 		}
 
@@ -203,6 +181,11 @@ func (ge *GameEngine) RunLoop() {
 		}
 
 		/* STEP 5: Wait for the ticker to complete the current frame */
-		<-ge.ticker.C
+		select {
+		case <-ge.ticker.C:
+		// If we get a quit signal, quit this broker
+		case <-ge.quitCh:
+			return
+		}
 	}
 }
