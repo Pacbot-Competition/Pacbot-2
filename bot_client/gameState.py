@@ -564,7 +564,7 @@ class GameState:
 		# General game info
 		self.currTicks    = unpacked[0]
 		self.updatePeriod = unpacked[1]
-		self.gameMode     = unpacked[2]
+		self.gameMode     = GameModes(unpacked[2])
 		self.modeSteps    = unpacked[3]
 		self.modeDuration = unpacked[4]
 		self.currScore    = unpacked[5]
@@ -639,6 +639,13 @@ class GameState:
 		'''
 
 		return sum(row_arr.bit_count() for row_arr in self.pelletArr)
+
+	def numSuperPellets(self) -> int:
+		'''
+		Helper function to compute how many super pellets are left in the maze
+		'''
+
+		return self.pelletAt(3, 1) + self.pelletAt(3, 26) + self.pelletAt(23, 1) + self.pelletAt(23, 26)
 
 	def collectFruit(self, row: int, col: int) -> None:
 		'''

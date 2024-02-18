@@ -91,7 +91,8 @@ class AStarNode:
 		directionBuf: list[Directions],
 		delayBuf: list[int],
 		bufLength: int,
-		victimColor: GhostColors
+		victimColor: GhostColors,
+		pelletTarget: Location
 	) -> None:
 
 		# Compressed game state
@@ -113,12 +114,14 @@ class AStarNode:
 		# Victim color (catching scared ghosts)
 		self.victimColor: GhostColors = GhostColors.NONE
 
+		# Pellet target (for focusing on a single pellet)
+		self.pelletTarget: Location = pelletTarget
+
 	def __lt__(self, other) -> bool: # type: ignore
 		return self.fCost < other.fCost # type: ignore
 
 	def __repr__(self) -> str:
 		return str(f'g = {self.gCost} ~ f = {self.fCost}')
-
 
 
 class AStarPolicy:
@@ -179,7 +182,7 @@ class AStarPolicy:
 			currLoc = queue.pop(0)
 
 			# Base Case: Found a pellet
-			if self.state.pelletAt(currLoc.row, currLoc.col):
+			if self.state.pelletAt(currLoc.row, currLoc.col) and not self.state.superPelletAt(currLoc.row, currLoc.col):
 				return currLoc
 
 			# Loop over the directions
@@ -194,12 +197,13 @@ class AStarPolicy:
 				nextLoc.col = currLoc.col
 				nextLoc.row = currLoc.row
 				nextLoc.setDirection(direction)
-				valid = nextLoc.advance()
+				valid = nextLoc.advance() and not self.state.superPelletAt(nextLoc.row, nextLoc.col)
 
 				# avoid same node twice and check this is a valid move
 				if str(nextLoc) not in visited and valid:
 					queue.append(nextLoc)
 					visited.add(str(nextLoc))
+
 		return first
 
 	def hCost(self) -> int:
@@ -272,7 +276,7 @@ class AStarPolicy:
 		gCostPerStep: float = 3
 
 		# If the buffer is too small, then the gCostPerStep should be 2 on average
-		if bufLen >= 3:
+		if bufLen >= 4:
 			gCostPerStep = gCost / bufLen
 
 		# Return the result: (g-cost) / (buffer length) * (dist to target)
@@ -281,7 +285,7 @@ class AStarPolicy:
 	def fCostMultiplier(self) -> float:
 
 		# Constant for the multiplier
-		K: int = 8
+		K: int = 16
 
 		# Multiplier addition term
 		multTerm: int = 0
@@ -297,7 +301,32 @@ class AStarPolicy:
 		# Return the multiplier (1 + constant / distance squared)
 		return 1 + multTerm
 
-	async def act(self, predicted_delay: int = 6, victimColor: GhostColors = GhostColors.NONE) -> GhostColors:
+	def selectTarget(self, pelletTarget: Location) -> None:
+
+		chase = self.state.gameMode == GameModes.CHASE
+
+		# check if top right pellet exists
+		if self.state.superPelletAt(3, 26) and chase:
+			self.target = newLocation(5, 21)
+
+		# check if top left pellet exists
+		elif self.state.superPelletAt(3, 1) and chase:
+			self.target = newLocation(5, 6)
+
+		# check if bottom left pellet exists
+		elif self.state.superPelletAt(23, 1) and chase:
+			self.target = newLocation(26, 3)
+
+		# check if bottom right pellet exists
+		elif self.state.superPelletAt(23, 26) and chase:
+			self.target = newLocation(26, 24)
+
+		# no super pellets
+		else:
+			# target the nearest pellet
+			self.target = pelletTarget
+
+	async def act(self, predicted_delay: int, victimColor: GhostColors, pelletTarget: Location) -> tuple[GhostColors, Location]:
 
 		# Make a priority queue of A-Star Nodes
 		priorityQueue: list[AStarNode] = []
@@ -317,6 +346,10 @@ class AStarPolicy:
 		elif not self.state.ghosts[victimColor].isFrightened() or self.state.ghosts[victimColor].spawning:
 			victimColor = GhostColors.NONE
 
+		# Choose a pellet to eat
+		if self.state.wallAt(pelletTarget.row, pelletTarget.col) or not self.state.pelletAt(pelletTarget.row, pelletTarget.col):
+			pelletTarget = self.getNearestPellet()
+
 		# Construct an initial node
 		initialNode = AStarNode(
 			compressGameState(self.state),
@@ -325,32 +358,15 @@ class AStarPolicy:
 			directionBuf = [],
 			delayBuf = [],
 			bufLength = 0,
-			victimColor = victimColor
+			victimColor = victimColor,
+			pelletTarget = pelletTarget
 		)
 
 		# Add the initial node to the priority queue
 		heappush(priorityQueue, initialNode)
 
-		# check if top right pellet exists
-		if self.state.superPelletAt(3, 26):
-			self.target = newLocation(5, 21)
-
-		# check if top left pellet exists
-		elif self.state.superPelletAt(3, 1):
-			self.target = newLocation(5, 6)
-
-		# check if bottom left pellet exists
-		elif self.state.superPelletAt(23, 1):
-			self.target = newLocation(20, 1)
-
-		# check if bottom right pellet exists
-		elif self.state.superPelletAt(23, 26):
-			self.target = newLocation(20, 26)
-
-		# no super pellets
-		else:
-			# target the nearest pellet
-			self.target = self.getNearestPellet()
+		# Select a target
+		self.selectTarget(pelletTarget)
 
 		# Keep proceeding until a break point is hit
 		while len(priorityQueue):
@@ -369,7 +385,13 @@ class AStarPolicy:
 						currNode.delayBuf[index],
 						currNode.directionBuf[index]
 					)
-				return currNode.victimColor
+				if self.state.wallAt(pelletTarget.row, pelletTarget.col) or not self.state.pelletAt(pelletTarget.row, pelletTarget.col):
+					for index in range(4, currNode.bufLength):
+						self.state.queueAction(
+							currNode.delayBuf[index],
+							currNode.directionBuf[index]
+						)
+				return currNode.victimColor, currNode.pelletTarget
 
 			# Loop over the directions
 			for direction in Directions:
@@ -377,7 +399,15 @@ class AStarPolicy:
 				# Reset to the current compressed state
 				decompressGameState(self.state, currNode.compressedState)
 
+				npBefore = self.state.numPellets()
+				nspBefore = self.state.numSuperPellets()
 				valid = self.state.simulateAction(predicted_delay, direction)
+				npAfter = self.state.numPellets()
+				nspAfter = self.state.numSuperPellets()
+				ateNormalPellet = (npBefore > npAfter) and (nspBefore == nspAfter)
+
+				# Select a new target
+				self.selectTarget(pelletTarget)
 
 				# Make the scared ghost 'victim' color the same as the current node
 				victimColor = currNode.victimColor
@@ -398,14 +428,15 @@ class AStarPolicy:
 					nextNode = AStarNode(
 						compressGameState(self.state),
 						fCost = int((self.hCostExtend(currNode.gCost, currNode.bufLength, victimColor) + currNode.gCost + 1) * self.fCostMultiplier()),
-						gCost = currNode.gCost + 1,
+						gCost = currNode.gCost + 2 + (not ateNormalPellet),
 						directionBuf = currNode.directionBuf + [direction],
 						delayBuf = currNode.delayBuf + [predicted_delay],
 						bufLength = currNode.bufLength + 1,
-						victimColor = victimColor
+						victimColor = victimColor,
+						pelletTarget = pelletTarget
 					)
 
 					# Add the next node to the priority queue
 					heappush(priorityQueue, nextNode)
 
-		return victimColor
+		return victimColor, pelletTarget
