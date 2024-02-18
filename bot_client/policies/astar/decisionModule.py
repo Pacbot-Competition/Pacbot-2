@@ -1,3 +1,6 @@
+# JSON (for reading config.json)
+import json
+
 # Asyncio (for concurrency)
 import asyncio
 
@@ -6,6 +9,16 @@ from gameState import *
 
 # A-Star Policy
 from policies.astar.aStarPolicy import *
+
+# Get the FPS of the server from the config.json file
+def getGameFPS() -> int:
+
+	# Read the configuration file
+	with open('../config.json', 'r', encoding='UTF-8') as configFile:
+		config = json.load(configFile)
+
+	# Return the FPS
+	return config["GameFPS"]
 
 class DecisionModule:
 	'''
@@ -29,6 +42,10 @@ class DecisionModule:
 		Decision loop for Pacbot
 		'''
 
+		wait = True
+		gameFPS = getGameFPS()
+		victimColor = GhostColors.NONE
+
 		# Receive values as long as we have access
 		while self.state.isConnected():
 
@@ -43,14 +60,21 @@ class DecisionModule:
 				await asyncio.sleep(0)
 				continue
 
+			if wait:
+				await asyncio.sleep(1/gameFPS)
+				wait = False
+
 			# Lock the game state
 			self.state.lock()
 
 			# Figure out which actions to take, according to the policy
-			if self.state.gameMode != GameModes.PAUSED: await self.policy.act()
+			if self.state.gameMode != GameModes.PAUSED:
+				victimColor = await self.policy.act(GhostColors.NONE, victimColor)
 
 			# Unlock the game state
 			self.state.unlock()
 
 			# Free up the event loop
 			await asyncio.sleep(0.005)
+
+			wait = True

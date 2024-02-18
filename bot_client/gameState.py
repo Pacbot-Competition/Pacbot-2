@@ -41,6 +41,7 @@ class GhostColors(IntEnum):
 	PINK   = 1
 	CYAN   = 2
 	ORANGE = 3
+	NONE   = 4
 
 # Scatter targets for each of the ghosts
 #               R   P   C   O
@@ -151,7 +152,7 @@ class Location:
 		'''
 
 		# If the current position is out of bounds, ignore it
-		if (self.row > 31) or (self.col > 28):
+		if (self.row >= 31) or (self.col >= 28) or (self.row < 0) or (self.col < 0):
 			return False
 
 		# Calculate the next row and column
@@ -788,10 +789,10 @@ class GameState:
 			if ghost.location.at(pacmanRow, pacmanCol):
 				if not ghost.isFrightened(): # Collision; Pacman loses
 					return False
-				else: # 'Respawn' the ghost
-					ghost.location.row = 32
-					ghost.location.col = 32
-					ghost.spawning = True
+				#else: # 'Respawn' the ghost
+				#	ghost.location.row = 32
+				#	ghost.location.col = 32
+				#	ghost.spawning = True
 
 		# Otherwise, Pacman is safe
 		return True
@@ -868,9 +869,12 @@ class GameState:
 			return False
 
 		# Set the direction of Pacman, as chosen, and try to move one step
+		pacmanPrevDir = self.pacmanLoc.getDirection()
 		self.pacmanLoc.setDirection(pacmanDir)
 		if not self.pacmanLoc.advance():
+			self.pacmanLoc.setDirection(pacmanPrevDir)
 			return False
+
 		self.collectFruit(self.pacmanLoc.row, self.pacmanLoc.col)
 		self.collectPellet(self.pacmanLoc.row, self.pacmanLoc.col)
 
