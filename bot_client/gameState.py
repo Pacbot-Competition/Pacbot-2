@@ -92,7 +92,10 @@ class Location:
 		self.col: int     = 32
 
 	def __str__(self):
-		return str(self.col) + "," + str(self.row)
+		return f'({self.row},{self.col})'
+
+	def hash(self) -> int:
+		return self.row * 32 + self.col
 
 	def update(self, loc_uint16: int) -> None:
 		'''
