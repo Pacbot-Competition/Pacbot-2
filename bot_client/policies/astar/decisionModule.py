@@ -46,6 +46,8 @@ class DecisionModule:
 		gameFPS = getGameFPS()
 		victimColor = GhostColors.NONE
 		pelletTarget = Location(self.state)
+		pelletTarget.row = 23
+		pelletTarget.col = 14
 
 		# Receive values as long as we have access
 		while self.state.isConnected():
@@ -70,9 +72,7 @@ class DecisionModule:
 
 			# Figure out which actions to take, according to the policy
 			if self.state.gameMode != GameModes.PAUSED:
-				victimColor, pelletTarget = await self.policy.act(4, victimColor, pelletTarget)
-			else:
-				victimColor, pelletTarget = GhostColors.NONE, Location(self.state)
+				victimColor, pelletTarget = await self.policy.act(3, victimColor, pelletTarget)
 
 			# Unlock the game state
 			self.state.unlock()
