@@ -1,6 +1,22 @@
 import math
 from gameState import GameState
 from debugServer import DebugServer
+import heapq
+
+class PriorityQueue:
+    def __init__(self):
+        self._queue = []
+        self._index = 0
+
+    def push(self, item, priority):
+        heapq.heappush(self._queue, (priority, self._index, item))
+        self._index += 1
+
+    def pop(self):
+        return heapq.heappop(self._queue)[-1]
+    
+    def empty(self):
+        return len(self._queue) == 0
 
 def get_distance(posA, posB):
     rowA,colA = posA if type(posA) == tuple else (posA.row, posA.col)
@@ -75,44 +91,40 @@ def find_path(start, target, g: GameState):
     cell_avoidance_map = build_cell_avoidance_map(g)
     show_cell_avoidance_map(cell_avoidance_map)
 
-    open_nodes = set()
-    open_nodes.add(start)
+    frontier = PriorityQueue()
+    frontier.push(start, 0)
+    expanded = []
+    reached = {start: {"cost": estimate_heuristic(start, target, cell_avoidance_map), "parent": None}}
+    path = []
 
-    parents = {}
+    while not frontier.empty():
+        # Pop highest priority from the frontier
+        currentNode = frontier.pop()
 
-    g_map = {}
-    g_map[start] = 0
-
-    f_map = {}
-    f_map[start] = estimate_heuristic(start, target, cell_avoidance_map)
-
-    while len(open_nodes) > 0:
-        # Find the node with the lowest f score
-        current = None
-        current_f = None
-        for node, score in f_map.items():
-            if node in open_nodes and (current is None or score < current_f):
-                current = node
-                current_f = score
-
-        if current == target:
+        # If current node is target, retrace path
+        if currentNode == target:
+            retrace = currentNode
             path = []
-            while current in parents:
-                path.append(current)
-                current = parents[current]
+            while retrace is not start:
+                path.append(retrace)
+                retrace = reached[retrace]["parent"]
             path.reverse()
-            return tuple(path)
+            print(path)
+            return path
+
+        # Add current, non-goal node to the expanded list
+        expanded.append(currentNode)
         
-        open_nodes.remove(current)
-
-        for neighbor in get_neighbors(g, current):
-            tentative_gScore = g_map[current] + get_distance(current, neighbor)
-            if neighbor not in g_map or tentative_gScore < g_map[neighbor]:
-                parents[neighbor] = current
-                g_map[neighbor] = tentative_gScore
-                f_map[neighbor] = tentative_gScore + estimate_heuristic(neighbor, target, cell_avoidance_map)
-                open_nodes.add(neighbor)
-
+        # Add neighboring nodes to the frontier
+        neighbors = get_neighbors(g, currentNode)
+        for neighbor in neighbors:
+            # Get cumulative cost, g
+            tentative_gScore = reached[currentNode]['cost'] + get_distance(currentNode, neighbor)
+            
+            if neighbor not in reached:
+                reached[neighbor] = {"cost": tentative_gScore, "parent": currentNode}
+                frontier.push(neighbor, (tentative_gScore + estimate_heuristic(neighbor, target, cell_avoidance_map)))
+    
     return None
 
 if __name__ == '__main__':
@@ -122,4 +134,4 @@ if __name__ == '__main__':
     target = (6,6)
 
     path = find_path(start, target, g)
-    print(path)
+    #print(path)
