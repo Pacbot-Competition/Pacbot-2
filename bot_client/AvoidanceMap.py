@@ -34,11 +34,8 @@ class cellAvoidanceMap:
         self.g = g
         self.avoidance_map = {}
 
-        print(self.dtDict)
-        print(type(self.dtDict))
-
-        # for ghost in self.g.ghosts:
-        #     self.ghosts[ghost.color] = (ghost.location.row, ghost.location.col)
+        # print(self.dtDict)
+        # print(type(self.dtDict))
         
         self.ghost_positions = list(map(lambda ghost: (ghost.location.row, ghost.location.col), g.ghosts))
 
@@ -66,43 +63,20 @@ class cellAvoidanceMap:
             pellet_boost = 0
             if self.g.pelletAt(tile[0], tile[1]):
                 pellet_boost = self.pellet_boost
+                
             if self.g.superPelletAt(tile[0], tile[1]):
                 pellet_boost = self.superPellet_boost
 
             self.avoidance_map[tile] = ghost_proximity - pellet_boost
+    
+    def show_map(self):
+        """
+        Show the avoidance map on the debug server.
+        """
+        new_cell_colors = []
+        for cell, score in self.avoidance_map.items():
+            score = min(max(-255, score), 255)
+            color = (score, 0, 0) if score > 0 else (0, -score, 0)
+            new_cell_colors.append((cell, color))
 
-
-# Original cell_avoidance_map code
-def build_cell_avoidance_map(g: GameState):
-    cell_avoidance_map = {}
-
-    ghost_positions = list(map(lambda ghost: (ghost.location.row, ghost.location.col), g.ghosts))
-
-    for tile in get_walkable_tiles(g):
-        ghost_proximity = 0
-        for ghost_pos in ghost_positions:
-            dist = get_distance(tile, ghost_pos)
-            if dist == 0:
-                ghost_proximity += 1000
-            else:
-                ghost_proximity += 1 / dist * 500
-
-        pellet_boost = 0
-        if g.pelletAt(tile[0], tile[1]):
-            pellet_boost = 50
-        if g.superPelletAt(tile[0], tile[1]):
-            pellet_boost = 200
-
-        cell_avoidance_map[tile] = ghost_proximity - pellet_boost
-
-    return cell_avoidance_map
-
-
-def show_cell_avoidance_map(cell_avoidance_map):
-    new_cell_colors = []
-    for cell, score in cell_avoidance_map.items():
-        score = min(max(-255, score), 255)
-        color = (score, 0, 0) if score > 0 else (0, -score, 0)
-        new_cell_colors.append((cell, color))
-
-    DebugServer.instance.set_cell_colors(new_cell_colors)
+        DebugServer.instance.set_cell_colors(new_cell_colors)

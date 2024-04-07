@@ -11,6 +11,7 @@ from debugServer import DebugServer
 from utils import get_distance, get_walkable_tiles
 from DistMatrix import createDistTable, createDistTableDict, loadDistTable, loadDistTableDict
 from pathfinding import find_path
+from AvoidanceMap import cellAvoidanceMap
 
 
 def direction_from_delta(deltaRow, deltaCol):
@@ -41,6 +42,7 @@ class DecisionModule:
 		self.targetPos = (state.pacmanLoc.row, state.pacmanLoc.col) # The position we want Pacman to be at. Should never be more than 1 cell away from Pacman
 
 		self.walkable_cells = get_walkable_tiles(state)
+		self.avoidance_map = cellAvoidanceMap(state)
 
 		# If DistTable and DistTableDict don't exist, create them
 		if not os.path.isfile('./static/distTable.json'):
@@ -61,13 +63,13 @@ class DecisionModule:
 
 		# Get the current position of Pacbot
 		pacmanPos = (self.state.pacmanLoc.row, self.state.pacmanLoc.col)
-
 		ghost_locations = list(map(lambda ghost: ghost.location, self.state.ghosts))
 
 		# Find the point that is farthest from any ghost
 		max_dist = 0
 		max_dist_point = None
 
+		""" Old way: furthest distance from closest ghost
 		for pos in self.walkable_cells:
 			dist_to_closest_ghost = None
 			for ghost_loc in ghost_locations:
@@ -89,8 +91,23 @@ class DecisionModule:
 			if dist_to_closest_ghost > max_dist:
 				max_dist = dist_to_closest_ghost
 				max_dist_point = pos
+		path = find_path(pacmanPos, max_dist_point, self.state, self.avoidance_map)
+		"""
 
-		path = find_path(pacmanPos, max_dist_point, self.state)
+		# Testing new way: within X block radius, set target to cell with lowest score in avoidance map
+		self.avoidance_map.updateMap(self.state)
+		radius = 5
+		avoidanceScores = {}
+		for i in range(-radius, radius+1):
+			for j in range(-radius, radius+1):
+				# If the cell is in the avoidance map, add it to the list of cells to consider
+				if (pacmanPos[0] + i, pacmanPos[1] + j) in self.avoidance_map.avoidance_map:
+					avoidanceScores[(pacmanPos[0] + i, pacmanPos[1] + j)] = self.avoidance_map.avoidance_map[(pacmanPos[0] + i, pacmanPos[1] + j)]
+		
+		# If there are cells to consider, set the target to the cell with the lowest score
+		target = min(avoidanceScores, key=avoidanceScores.get)
+		
+		path = find_path(pacmanPos, target, self.state, self.avoidance_map)
 		DebugServer.instance.set_path(path)
 	
 		if len(path) > 1:

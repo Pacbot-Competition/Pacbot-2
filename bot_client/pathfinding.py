@@ -7,7 +7,7 @@ from json import JSONEncoder
 import numpy as np
 
 from utils import PriorityQueue, get_distance, get_neighbors
-from AvoidanceMap import cellAvoidanceMap, show_cell_avoidance_map
+from AvoidanceMap import cellAvoidanceMap
 
 
 def estimate_heuristic(node_pos, target_pos, cell_avoidance_map):
@@ -17,7 +17,7 @@ def estimate_heuristic(node_pos, target_pos, cell_avoidance_map):
     return get_distance(node_pos, target_pos) + (cell_avoidance_map[node_pos] if cell_avoidance_map is not None else 0)
 
 
-def find_path(start, target, g: GameState):
+def find_path(start, target, g: GameState, avoidance_map):
     """
     Current Pac-Man policy: A* search to find path from start to target using cell avoidance map.
     @param:
@@ -27,12 +27,13 @@ def find_path(start, target, g: GameState):
     @return:
         - list, the path from start to target
     """
-    map_class = cellAvoidanceMap(g)
-    map_class.updateMap(g)
-    cell_avoidance_map = map_class.avoidance_map
 
-    #cell_avoidance_map = build_cell_avoidance_map(g)
-    show_cell_avoidance_map(cell_avoidance_map)
+    # Initialize, update, and show cell avoidance map
+    avoidance_class = avoidance_map
+    avoidance_class.updateMap(g)
+    avoidance_class.show_map()
+    cell_avoidance_map = avoidance_class.avoidance_map
+
 
     print(f'start: {start}, target: {target}')
 
