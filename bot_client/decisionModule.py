@@ -110,8 +110,9 @@ class DecisionModule:
 		path = find_path(pacmanPos, target, self.state, self.avoidance_map)
 		DebugServer.instance.set_path(path)
 	
-		if len(path) > 1:
+		if len(path) >= 1:
 			self.targetPos = path[0]
+		print(f"Path: {path}")
 		
 
 	async def decisionLoop(self) -> None:
