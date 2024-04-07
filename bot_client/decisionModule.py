@@ -1,10 +1,17 @@
 # Asyncio (for concurrency)
 import asyncio
 
+import os
+
 # Game state
-from gameState import * 
-from pathfinding import get_distance, find_path, get_walkable_tiles
+from gameState import *
 from debugServer import DebugServer
+
+# Import pathfinding utilities
+from utils import get_distance, get_walkable_tiles
+from DistMatrix import createDistTable, createDistTableDict, loadDistTable, loadDistTableDict
+from pathfinding import find_path
+
 
 def direction_from_delta(deltaRow, deltaCol):
 	if deltaRow == 1:
@@ -35,6 +42,16 @@ class DecisionModule:
 
 		self.walkable_cells = get_walkable_tiles(state)
 
+		# If DistTable and DistTableDict don't exist, create them
+		if not os.path.isfile('./static/distTable.json'):
+			createDistTable(self.state)
+		if not os.path.isfile('./static/dtDict.json'):
+			createDistTableDict(self.state)
+
+		# Load DistTable and DistTableDict
+		self.distTable = loadDistTable()
+		self.dtDict = loadDistTableDict()
+
 	def update_target_loc(self):
 		'''
 		Decide the direction to move in
@@ -55,6 +72,16 @@ class DecisionModule:
 			dist_to_closest_ghost = None
 			for ghost_loc in ghost_locations:
 				dist = get_distance(pos, (ghost_loc.row, ghost_loc.col))
+				# try:
+				# 	pos_idx = self.dtDict[pos]
+				# 	ghost_idx = self.dtDict[(ghost_loc.row, ghost_loc.col)]
+				# 	print(f'pos: {pos_idx}, ghost_pos: {ghost_idx}')
+				# 	print(type(pos_idx), type(ghost_idx))
+				# 	dist = self.distTable[pos_idx][ghost_idx]
+				# except IndexError:
+				# 	dist = get_distance(pos, (ghost_loc.row, ghost_loc.col))
+				# except KeyError:
+				# 	dist = get_distance(pos, (ghost_loc.row, ghost_loc.col))
 
 				if dist_to_closest_ghost is None or dist < dist_to_closest_ghost:
 					dist_to_closest_ghost = dist
