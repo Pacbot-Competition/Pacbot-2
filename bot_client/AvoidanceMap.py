@@ -16,7 +16,6 @@ class cellAvoidanceMap:
         """
         self.avoidance_map = {}
         self.g = g
-        self.ghosts = {}
         self.pellet_boost = 50
         self.superPellet_boost = 200
 
@@ -34,17 +33,18 @@ class cellAvoidanceMap:
         """
         self.g = g
         self.avoidance_map = {}
-        self.ghosts = {}
 
         print(self.dtDict)
         print(type(self.dtDict))
 
-        for ghost in self.g.ghosts:
-            self.ghosts[ghost.color] = (ghost.location.row, ghost.location.col)
+        # for ghost in self.g.ghosts:
+        #     self.ghosts[ghost.color] = (ghost.location.row, ghost.location.col)
+        
+        self.ghost_positions = list(map(lambda ghost: (ghost.location.row, ghost.location.col), g.ghosts))
 
         for tile in get_walkable_tiles(g):
             ghost_proximity = 0
-            for ghost_col, ghost_pos in self.ghosts.items():
+            for ghost_pos in self.ghost_positions:
                 # TODO: Account for ghost color (i.e. avoid red ghost more than pink?)
                 try:
                     tile_idx = self.dtDict[tile]
@@ -54,6 +54,7 @@ class cellAvoidanceMap:
                     dist = get_distance(tile, (ghost_pos[0], ghost_pos[1]))
                 except KeyError:
                     dist = get_distance(tile, (ghost_pos[0], ghost_pos[1]))
+                dist = get_distance(tile, ghost_pos)
                 
                 #dist = get_astar_dist(tile, ghost_pos, self.g)
                 if dist == 0 or dist is None:

@@ -54,7 +54,7 @@ def find_path(start, target, g: GameState):
                 path.append(retrace)
                 retrace = reached[retrace]["parent"]
             path.reverse()
-            print(path)
+            #print(path)
             return path
 
         # Add current, non-goal node to the expanded list
