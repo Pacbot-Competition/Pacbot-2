@@ -2,6 +2,7 @@
 import asyncio
 
 import os
+import random
 
 # Game state
 from gameState import *
@@ -63,6 +64,9 @@ class DecisionModule:
 
 		# Get the current position of Pacbot
 		pacmanPos = (self.state.pacmanLoc.row, self.state.pacmanLoc.col)
+		if pacmanPos not in self.walkable_cells:
+			return # If Pacman is not in a walkable cell, don't update the target location
+
 		ghost_locations = list(map(lambda ghost: ghost.location, self.state.ghosts))
 
 		# Find the point that is farthest from any ghost
@@ -105,8 +109,14 @@ class DecisionModule:
 					avoidanceScores[(pacmanPos[0] + i, pacmanPos[1] + j)] = self.avoidance_map.avoidance_map[(pacmanPos[0] + i, pacmanPos[1] + j)]
 		
 		# If there are cells to consider, set the target to the cell with the lowest score
-		target = min(avoidanceScores, key=avoidanceScores.get)
-		
+		if avoidanceScores:
+			target = min(avoidanceScores, key=avoidanceScores.get)
+		else: # Move one space randomly
+			while True:
+				rand_move = random.choice([(pacmanPos[0]+1, pacmanPos[1]), (pacmanPos[0]-1, pacmanPos[1]), (pacmanPos[0], pacmanPos[1]+1), (pacmanPos[0], pacmanPos[1]-1)])
+				if rand_move in self.walkable_cells:
+					target = rand_move
+
 		path = find_path(pacmanPos, target, self.state, self.avoidance_map)
 		DebugServer.instance.set_path(path)
 	
@@ -147,7 +157,7 @@ class DecisionModule:
 
 			# Perform the decision-making process
 			if absDelta != 1:
-				# If we're at the target location, or the target locatin is somehow unreachable from the current position,
+				# If we're at the target location, or the target locatipn is somehow unreachable from the current position,
 				# update the target location
 				self.update_target_loc()
 			else:

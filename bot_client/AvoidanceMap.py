@@ -37,27 +37,32 @@ class cellAvoidanceMap:
         # print(self.dtDict)
         # print(type(self.dtDict))
         
-        self.ghost_positions = list(map(lambda ghost: (ghost.location.row, ghost.location.col), g.ghosts))
+        self.ghosts = self.g.ghosts
 
         for tile in get_walkable_tiles(g):
             ghost_proximity = 0
-            for ghost_pos in self.ghost_positions:
+            for ghost in self.ghosts:
                 # TODO: Account for ghost color (i.e. avoid red ghost more than pink?)
-                try:
-                    tile_idx = self.dtDict[tile]
-                    ghost_idx = self.dtDict[ghost_pos]
-                    dist = self.distTable[tile_idx][ghost_idx]
-                except IndexError:
-                    dist = get_distance(tile, (ghost_pos[0], ghost_pos[1]))
-                except KeyError:
-                    dist = get_distance(tile, (ghost_pos[0], ghost_pos[1]))
-                dist = get_distance(tile, ghost_pos)
+                # try:
+                #     tile_idx = self.dtDict[tile]
+                #     ghost_idx = self.dtDict[ghost_pos]
+                #     dist = self.distTable[tile_idx][ghost_idx]
+                # except IndexError:
+                #     dist = get_distance(tile, (ghost_pos[0], ghost_pos[1]))
+                # except KeyError:
+                #     dist = get_distance(tile, (ghost_pos[0], ghost_pos[1]))
+
+                dist = get_distance(tile, (ghost.location.row, ghost.location.col))
+
+                fright_modifier = 1
+                if ghost.isFrightened():
+                    fright_modifier = -1
                 
                 #dist = get_astar_dist(tile, ghost_pos, self.g)
                 if dist == 0 or dist is None:
-                    ghost_proximity += 1000  # Tunable
+                    ghost_proximity += 1000*fright_modifier  # Tunable
                 else:
-                    ghost_proximity += 1 / dist * 500  # Tunable
+                    ghost_proximity += 1 / dist*500 * fright_modifier  # Tunable
 
             # TODO: Maybe account for distance to nearby pellets?
             pellet_boost = 0
