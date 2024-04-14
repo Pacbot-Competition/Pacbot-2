@@ -15,6 +15,9 @@ from gameState import GameState
 # Decision module
 from policies.astar.decisionModule import DecisionModule
 
+# Robot socket
+from robotSocket import RobotSocket
+
 # Server messages
 from serverMessage import *
 
@@ -35,19 +38,46 @@ def getConnectURL() -> str:
 	# Return the websocket connect address
 	return f'ws://{config["ServerIP"]}:{config["WebSocketPort"]}'
 
+# Get the simulation flag from the config.json file
+def getSimulationFlag() -> bool:
+
+	# Read the configuration file
+	with open('../config.json', 'r', encoding='UTF-8') as configFile:
+		config = json.load(configFile)
+
+	# Return the websocket connect address
+	return config["PythonSimulation"]
+
+# Get the robot address from the config.json file
+def getRobotAddress() -> tuple[str, int]:
+
+	# Read the configuration file
+	with open('../config.json', 'r', encoding='UTF-8') as configFile:
+		config = json.load(configFile)
+
+	# Return the websocket connect address
+	return config["RobotIP"], config['RobotPort']
+
 class PacbotClient:
 	'''
 	Sample implementation of a websocket client to communicate with the
 	Pacbot game server, using asyncio.
 	'''
 
-	def __init__(self, connectURL: str) -> None:
+	def __init__(self, connectURL: str, simulationFlag: bool, robotAddress: tuple[str, int]) -> None:
 		'''
 		Construct a new Pacbot client object
 		'''
 
 		# Connection URL (starts with ws://)
 		self.connectURL: str = connectURL
+
+		# Simulation flag (bool)
+		self.simulationFlag: bool = simulationFlag
+
+		# Robot IP and port
+		self.robotIP: str = robotAddress[0]
+		self.robotPort: int = robotAddress[1]
 
 		# Private variable to store whether the socket is open
 		self._socketOpen: bool = False
@@ -61,6 +91,9 @@ class PacbotClient:
 		# Decision module (policy) to make high-level decisions
 		self.decisionModule: DecisionModule = DecisionModule(self.state)
 
+		# Robot socket (comms) to dispatch low-level commands
+		self.robotSocket: RobotSocket = RobotSocket(self.robotIP, self.robotPort)
+
 	async def run(self) -> None:
 		'''
 		Connect to the server, then run
@@ -73,6 +106,7 @@ class PacbotClient:
 			if self._socketOpen:
 				await asyncio.gather(
 					self.receiveLoop(),
+					self.commsLoop(),
 					self.decisionModule.decisionLoop()
 				)
 		finally: # Disconnect once the connection is over
@@ -141,9 +175,10 @@ class PacbotClient:
 				self.state.update(messageBytes)
 
 				# Write a response back to the server if necessary
-				if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
-					response: bytes = self.state.writeServerBuf.popleft().getBytes()
-					self.connection.send(response)
+				if (self.simulationFlag):
+					if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
+						response: bytes = self.state.writeServerBuf.popleft().getBytes()
+						self.connection.send(response)
 
 				# Free the event loop to allow another decision
 				await asyncio.sleep(0)
@@ -154,12 +189,58 @@ class PacbotClient:
 				self.state.setConnectionStatus(False)
 				break
 
+	async def commsLoop(self) -> None:
+		'''
+		Communication loop for sending messages to the robot
+		'''
+
+		# Quit if in simulation
+		if (self.simulationFlag):
+			print("Simulation Mode: No Robot")
+			return
+
+		# Keep track if the first iteration has taken place
+		firstIt = True
+
+		# Keep sending messages as long as the server connection is open
+		while self.isOpen():
+
+			# Try to receive messages (and skip to except in case of an error)
+			try:
+
+				# Wait until the bot stops sending messages
+				self.robotSocket.wait()
+				
+				# Handle first iteration (flush)
+				if firstIt:
+					self.robotSocket.flush(self.state.pacmanLoc.row, self.state.pacmanLoc.col)
+					firstIt = False
+
+				# Otherwise, send out relevant messages
+				else:
+					if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
+						command: bytes = self.state.writeServerBuf.popleft().getBytes()
+						self.robotSocket.moveNoCoal(command)
+						#if self.state.writeServerBuf:
+						#	self.state.writeServerBuf[0].skipDelay()
+
+				# Free the event loop to allow another decision
+				await asyncio.sleep(0.025)
+
+			# Break once the connection is closed
+			except ConnectionClosedError:
+				print('Comms lost...')
+				self.state.setConnectionStatus(False)
+				break
+
 # Main function
 async def main():
 
 	# Get the URL to connect to
 	connectURL = getConnectURL()
-	client = PacbotClient(connectURL)
+	simulationFlag = getSimulationFlag()
+	robotAddress = getRobotAddress()
+	client = PacbotClient(connectURL, simulationFlag, robotAddress)
 	await client.run()
 
 	# Once the connection is closed, end the event loop
@@ -169,6 +250,6 @@ async def main():
 if __name__ == '__main__':
 
 	# Run the event loop forever
-	loop = asyncio.get_event_loop()
+	loop = asyncio.new_event_loop()
 	loop.create_task(main())
 	loop.run_forever()

@@ -160,10 +160,6 @@ class AStarPolicy:
 			case DistTypes.PACHATTAN_DISTANCE:
 				self.dist = distL3
 				self.distSq = distSqL3
-			case _: # pachattan
-				self.distType = DistTypes.PACHATTAN_DISTANCE
-				self.dist = distL3
-				self.distSq = distSqL3
 
 	def getNearestPellet(self) -> Location:
 
@@ -203,7 +199,7 @@ class AStarPolicy:
 					queue.append(nextLoc)
 					visited.add(nextLoc.hash())
 
-		print('No nearest...')
+		#print('No nearest...')
 		return first
 	
 	def scaryVictim(self, victimColor: GhostColors) -> bool:
@@ -221,7 +217,7 @@ class AStarPolicy:
 			if (color != victimColor) and (not G.spawning) and (not G.isFrightened()):
 				if not self.state.wallAt(G.location.row, G.location.col):
 					if self.dist(V.location, G.location) <= 2:
-						print('re-assigning victim')
+						#print('re-assigning victim')
 						return True
 					
 		return False
@@ -436,13 +432,13 @@ class AStarPolicy:
 						currNode.directionBuf[index]
 					)
 				
-				print('victim caught?')
+				#print('victim caught?')
 					
 				if currNode.targetCaught:
-					print('target caught')
+					#print('target caught')
 					pelletTarget = self.getNearestPellet()
 
-				print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
+				#print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
 				return victimColor, pelletTarget
 
 			elif currNode.targetCaught and (victimColor == GhostColors.NONE):
@@ -453,10 +449,10 @@ class AStarPolicy:
 						currNode.directionBuf[index]
 					)
 			
-				print('target caught')
+				#print('target caught')
 				pelletTarget = self.getNearestPellet()
 
-				print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
+				#print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
 				return GhostColors.NONE, pelletTarget
 
 			if currNode.bufLength >= 6:
@@ -467,7 +463,7 @@ class AStarPolicy:
 						currNode.directionBuf[index]
 					)
 
-				print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
+				#print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
 				return victimColor, pelletTarget
 
 			# Get Pacman's current direction
@@ -540,5 +536,5 @@ class AStarPolicy:
 
 			firstIt = False
 
-		print("Trapped...")
+		#print("Trapped...")
 		return victimColor, pelletTarget

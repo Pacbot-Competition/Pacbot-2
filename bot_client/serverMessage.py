@@ -17,7 +17,13 @@ class ServerMessage:
     is ready to send to the server.
 		'''
     self.waitTicks -= 1
-    return (self.waitTicks == 0)
+    return (self.waitTicks <= 0)
+  
+  def skipDelay(self):
+    '''
+    Skip the delay for a message sent to the robot
+    '''
+    self.waitTicks = 0
 
   def getBytes(self):
     '''
