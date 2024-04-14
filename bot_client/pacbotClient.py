@@ -221,8 +221,8 @@ class PacbotClient:
 					if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
 						command: bytes = self.state.writeServerBuf.popleft().getBytes()
 						self.robotSocket.moveNoCoal(command)
-						#if self.state.writeServerBuf:
-						#	self.state.writeServerBuf[0].skipDelay()
+						if self.state.writeServerBuf:
+							self.state.writeServerBuf[0].skipDelay()
 
 				# Free the event loop to allow another decision
 				await asyncio.sleep(0.025)

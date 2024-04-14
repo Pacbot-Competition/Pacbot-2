@@ -71,10 +71,47 @@ class RobotSocket:
         
         print('flush', row, col)
 
+        # Update the sequence number, if applicable
+        self.updateSeq()
+
         # Overwrite the output for a flush
         self.seq0 = self.recvData[2]
         self.seq1 = self.recvData[1]
         self.typ  = int(CommandType.FLUSH)
+        self.val1 = 0
+        self.val2 = 0
+
+        # Dispatch the message
+        self.dispatch()
+
+    def start(self, row: int, col: int) -> None:
+
+        print('start', row, col)
+
+        # Update the sequence number, if applicable
+        self.updateSeq()
+
+        # Overwrite the output for a flush
+        self.seq0 = self.recvData[2]
+        self.seq1 = self.recvData[1]
+        self.typ  = int(CommandType.START)
+        self.val1 = 0
+        self.val2 = 0
+
+        # Dispatch the message
+        self.dispatch()
+
+    def stop(self, row: int, col: int) -> None:
+
+        print('stop', row, col)
+
+        # Update the sequence number, if applicable
+        self.updateSeq()
+
+        # Overwrite the output for a flush
+        self.seq0 = self.recvData[2]
+        self.seq1 = self.recvData[1]
+        self.typ  = int(CommandType.STOP)
         self.val1 = 0
         self.val2 = 0
 
