@@ -20,6 +20,8 @@ const int back_sensor_pin = 12;
 
 #define LED_PIN LED_BUILTIN
 
+#define MAX_DISTANCE /*max distance = sum of two sensor distances when not tilted*/
+
 void init_sensors() {
   pinMode(left_sensor_pin, OUTPUT);
   pinMode(right_sensor_pin, OUTPUT);
@@ -79,7 +81,71 @@ void setup()
   digitalWrite(LED_PIN, HIGH);
 }
 
+int is_tilted(VL6180X left_sensor, VL6180X right_sensor){
+  int ldist = left_sensor.readRangeSingleMillimeters();
+  int rdist = right_sensor.readRangeSingleMillimeters();
+  if((ldist + rdist) > MAX_DISTANCE) { /*is tilted*/
+    return 1;
+  } else { /*not tilted*/
+    return 0;
+  }
+}
 
+void correct_tilt(int top, int right, VL6180X left_sensor, VL6180X right_sensor) {
+  //if tilted to the right
+  while(right_sensor.readRangeSingleMillimeters() < left_sensor.readRangeSingleMillimeters()) {
+    //move top wheel to the left and bottom wheel to the right
+      digitalWrite(MOTORDIR_PINS[top], HIGH);
+      digitalWrite(MOTORDIR_PINS[bottom], LOW);
+      analogWrite(MOTORPWM_PINS[top], 200);
+      analogWrite(MOTORPWM_PINS[bottom], 200);
+  }
+  //if tilted to the left
+  while(left_sensor.readRangeSingleMillimeters() > right_sensor.readRangeSingleMillimeters()){
+    //move top wheel to the right and bottom wheel to the left
+      digitalWrite(MOTORDIR_PINS[top], LOW);
+      digitalWrite(MOTORDIR_PINS[bottom], HIGH);
+      analogWrite(MOTORPWM_PINS[top], 200);
+      analogWrite(MOTORPWM_PINS[bottom], 200);
+  }
+
+  analogWrite(MOTORPWM_PINS[top], 0);
+  analogWrite(MOTORPWM_PINS[bottom], 0);
+}
+
+void correct_drift(VL6180X right_sensor, VL6180X left_sensor) {
+  if(right_sensor.readRangeSingleMillimeters() == left_sensor.readRangeSingleMillimeters()) {
+    analogWrite(MOTORPWM_PINS[bottom], 0);
+    analogWrite(MOTORPWM_PINS[top], 0);
+  }
+  while(right_sensor.readRangeSingleMillimeters() > left_sensor.readRangeSingleMillimeters()) {
+    digitalWrite(MOTORDIR_PINS[top], HIGH); //moves top motor to the left
+    analogWrite(MOTORPWM_PINS[top], 200); //moves motors
+    digitalWrite(MOTORDIR_PINS[bottom], HIGH);
+    analogWrite(MOTORPWM_PINS[bottom], 200);
+  }
+  while(left_sensor > right_sensor) {
+    //move it to the right
+    digitalWrite(MOTORDIR_PINS[top], LOW);
+    analogWrite(MOTORPWM_PINS[top], 200);
+    digitalWrite(MOTORDIR_PINS[bottom], LOW);
+    analogWrite(MOTORPWM_PINS[bottom], 200);
+  }
+}
+
+void straight(int top, int bottom, int left, int right, VL6180X left_sensor, VL6180X right_sensor) {
+  //go forward
+  digitalWrite(MOTORDIR_PINS[left], LOW);
+  digitalWrite(MOTORDIR_PINS[right], LOW);
+  analogWrite(MOTORPWM_PINS[left], 200);
+  analogWrite(MOTORPWM_PINS[right], 200);
+
+  if(is_tilted(left, right) == 1) { /*is tilted*/
+    correct_tilt(top, bottom, left_sensor, right_sensor);
+  } else {
+    correct_drift(left, right, left_sensor, right_sensor);
+  }
+}
 
 void loop()
 {
