@@ -555,7 +555,7 @@ class GameState:
 		# General game info
 		self.currTicks    = unpacked[0]
 		self.updatePeriod = unpacked[1]
-		self.gameMode     = unpacked[2]
+		self.gameMode     = GameModes(unpacked[2])
 		self.modeSteps    = unpacked[3]
 		self.modeDuration = unpacked[4]
 		self.currScore    = unpacked[5]
