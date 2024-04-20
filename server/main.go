@@ -53,14 +53,13 @@ func main() {
 
 	// Keep the game engine alive until a user types 'q'
 	var input string
+	fmt.Println("Ready")
 	for {
-		fmt.Scanf("%s", &input) // Blocking I/O to keep the program alive
-		if input == "q" {       // Quit signal
+		fmt.Scanf("%s\n", &input) // Blocking I/O to keep the program alive
+		if input == "q" {         // Quit signal
 			break
-		} else if input == "p" { // Pause signal
-			webResponseCh <- []byte("p")
-		} else if input == "P" { // Play signal
-			webResponseCh <- []byte("P")
+		} else {
+			webResponseCh <- []byte(input)
 		}
 	}
 
