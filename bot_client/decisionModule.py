@@ -98,9 +98,22 @@ class DecisionModule:
 		path = find_path(pacmanPos, max_dist_point, self.state, self.avoidance_map)
 		"""
 
-		# Testing new way: within X block radius, set target to cell with lowest score in avoidance map
+		n = self.state.numPellets()
+		self.avoidance_map.num_pellets = n
 		self.avoidance_map.updateMap(self.state)
-		radius = 5
+  
+		# pacbot evaluates more options as it gets closer to the end of the level
+		# (tunable ofc)
+		if n > 200:
+			radius = 5
+		elif n > 100:
+			radius = 10
+		elif n > 50:
+			radius = 15
+		else:
+			radius = 20
+   
+   		# Testing new way: within X block radius, set target to cell with lowest score in avoidance map
 		avoidanceScores = {}
 		for i in range(-radius, radius+1):
 			for j in range(-radius, radius+1):
@@ -167,9 +180,9 @@ class DecisionModule:
 				direction = direction_from_delta(deltaRow, deltaCol)
 
 				# Update our position on the server.
-				# In the future, this needs to be replaced by a call to the low level movement code
+				# !TODO: In the future, this needs to be replaced by a call to the low level movement code
 				self.state.queueAction(1, direction)
-				await asyncio.sleep(0.5)
+				await asyncio.sleep(0.1)
 				
 
 			# Unlock the game state
@@ -180,3 +193,17 @@ class DecisionModule:
 
 			# Free up the event loop
 			await asyncio.sleep(0)
+
+"""
+================================================.
+     .-.   .-.     .--.                         |
+    | OO| | OO|   / _.-' .-.   .-.  .-.   .''.  |
+    |   | |   |   \  '-. '-'   '-'  '-'   '..'  |
+    '^^^' '^^^'    '--'                         |
+===============.  .-.  .================.  .-.  |
+               | |   | |                |  '-'  |
+               | |   | |                |       |
+               | ':-:' |                |  .-.  |
+               |  '-'  |                |  '-'  |
+==============='       '================'       |
+"""
