@@ -46,6 +46,9 @@ class CameraModule:
 		# Instantiate a new ArUco detector
 		self.detector = aruco.ArucoDetector(self.dictionary, aruco.DetectorParameters())
 
+		# Capture object
+		self.cap = cv2.VideoCapture(0)
+
 	async def decisionLoop(self) -> None:
 		'''
 		Decision loop for CV
@@ -58,11 +61,17 @@ class CameraModule:
 			img = self.capture()
 
 			# If the image is none, continue
-			if not img:
+			if not img.any():
 				continue
 
 			# Process the frame
 			pacman_row, pacman_col = self.localize(img)
+
+			# If there's a wall where the Pacbot is, quit
+			if self.wallAt(pacman_row, pacman_col):
+				print("Invalid coords")
+				await asyncio.sleep(1)
+				continue
 
 			# Write back to the server, as a test (move right)
 			self.state.send(pacman_row, pacman_col)
@@ -75,8 +84,7 @@ class CameraModule:
 		Capture an image
 		'''
 
-		cap = cv2.VideoCapture(1)
-		_, img = cap.read()
+		_, img = self.cap.read()
 		img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 		return img
 
@@ -96,6 +104,12 @@ class CameraModule:
 
 		# Detect markers
 		corners, ids, _ = self.detector.detectMarkers(img)
+
+		if ids is None:                                                              # type: ignore
+			print("ERR: No markers detected...")
+			return 32, 32
+
+		print(ids)
 
 		# Array of ids with centroids
 		ids_centroids: list[tuple[int, IntArray]] = []
@@ -130,7 +144,9 @@ class CameraModule:
 			ids_centroids.append(pair)
 
 		# Assert that Pacman was found
-		assert foundPacman, "ERR: Pacman not found"
+		if not foundPacman:
+			print("ERR: Pacman not found")
+			return 32, 32
 
 		# Sort the centroids
 		ids_centroids.sort()
@@ -143,10 +159,14 @@ class CameraModule:
 		bottomHalf = (ids == (0, 3, 4, 5, 6))
 
 		# Assert that we're either in the top half or bottom half
-		assert (topHalf or bottomHalf), "ERR: The image is neither the top or bottom half"
+		if not (topHalf or bottomHalf):
+			print("ERR: The image is neither the top or bottom half")
+			return 32, 32
 
 		# Assert that we're not including both halves (because it's too 'zoomed out')
-		assert (not (topHalf and bottomHalf)), "ERR: The image includes the whole maze"
+		if (topHalf and bottomHalf):
+			print("ERR: The image includes the whole maze")
+			return 32, 32
 
 		# Dimensions
 		width = 28
@@ -213,7 +233,9 @@ class CameraModule:
 								(transformed_col - pacman_transformed_colf)
 					neighbors.append((distSq, (transformed_row + offset, transformed_col)))
 
-		assert len(neighbors), "ERR: Pacbot was found to be in a wall"
+		if not len(neighbors):
+			print("ERR: Pacbot was found to be in a wall")
+			return 32, 32
 
 		pacman_transformed_row, pacman_transformed_col = min(neighbors)[1]
 		print(pacman_transformed_row, pacman_transformed_col)
