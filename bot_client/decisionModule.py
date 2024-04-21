@@ -18,6 +18,18 @@ def direction_from_delta(deltaRow, deltaCol):
 	else:
 		raise ValueError("Invalid delta")
 
+def send_bit(value, GPIO_PIN):
+    # Set up GPIO
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(GPIO_PIN, GPIO.OUT)
+
+    # Send the bit
+    GPIO.output(GPIO_PIN, value)
+    time.sleep(0.1)  # Adjust delay as needed
+
+    # Clean up GPIO
+    GPIO.cleanup()
+
 class DecisionModule:
 	'''
 	Sample implementation of a decision module for high-level
