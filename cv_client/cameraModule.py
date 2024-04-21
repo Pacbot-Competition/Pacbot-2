@@ -57,6 +57,10 @@ class CameraModule:
 			# Get a frame
 			img = self.capture()
 
+			# If the image is none, continue
+			if not img:
+				continue
+
 			# Process the frame
 			pacman_row, pacman_col = self.localize(img)
 
