@@ -22,6 +22,8 @@ class cellAvoidanceMap:
         self.distTable = loadDistTable()
         self.dtDict = loadDistTableDict()
         
+        self.num_pellets = g.numPellets()
+        
         self.updateMap(self.g)
         
     
@@ -57,17 +59,36 @@ class cellAvoidanceMap:
                 fright_modifier = 1
                 if ghost.isFrightened():
                     fright_modifier = -1
-                
-                #dist = get_astar_dist(tile, ghost_pos, self.g)
-                if dist == 0 or dist is None:
-                    ghost_proximity += 1000*fright_modifier  # Tunable
-                else:
-                    ghost_proximity += 1 / dist*500 * fright_modifier  # Tunable
+                THRESHOLD_DIST = 8 # tunable 
+                if dist < THRESHOLD_DIST:
+                    #dist = get_astar_dist(tile, ghost_pos, self.g)
+                    if dist == 0 or dist is None:
+                        ghost_proximity += 1000*fright_modifier  # Tunable
+                    else:
+                        ghost_proximity += 1 / dist* 250 * fright_modifier  # Tunable
 
             # TODO: Maybe account for distance to nearby pellets?
             pellet_boost = 0
             if self.g.pelletAt(tile[0], tile[1]):
                 pellet_boost = self.pellet_boost
+                
+                # Tunable: pellet boost multiplier based on number of pellets left
+                # pacbot needs to be more aggressive as it gets closer to the end of the level
+                # this doesn't have to be a series of if statements, could be a function lol
+                if self.num_pellets < 4:
+                    pellet_boost *= 50
+                elif self.num_pellets < 6:
+                    pellet_boost *= 20
+                elif self.num_pellets < 8:
+                    pellet_boost *= 10
+                elif self.num_pellets < 10:
+                    pellet_boost *= 5
+                elif self.num_pellets < 20:
+                    pellet_boost *= 4
+                elif self.num_pellets < 50:
+                    pellet_boost *= 3
+                elif self.num_pellets < 100:
+                    pellet_boost *= 2
                 
             if self.g.superPelletAt(tile[0], tile[1]):
                 pellet_boost = self.superPellet_boost
