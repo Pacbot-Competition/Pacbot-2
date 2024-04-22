@@ -163,11 +163,6 @@ class CameraModule:
 			print("ERR: The image is neither the top or bottom half")
 			return 32, 32
 
-		# Assert that we're not including both halves (because it's too 'zoomed out')
-		if (topHalf and bottomHalf):
-			print("ERR: The image includes the whole maze")
-			return 32, 32
-
 		# Dimensions
 		width = 28
 		height = 16 if topHalf else 15
