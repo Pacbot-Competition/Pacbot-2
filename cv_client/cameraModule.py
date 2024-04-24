@@ -22,9 +22,41 @@ import matplotlib.pyplot as plt
 # Typing
 from typing import Any
 
+# Extra imports for bufferless VideoCapture
+import threading
+import queue
+
 # Typedef
 MatLike = cv2.typing.MatLike
 IntArray = np.ndarray[Any, np.dtype[np.intp]]
+
+# Bufferless VideoCapture
+class VideoCapture:
+
+	''' Copied from StackOverflow: https://stackoverflow.com/a/54755738 '''
+
+	def __init__(self, name: Any):
+		self.cap = cv2.VideoCapture(name)
+		self.q: queue.Queue[MatLike] = queue.Queue()
+		t = threading.Thread(target=self._reader)
+		t.daemon = True
+		t.start()
+
+	# read frames as soon as they are available, keeping only most recent one
+	def _reader(self):
+		while True:
+			ret, frame = self.cap.read()
+			if not ret:
+				break
+			if not self.q.empty():
+				try:
+					self.q.get_nowait()   # discard previous (unprocessed) frame
+				except queue.Empty:
+					pass
+			self.q.put(frame)
+
+	def read(self):
+		return self.q.get()
 
 class CameraModule:
 	'''
@@ -47,7 +79,7 @@ class CameraModule:
 		self.detector = aruco.ArucoDetector(self.dictionary, aruco.DetectorParameters())
 
 		# Capture object
-		self.cap = cv2.VideoCapture(0)
+		self.cap = VideoCapture(0)
 
 	async def decisionLoop(self) -> None:
 		'''
@@ -61,7 +93,7 @@ class CameraModule:
 			img = self.capture()
 
 			# If the image is none, continue
-			if not img.any():
+			if img is None:
 				continue
 
 			# Process the frame
@@ -69,8 +101,7 @@ class CameraModule:
 
 			# If there's a wall where the Pacbot is, quit
 			if self.wallAt(pacman_row, pacman_col):
-				print("Invalid coords")
-				await asyncio.sleep(1)
+				await asyncio.sleep(0)
 				continue
 
 			# Write back to the server, as a test (move right)
@@ -79,12 +110,15 @@ class CameraModule:
 			# Free up the event loop
 			await asyncio.sleep(0)
 
-	def capture(self) -> MatLike:
+	def capture(self) -> MatLike | None:
 		'''
 		Capture an image
 		'''
 
-		_, img = self.cap.read()
+		img = self.cap.read()
+		if img is None:                                                              # type: ignore
+			print("ERR: NO IMAGE")
+			return None
 		img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 		return img
 
@@ -149,7 +183,7 @@ class CameraModule:
 			return 32, 32
 
 		# Sort the centroids
-		ids_centroids.sort()
+		ids_centroids.sort(key=lambda x: x[0])
 
 		# Get the sorted ids
 		ids, centroids = list(zip(*ids_centroids))
