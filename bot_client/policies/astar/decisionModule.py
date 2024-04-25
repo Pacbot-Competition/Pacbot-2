@@ -61,14 +61,11 @@ class DecisionModule:
 			# If the current messages haven't been sent out yet, skip this iteration
 			if not self.state.done or self.state.isLocked():
 				await asyncio.sleep(0)
-				print("?")
 				continue
 
 			if wait:
-				print('!')
 				await asyncio.sleep(1/gameFPS)
 				wait = False
-
 
 			if self.state.gameMode == 0:
 				await asyncio.sleep(0)

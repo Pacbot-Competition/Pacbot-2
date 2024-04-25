@@ -53,6 +53,19 @@ class RobotSocket:
         self.val2: int = 0
         self.done: bool = False
 
+        self.doneEventSubscribers=[]
+
+    def notifyDoneEvent(self, done):
+        pass
+
+    def registerDoneHandler(self, doneEventHandler):
+        pass
+
+    def unRegisterDoneHandler(self, doneEventHandler):
+        pass
+
+
+
     def moveNoCoal(self, command: bytes, row: int, col: int, dist: int) -> None:
 
         print(f'{CYAN}sending command{NORMAL}', command, dist, '->', row, col)
