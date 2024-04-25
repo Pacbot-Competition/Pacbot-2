@@ -33,7 +33,7 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte,
 	// Time between ticks
 	_tickTime := 1000000 * time.Microsecond / time.Duration(clockRate)
 	ge := GameEngine{
-		quitCh:      make(chan struct{}, 0),
+		quitCh:      make(chan struct{}),
 		webOutputCh: _webOutputCh,
 		webInputCh:  _webInputCh,
 		state:       newGameState(),
@@ -139,7 +139,6 @@ func (ge *GameEngine) RunLoop() {
 		// Re-serialize the current state
 		serLen = ge.state.serFull(outputBuf, 0)
 
-
 		/* STEP 4: Write the serialized game state to the output channel */
 
 		// Check if a write will be blocked, and try to write the serialized state
@@ -160,11 +159,19 @@ func (ge *GameEngine) RunLoop() {
 		}
 
 		/* STEP 5: Read the input channel and update the game state accordingly */
-		read_loop: for {
+	read_loop:
+		for {
 			select {
 			// If we get a message from the web broker, handle it
 			case msg := <-ge.webInputCh:
-				ge.state.interpretCommand(msg)
+				rst := ge.state.interpretCommand(msg)
+				if rst { // Reset if necessary
+					ge.state = newGameState()
+					ge.state.updateAllGhosts()
+					ge.state.handleStepEvents()
+					ge.state.planAllGhosts()
+					justTicked = true
+				}
 			default:
 				break read_loop
 			}

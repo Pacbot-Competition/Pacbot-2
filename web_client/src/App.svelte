@@ -286,6 +286,9 @@
     } else if (key === ' ' && !mediaControlKeyHeld) {
       mediaControlKeyHeld = true;
       return (gameMode === Modes.Paused ? 'P' : 'p');
+    } else if (key === 'Escape') {
+      mediaControlKeyHeld = false;
+      return 'r';
     }
     return null;
   }
@@ -299,6 +302,9 @@
       have elapsed since the last motion key, ignore this key
     */
     if ((4 * (currTicks - lastMotionTicks) < updatePeriod)) {
+      if (currTicks == 0) {
+        lastMotionTicks = currTicks;
+      }
       return null;
     }
 

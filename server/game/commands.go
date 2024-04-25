@@ -7,7 +7,7 @@ import (
 /***************************** Interpret Commands *****************************/
 
 // Convert byte messages from clients into commands to the game state
-func (gs *gameState) interpretCommand(msg []byte) {
+func (gs *gameState) interpretCommand(msg []byte) bool {
 
 	// Log the command if necessary
 	if getCommandLogEnable() {
@@ -28,6 +28,14 @@ func (gs *gameState) interpretCommand(msg []byte) {
 	// Play command
 	case 'P':
 		gs.play()
+
+	// Restart command
+	case 'r':
+		return true
+
+	// Restart command
+	case 'R':
+		return true
 
 	// Move up (decrease row index)
 	case 'w':
@@ -50,8 +58,10 @@ func (gs *gameState) interpretCommand(msg []byte) {
 		if len(msg) != 3 {
 			log.Println("\033[35m\033[1mERR:  Invalid position update " +
 				"(message type 'x'). Ignoring...\033[0m")
-			return
+			return false
 		}
 		gs.movePacmanAbsolute(int8(msg[1]), int8(msg[2]))
 	}
+
+	return false
 }
