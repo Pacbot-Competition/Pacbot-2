@@ -53,16 +53,17 @@ class RobotSocket:
         self.val2: int = 0
         self.done: bool = False
 
-        self.doneEventSubscribers=[]
+    #     self.doneEventSubscribers=[]
 
-    def notifyDoneEvent(self, done):
-        pass
+    # def notifyDoneEvent(self, done):
+    #     for handler in self.doneEventSubscribers:
 
-    def registerDoneHandler(self, doneEventHandler):
-        pass
 
-    def unRegisterDoneHandler(self, doneEventHandler):
-        pass
+    # def registerDoneHandler(self, doneEventHandler):
+    #     pass
+
+    # def unRegisterDoneHandler(self, doneEventHandler):
+    #     raise Exception("unimplemented")
 
 
 
