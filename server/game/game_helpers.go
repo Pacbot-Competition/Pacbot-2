@@ -308,7 +308,7 @@ func (gs *gameState) movePacmanAbsolute(newRow, newCol int8) {
 	if gs.isPaused() || gs.getPauseOnUpdate() {
 		return
 	}
-	
+
 	// Reject invalid coords
 	if gs.wallAt(newRow, newCol) {
 		return
@@ -332,7 +332,7 @@ func (gs *gameState) movePacmanAbsolute(newRow, newCol int8) {
 
 	// The new position is far from the old one, let's not traverse the path
 	if len(path) > 5 {
-		log.Println("\033[35mWARN: Interpolated path too long! "+
+		log.Println("\033[35mWARN: Interpolated path too long! " +
 			"Tracking performance is likely degraded\033[0m")
 
 		// Acquire the Pacman control lock, to prevent other Pacman movement
@@ -358,18 +358,22 @@ func (gs *gameState) movePacmanAbsolute(newRow, newCol int8) {
 		nextPos := path[i]
 		if nextPos.r < prevPos.r {
 			gs.movePacmanDir(up)
+			gs.checkCollisions()
 		} else if nextPos.c < prevPos.c {
 			gs.movePacmanDir(left)
+			gs.checkCollisions()
 		} else if nextPos.r > prevPos.r {
 			gs.movePacmanDir(down)
+			gs.checkCollisions()
 		} else {
 			gs.movePacmanDir(right)
+			gs.checkCollisions()
 		}
 		prevPos = nextPos
 	}
 }
 
-type pos struct {r, c int8}
+type pos struct{ r, c int8 }
 
 func (p pos) getAdjacent() [4]pos {
 	return [...]pos{
@@ -393,11 +397,12 @@ func (gs *gameState) findLikelyPath(newRow, newCol int8) []pos {
 	target := pos{newRow, newCol}
 
 	// Keep searching until we have exhausted all options or found it
-	search_loop: for len(queue) != 0 {
+search_loop:
+	for len(queue) != 0 {
 		// Peek top, and remove
 		curr := queue[0]
 		queue = queue[1:]
-		
+
 		// Find adjacencies/neighbors of current cell
 		neighbors := curr.getAdjacent()
 		for i := range neighbors {
@@ -433,9 +438,9 @@ func (gs *gameState) findLikelyPath(newRow, newCol int8) []pos {
 	}
 
 	// Something has gone horribly wrong, last node doesnt backtrack to start
-	if parent[path[len(path) - 1]] != start {
+	if parent[path[len(path)-1]] != start {
 		return nil
-	} 
+	}
 	slices.Reverse(path)
 	return path
 }
