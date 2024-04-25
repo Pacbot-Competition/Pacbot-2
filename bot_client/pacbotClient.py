@@ -10,7 +10,7 @@ from websockets.exceptions import ConnectionClosedError # type: ignore
 from websockets.typing import Data # type: ignore
 
 # Game state
-from gameState import GameState
+from gameState import GameState, ClientMode
 
 # Decision module
 from policies.astar.decisionModule import DecisionModule
@@ -203,7 +203,7 @@ class PacbotClient:
 		firstIt = True
 
 		# Keep track of whether we've sent a message before the robot told us it's done
-		sent = False
+		# sent = False
 
 		# Keep sending messages as long as the server connection is open
 		while self.isOpen():
@@ -211,23 +211,27 @@ class PacbotClient:
 			# Try to receive messages (and skip to except in case of an error)
 			try:
 
-				# Wait until the bot stops sending messages
-				doneBefore = self.state.done
-				self.state.done = self.robotSocket.wait()
-				if not self.state.gameMode == 0:
-					if not doneBefore and self.state.done:
-						print(f'{GREEN}robot just told us it\'s done{NORMAL}')
-					if doneBefore and not self.state.done:
-						print(f'{RED}robot started a move{NORMAL}')
+				# Wait until the bot stops sending messages, and check if it's done
+				robotIsDone = self.robotSocket.wait()
+
+				if (self.state.isSent() and robotIsDone):
+					print('robot just told us it\'s done')
+					self.state.setClientMode(ClientMode.DONE)
+
+				# Not ready to send a new message yet
+				if (self.state.clientMode != ClientMode.PLANNED):
+					await asyncio.sleep(0)
+					continue
 
 				# Handle first iteration (flush)
 				if firstIt:
 					self.robotSocket.start()
-					while (self.state.isLocked()):
+					while (self.state.isLocked() or not self.state.isDone()):
 						await asyncio.sleep(0)
 					self.state.lock()
 					self.robotSocket.flush(self.state.pacmanLoc.row, self.state.pacmanLoc.col)
 					self.state.unlock()
+					self.state.setClientMode(ClientMode.SENT)
 					firstIt = False
 
 				# Otherwise, send out relevant messages
@@ -239,6 +243,7 @@ class PacbotClient:
 						self.robotSocket.moveNoCoal(msg, row, col, dist)
 						if self.state.writeServerBuf:
 							self.state.writeServerBuf[0].skipDelay()
+						self.state.setClientMode(ClientMode.SENT)
 
 				# Free the event loop to allow another decision
 				await asyncio.sleep(0.025)

@@ -72,6 +72,17 @@ reversedDirections: dict[Directions, Directions] = {
 	Directions.NONE:  Directions.NONE
 }
 
+# Possible comms module states
+class ClientMode(IntEnum):
+	'''
+	State of the Pacbot client and comms
+	'''
+
+	DONE = 0
+	FOUND = 1
+	PLANNED = 2
+	SENT = 3
+
 class Location:
 	'''
 	Location of an entity in the game engine
@@ -456,8 +467,44 @@ class GameState:
 		self.pelletArr: list[int] = [0 for _ in range(31)]
 		self.format += (31 * 'I')
 
-		# Done flag
-		self.done = False
+		# Client mode
+		self.clientMode: ClientMode = ClientMode.DONE
+
+	def isPaused(self) -> bool:
+		return self.gameMode == GameModes.PAUSED
+
+	def isDone(self) -> bool:
+		return self.clientMode == ClientMode.DONE
+
+	def isFound(self) -> bool:
+		return self.clientMode == ClientMode.FOUND
+
+	def isPlanned(self) -> bool:
+		return self.clientMode == ClientMode.PLANNED
+
+	def isSent(self) -> bool:
+		return self.clientMode == ClientMode.SENT
+
+	def setClientMode(self, value: ClientMode) -> None:
+
+		if (value == ClientMode.DONE) and (self.clientMode == ClientMode.SENT):
+			print(f"{CYAN}SENT -> DONE{NORMAL}")
+			self.clientMode = value
+
+		elif (value == ClientMode.FOUND) and (self.clientMode == ClientMode.DONE):
+			print(f"{CYAN}DONE -> FOUND{NORMAL}")
+			self.clientMode = value
+
+		elif (value == ClientMode.PLANNED) and (self.clientMode == ClientMode.FOUND):
+			print(f"{CYAN}FOUND -> PLANNED{NORMAL}")
+			self.clientMode = value
+
+		elif (value == ClientMode.SENT) and (self.clientMode == ClientMode.PLANNED):
+			print(f"{CYAN}PLANNED -> SENT{NORMAL}")
+			self.clientMode = value
+
+		else:
+			print(f"{RED}Invalid client mode transition, {self.clientMode} -> {value}")
 
 	def lock(self) -> None:
 		'''
