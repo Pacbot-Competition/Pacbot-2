@@ -209,20 +209,37 @@ class PacbotClient:
 			try:
 
 				# Wait until the bot stops sending messages
-				self.robotSocket.wait()
-				
+				doneBefore = self.state.done and not firstIt
+				self.state.done = self.robotSocket.wait()
+				if not self.state.gameMode == 0:
+					if not doneBefore and self.state.done:
+						print(f'{GREEN}robot just told us it\'s done{NORMAL}')
+					if doneBefore and not self.state.done:
+						print(f'{RED}robot started a move{NORMAL}')
+
+				print('going')
+
 				# Handle first iteration (flush)
 				if firstIt:
+					self.robotSocket.start()
+					while (self.state.isLocked()):
+						await asyncio.sleep(0)
+					self.state.lock()
 					self.robotSocket.flush(self.state.pacmanLoc.row, self.state.pacmanLoc.col)
+					self.state.unlock()
 					firstIt = False
 
 				# Otherwise, send out relevant messages
 				else:
 					if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
-						command: bytes = self.state.writeServerBuf.popleft().getBytes()
-						self.robotSocket.moveNoCoal(command)
+						srvmsg: ServerMessage = self.state.writeServerBuf.popleft()
+						msg = srvmsg.getBytes()
+						dist, row, col = srvmsg.dist, srvmsg.row, srvmsg.col
+						self.robotSocket.moveNoCoal(msg, row, col, dist)
 						if self.state.writeServerBuf:
 							self.state.writeServerBuf[0].skipDelay()
+
+				self.state.writeServerBuf.clear()
 
 				# Free the event loop to allow another decision
 				await asyncio.sleep(0.025)

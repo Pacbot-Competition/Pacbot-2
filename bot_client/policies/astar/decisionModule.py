@@ -35,7 +35,7 @@ class DecisionModule:
 		self.state = state
 
 		# Policy object, with the game state
-		self.policy = AStarPolicy(state, newLocation(5, 21))
+		self.policy = AStarPolicy(state, newLocation(5, 21, self.state))
 
 	async def decisionLoop(self) -> None:
 		'''
@@ -59,20 +59,37 @@ class DecisionModule:
 			'''
 
 			# If the current messages haven't been sent out yet, skip this iteration
-			if len(self.state.writeServerBuf):
+			if not self.state.done or self.state.isLocked():
 				await asyncio.sleep(0)
+				print("?")
 				continue
 
 			if wait:
+				print('!')
 				await asyncio.sleep(1/gameFPS)
 				wait = False
+
+
+			if self.state.gameMode == 0:
+				await asyncio.sleep(0)
+				continue
+
+			await asyncio.sleep(0.5)
+
 
 			# Lock the game state
 			self.state.lock()
 
+
+			done = self.state.done
+
 			# Figure out which actions to take, according to the policy
-			if self.state.gameMode != GameModes.PAUSED:
-				victimColor, pelletTarget = await self.policy.act(3, victimColor, pelletTarget)
+
+			print("[ astar calculating...", end=' ')
+			victimColor, pelletTarget = await self.policy.act(3, victimColor, pelletTarget)
+			print("]")
+
+			self.state.done = done
 
 			# Unlock the game state
 			self.state.unlock()

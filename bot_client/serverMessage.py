@@ -4,12 +4,15 @@ class ServerMessage:
   the Pacbot server.
 	'''
 
-  def __init__(self, messageBytes: bytes, numTicks: int):
+  def __init__(self, messageBytes: bytes, numTicks: int, dist: int, row: int, col: int):
     '''
 		Construct a new server object
 		'''
     self.messageBytes = messageBytes
     self.waitTicks = numTicks
+    self.dist = dist
+    self.row = row
+    self.col = col
 
   def tick(self):
     '''

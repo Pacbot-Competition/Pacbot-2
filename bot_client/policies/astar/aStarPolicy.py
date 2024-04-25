@@ -38,11 +38,11 @@ class DistTypes(IntEnum):
 	PACHATTAN_DISTANCE = 2
 
 # Create new location with row, col
-def newLocation(row: int, col: int):
+def newLocation(row: int, col: int, state: GameState):
 	'''
 	Construct a new location state
 	'''
-	result = Location(0)
+	result = Location(state)
 	result.row = row
 	result.col = col
 	return result
@@ -143,7 +143,7 @@ class AStarPolicy:
 		self.target: Location = target
 
 		# Expected location
-		self.expectedLoc: Location = newLocation(23, 13)
+		self.expectedLoc: Location = newLocation(23, 13, self.state)
 		self.error_sum = 0
 		self.error_count = 0
 		self.dropped_command_count = 0
@@ -168,17 +168,34 @@ class AStarPolicy:
 		if self.state.wallAt(first.row, first.col):
 			return self.state.pacmanLoc
 
+		candidate = None
+
 		#  BFS traverse
-		queue = [first]
+		queue = [(first, 0)]
 		visited = {first.hash()}
 		while queue:
 
 			# pop from queue
-			currLoc = queue.pop(0)
+			item = queue.pop(0)
+			currLoc, depth = item
+			depth += 1
 
 			# Base Case: Found a pellet
-			if self.state.pelletAt(currLoc.row, currLoc.col) and not self.state.superPelletAt(currLoc.row, currLoc.col):
-				return currLoc
+			if self.state.pelletAt(currLoc.row, currLoc.col) and \
+				not self.state.superPelletAt(currLoc.row, currLoc.col):
+
+				# winner
+				if depth >= 5:
+					return currLoc
+
+				# if there is indeed a close pellet, then go for it if we have explored up to this radius
+				if depth >= 10 and candidate != None:
+					return candidate
+
+				if candidate != None:
+					candidate = currLoc
+
+
 
 			# Loop over the directions
 			for direction in Directions:
@@ -196,22 +213,22 @@ class AStarPolicy:
 
 				# avoid same node twice and check this is a valid move
 				if nextLoc.hash() not in visited and valid:
-					queue.append(nextLoc)
+					queue.append((nextLoc, depth))
 					visited.add(nextLoc.hash())
 
 		#print('No nearest...')
 		return first
-	
+
 	def scaryVictim(self, victimColor: GhostColors) -> bool:
-		
+
 		V = self.state.ghosts[victimColor]
 
 		if (victimColor == GhostColors.NONE) or self.state.wallAt(V.location.row, V.location.col):
 			return False
-		
+
 		if (V.spawning):
 			return True
-		
+
 		for color in GhostColors:
 			G = self.state.ghosts[color]
 			if (color != victimColor) and (not G.spawning) and (not G.isFrightened()):
@@ -219,11 +236,11 @@ class AStarPolicy:
 					if self.dist(V.location, G.location) <= 2:
 						#print('re-assigning victim')
 						return True
-					
+
 		return False
-	
+
 	def getNearestVictim(self) -> GhostColors:
-		
+
 		closest, closestDist = GhostColors.NONE, INF
 		for color in GhostColors:
 			if self.state.ghosts[color].isFrightened() and not self.state.ghosts[color].spawning:
@@ -351,21 +368,21 @@ class AStarPolicy:
 
 		chase = self.state.gameMode == GameModes.CHASE
 
-		# check if top left pellet exists
-		if self.state.superPelletAt(3, 1) and chase:
-			self.target = newLocation(5, 1)
+		# # check if top left pellet exists
+		# if self.state.superPelletAt(3, 1) and chase:
+		# 	self.target = newLocation(5, 1, self.state)
 
-		# check if top right pellet exists
-		elif self.state.superPelletAt(3, 26) and chase:
-			self.target = newLocation(5, 26)
+		# # check if top right pellet exists
+		# elif self.state.superPelletAt(3, 26) and chase:
+		# 	self.target = newLocation(5, 26, self.state)
 
 		# check if bottom left pellet exists
-		elif self.state.superPelletAt(23, 1) and chase:
-			self.target = newLocation(20, 3)
+		if self.state.superPelletAt(23, 1) and chase:
+			self.target = newLocation(20, 3, self.state)
 
 		# check if bottom right pellet exists
 		elif self.state.superPelletAt(23, 26) and chase:
-			self.target = newLocation(20, 24)
+			self.target = newLocation(20, 24, self.state)
 
 		# no super pellets
 		else:
@@ -376,6 +393,10 @@ class AStarPolicy:
 
 		# Make a priority queue of A-Star Nodes
 		priorityQueue: list[AStarNode] = []
+
+		# Starting row and col
+		startRow = self.state.pacmanLoc.row
+		startCol = self.state.pacmanLoc.col
 
 		# Construct an initial node
 		initialNode = AStarNode(
@@ -425,15 +446,31 @@ class AStarPolicy:
 			# make the moves and return
 
 			if currNode.victimCaught:
+				testLoc = newLocation(startRow, startCol, self.state)
+				lastDir = currNode.directionBuf[0]
+				dist = 0
 
-				for index in range(currNode.bufLength):
-					self.state.queueAction(
-						currNode.delayBuf[index] - (index == 0),
-						currNode.directionBuf[index]
-					)
-				
+				for index in range(len(currNode.directionBuf)):
+					# coalesce
+					if lastDir != currNode.directionBuf[index]:
+						break
+					dist += 1
+
+					# get target location
+					testLoc.setDirection(currNode.directionBuf[index])
+					testLoc.advance()
+
+
+				self.state.queueAction(
+					currNode.delayBuf[0] - (0 == 0),
+					lastDir,
+					dist,
+					testLoc.row,
+					testLoc.col,
+				)
+
 				#print('victim caught?')
-					
+
 				if currNode.targetCaught:
 					#print('target caught')
 					pelletTarget = self.getNearestPellet()
@@ -443,25 +480,83 @@ class AStarPolicy:
 
 			elif currNode.targetCaught and (victimColor == GhostColors.NONE):
 
-				for index in range(currNode.bufLength):
-					self.state.queueAction(
-						currNode.delayBuf[index] - (index == 0),
-						currNode.directionBuf[index]
-					)
-			
+				# testLoc = newLocation(startRow, startCol, self.state)
+				# for index in range(1):
+				# 	testLoc.setDirection(currNode.directionBuf[index])
+				# 	testLoc.advance()
+
+				# 	self.state.queueAction(
+				# 		currNode.delayBuf[index] - (index == 0),
+				# 		currNode.directionBuf[index],
+				# 		testLoc.row,
+				# 		testLoc.col
+				# 	)
+
+				testLoc = newLocation(startRow, startCol, self.state)
+				lastDir = currNode.directionBuf[0]
+				dist = 0
+
+				for index in range(len(currNode.directionBuf)):
+					# coalesce
+					if lastDir != currNode.directionBuf[index]:
+						break
+					dist += 1
+
+					# get target location
+					testLoc.setDirection(currNode.directionBuf[index])
+					testLoc.advance()
+
+
+				self.state.queueAction(
+					currNode.delayBuf[0] - (0 == 0),
+					lastDir,
+					dist,
+					testLoc.row,
+					testLoc.col,
+				)
+
 				#print('target caught')
 				pelletTarget = self.getNearestPellet()
 
 				#print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
 				return GhostColors.NONE, pelletTarget
 
-			if currNode.bufLength >= 6:
-				
-				for index in range(min(currNode.bufLength, 3)):
-					self.state.queueAction(
-						currNode.delayBuf[index] - (index == 0),
-						currNode.directionBuf[index]
-					)
+			if currNode.bufLength >= 8:
+
+				# testLoc = newLocation(startRow, startCol, self.state)
+				# for index in range(1):
+				# 	testLoc.setDirection(currNode.directionBuf[index])
+				# 	testLoc.advance()
+
+				# 	self.state.queueAction(
+				# 		currNode.delayBuf[index] - (index == 0),
+				# 		currNode.directionBuf[index],
+				# 		testLoc.row,
+				# 		testLoc.col
+				# 	)
+
+				testLoc = newLocation(startRow, startCol, self.state)
+				lastDir = currNode.directionBuf[0]
+				dist = 0
+
+				for index in range(len(currNode.directionBuf)):
+					# coalesce
+					if lastDir != currNode.directionBuf[index]:
+						break
+					dist += 1
+
+					# get target location
+					testLoc.setDirection(currNode.directionBuf[index])
+					testLoc.advance()
+
+
+				self.state.queueAction(
+					currNode.delayBuf[0] - (0 == 0),
+					lastDir,
+					dist,
+					testLoc.row,
+					testLoc.col,
+				)
 
 				#print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
 				return victimColor, pelletTarget
@@ -485,17 +580,17 @@ class AStarPolicy:
 				turnPenalty = 0
 				evadePenalty = 0
 				if (prevDir != direction):
-					turnPenalty = 1
+					turnPenalty = 6
 
 					if (victimColor != GhostColors.NONE) and not self.state.ghosts[victimColor].spawning:
-						
+
 						loc: Location = Location(self.state)
 						loc.update(self.state.pacmanLoc.serialize())
 						loc.setDirection(direction)
 						dist1 = self.dist(loc, self.state.ghosts[victimColor].location)
 						loc.advance()
 						dist2 = self.dist(loc, self.state.ghosts[victimColor].location)
-						
+
 						if (dist1 < dist2):
 							evadePenalty = 10
 
@@ -511,7 +606,7 @@ class AStarPolicy:
 
 				# Determines if the scared ghost 'victim' was caught
 				victimCaught = (victimColor != GhostColors.NONE) and ((not self.state.ghosts[victimColor].isFrightened()) or self.state.ghosts[victimColor].spawning)
-				
+
 				# Select a new target
 				self.selectTarget(pelletTarget)
 

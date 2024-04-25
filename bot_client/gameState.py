@@ -456,6 +456,9 @@ class GameState:
 		self.pelletArr: list[int] = [0 for _ in range(31)]
 		self.format += (31 * 'I')
 
+		# Done flag
+		self.done = False
+
 	def lock(self) -> None:
 		'''
 		Lock the game state, to prevent updates
@@ -543,6 +546,7 @@ class GameState:
 
 			# Pellet info
 			*self.pelletArr
+
 		)
 
 	def getGhostPlans(self) -> dict[GhostColors, Directions]:
@@ -791,14 +795,14 @@ class GameState:
 		# Otherwise, Pacman is safe
 		return True
 
-	def queueAction(self, numTicks: int, pacmanDir: Directions) -> None:
+	def queueAction(self, numTicks: int, pacmanDir: Directions, dist: int, row: int, col: int) -> None:
 		'''
 		Helper function to queue a message to be sent to the server, with a
 		given Pacbot direction and number of ticks until the message is sent.
 		'''
 
 		self.writeServerBuf.append(
-			ServerMessage(D_MESSAGES[pacmanDir], numTicks)
+			ServerMessage(D_MESSAGES[pacmanDir], numTicks, dist, row, col)
 		)
 
 	def simulateAction(self, numTicks: int, pacmanDir: Directions) -> bool:
