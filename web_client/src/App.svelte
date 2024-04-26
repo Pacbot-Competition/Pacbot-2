@@ -23,10 +23,12 @@
   .maze-space {
 
     /* Positioning */
+    
     position: absolute;
     transform: translate(50%, 50%);
     bottom: 50%;
     right: 50%;
+    
   }
 
 </style>
@@ -264,7 +266,10 @@
   // Track the size of the window, to determine the grid size
   let innerWidth = 0;
   let innerHeight = 0;
-  $: gridSize = Math.min(innerHeight / 31, innerWidth / 28)
+  let fullWidth = false;
+//   $: gridSize = Math.min(innerHeight / 31, innerWidth / 28)
+  $: gridSize = fullWidth ? innerWidth / 28 : Math.min(innerHeight / 31, innerWidth / 28)
+
 
   // Calculate the remainder when currTicks is divided by updatePeriod
   $: modTicks = currTicks % updatePeriod
@@ -359,6 +364,13 @@
     if (motion) {
       sendToSocket(motion);
     }
+
+    if (key == '1') {
+      fullWidth = false;
+    }
+    else if (key == '2') {
+      fullWidth = true;
+    }
   }
 
   // Handle key releases, for allowing toggle commands to be sent again
@@ -381,7 +393,7 @@
   bind:innerHeight
 />
 
-<div class='maze-space' style:--grid-size="{gridSize}px">
+<div class={fullWidth ? '' : 'maze-space'} style:--grid-size="{gridSize}px">
 
   <Maze
     {gridSize}
