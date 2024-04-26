@@ -359,15 +359,19 @@ func (gs *gameState) movePacmanAbsolute(newRow, newCol int8) {
 		if nextPos.r < prevPos.r {
 			gs.movePacmanDir(up)
 			gs.checkCollisions()
+			gs.collectPellet(gs.pacmanLoc.getCoords())
 		} else if nextPos.c < prevPos.c {
 			gs.movePacmanDir(left)
 			gs.checkCollisions()
+			gs.collectPellet(gs.pacmanLoc.getCoords())
 		} else if nextPos.r > prevPos.r {
 			gs.movePacmanDir(down)
 			gs.checkCollisions()
+			gs.collectPellet(gs.pacmanLoc.getCoords())
 		} else {
 			gs.movePacmanDir(right)
 			gs.checkCollisions()
+			gs.collectPellet(gs.pacmanLoc.getCoords())
 		}
 		prevPos = nextPos
 	}
