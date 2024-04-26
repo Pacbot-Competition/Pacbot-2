@@ -13,6 +13,7 @@
   "PythonSimulation": false,
   "FlushEnabled": false,
   "CoalesceCommands": false,
+  "ReliablityEnabled": true,
 
   "RobotIP": "10.9.135.32",
   "RobotPort": 8081

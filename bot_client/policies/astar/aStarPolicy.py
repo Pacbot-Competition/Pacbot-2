@@ -161,6 +161,9 @@ class AStarPolicy:
 				self.dist = distL3
 				self.distSq = distSqL3
 
+		self.initialSeqComplete = False
+
+
 	def getNearestPellet(self) -> Location:
 
 		# Check bounds
@@ -168,34 +171,18 @@ class AStarPolicy:
 		if self.state.wallAt(first.row, first.col):
 			return self.state.pacmanLoc
 
-		candidate = None
-
 		#  BFS traverse
-		queue = [(first, 0)]
+		queue = [first]
 		visited = {first.hash()}
 		while queue:
 
 			# pop from queue
-			item = queue.pop(0)
-			currLoc, depth = item
-			depth += 1
+			currLoc = queue.pop(0)
 
 			# Base Case: Found a pellet
 			if self.state.pelletAt(currLoc.row, currLoc.col) and \
 				not self.state.superPelletAt(currLoc.row, currLoc.col):
-
-				# winner
-				if depth >= 5:
-					return currLoc
-
-				# if there is indeed a close pellet, then go for it if we have explored up to this radius
-				if depth >= 10 and candidate != None:
-					return candidate
-
-				if candidate != None:
-					candidate = currLoc
-
-
+				return currLoc
 
 			# Loop over the directions
 			for direction in Directions:
@@ -213,7 +200,7 @@ class AStarPolicy:
 
 				# avoid same node twice and check this is a valid move
 				if nextLoc.hash() not in visited and valid:
-					queue.append((nextLoc, depth))
+					queue.append(nextLoc)
 					visited.add(nextLoc.hash())
 
 		#print('No nearest...')
@@ -333,7 +320,7 @@ class AStarPolicy:
 	def fCostMultiplier(self) -> float:
 
 		# Constant for the multiplier
-		K: int = 64
+		K: int = 64 # TODO: considering changing to 128
 
 		# Multiplier addition term
 		multTerm: int = 0
@@ -368,16 +355,19 @@ class AStarPolicy:
 
 		chase = self.state.gameMode == GameModes.CHASE
 
-		# # check if top left pellet exists
-		# if self.state.superPelletAt(3, 1) and chase:
-		# 	self.target = newLocation(5, 1, self.state)
+		if self.initialSeqComplete:
+			pass
 
-		# # check if top right pellet exists
-		# elif self.state.superPelletAt(3, 26) and chase:
-		# 	self.target = newLocation(5, 26, self.state)
+		# check if top left pellet exists
+		if self.state.superPelletAt(3, 1) and chase:
+			self.target = newLocation(5, 1, self.state)
+
+		# check if top right pellet exists
+		elif self.state.superPelletAt(3, 26) and chase:
+			self.target = newLocation(5, 26, self.state)
 
 		# check if bottom left pellet exists
-		if self.state.superPelletAt(23, 1) and chase:
+		elif self.state.superPelletAt(23, 1) and chase:
 			self.target = newLocation(20, 3, self.state)
 
 		# check if bottom right pellet exists
@@ -431,7 +421,7 @@ class AStarPolicy:
 		firstItLag = 0
 
 		# Lag for turns
-		turnLag = 0
+		turnLag = 10
 
 		# Keep proceeding until a break point is hit
 		while len(priorityQueue):
@@ -444,8 +434,20 @@ class AStarPolicy:
 
 			# If the g-cost of this node is high enough or we reached the target,
 			# make the moves and return
+			if currNode.bufLength >= 14:
 
-			if currNode.victimCaught:
+				# testLoc = newLocation(startRow, startCol, self.state)
+				# for index in range(1):
+				# 	testLoc.setDirection(currNode.directionBuf[index])
+				# 	testLoc.advance()
+
+				# 	self.state.queueAction(
+				# 		currNode.delayBuf[index] - (index == 0),
+				# 		currNode.directionBuf[index],
+				# 		testLoc.row,
+				# 		testLoc.col
+				# 	)
+
 				testLoc = newLocation(startRow, startCol, self.state)
 				lastDir = currNode.directionBuf[0]
 				dist = 0
@@ -469,103 +471,91 @@ class AStarPolicy:
 					testLoc.col,
 				)
 
+				#print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
+				return victimColor, pelletTarget
+
+			if currNode.victimCaught:
+				# testLoc = newLocation(startRow, startCol, self.state)
+				# lastDir = currNode.directionBuf[0]
+				# dist = 0
+
+				# for index in range(len(currNode.directionBuf)):
+				# 	# coalesce
+				# 	if lastDir != currNode.directionBuf[index]:
+				# 		break
+				# 	dist += 1
+
+				# 	# get target location
+				# 	testLoc.setDirection(currNode.directionBuf[index])
+				# 	testLoc.advance()
+
+
+				# self.state.queueAction(
+				# 	currNode.delayBuf[0] - (0 == 0),
+				# 	lastDir,
+				# 	dist,
+				# 	testLoc.row,
+				# 	testLoc.col,
+				# )
+
 				#print('victim caught?')
+
+				# force pb to take this path
+				priorityQueue.clear()
 
 				if currNode.targetCaught:
 					#print('target caught')
 					pelletTarget = self.getNearestPellet()
 
 				#print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
-				return victimColor, pelletTarget
+				# return victimColor, pelletTarget
 
 			elif currNode.targetCaught and (victimColor == GhostColors.NONE):
 
-				# testLoc = newLocation(startRow, startCol, self.state)
-				# for index in range(1):
-				# 	testLoc.setDirection(currNode.directionBuf[index])
-				# 	testLoc.advance()
+				# force pb to take this path
+				priorityQueue.clear()
 
-				# 	self.state.queueAction(
-				# 		currNode.delayBuf[index] - (index == 0),
-				# 		currNode.directionBuf[index],
-				# 		testLoc.row,
-				# 		testLoc.col
-				# 	)
-
-				testLoc = newLocation(startRow, startCol, self.state)
-				lastDir = currNode.directionBuf[0]
-				dist = 0
-
-				for index in range(len(currNode.directionBuf)):
-					# coalesce
-					if lastDir != currNode.directionBuf[index]:
-						break
-					dist += 1
-
-					# get target location
-					testLoc.setDirection(currNode.directionBuf[index])
-					testLoc.advance()
-
-
-				self.state.queueAction(
-					currNode.delayBuf[0] - (0 == 0),
-					lastDir,
-					dist,
-					testLoc.row,
-					testLoc.col,
-				)
-
-				#print('target caught')
+				# choose new target
 				pelletTarget = self.getNearestPellet()
 
-				#print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
-				return GhostColors.NONE, pelletTarget
-
-			if currNode.bufLength >= 8:
 
 				# testLoc = newLocation(startRow, startCol, self.state)
-				# for index in range(1):
+				# lastDir = currNode.directionBuf[0]
+				# dist = 0
+
+				# for index in range(len(currNode.directionBuf)):
+				# 	# coalesce
+				# 	if lastDir != currNode.directionBuf[index]:
+				# 		break
+				# 	dist += 1
+
+				# 	# get target location
 				# 	testLoc.setDirection(currNode.directionBuf[index])
 				# 	testLoc.advance()
 
-				# 	self.state.queueAction(
-				# 		currNode.delayBuf[index] - (index == 0),
-				# 		currNode.directionBuf[index],
-				# 		testLoc.row,
-				# 		testLoc.col
-				# 	)
 
-				testLoc = newLocation(startRow, startCol, self.state)
-				lastDir = currNode.directionBuf[0]
-				dist = 0
+				# self.state.queueAction(
+				# 	currNode.delayBuf[0] - (0 == 0),
+				# 	lastDir,
+				# 	dist,
+				# 	testLoc.row,
+				# 	testLoc.col,
+				# )
 
-				for index in range(len(currNode.directionBuf)):
-					# coalesce
-					if lastDir != currNode.directionBuf[index]:
-						break
-					dist += 1
+				# #print('target caught')
+				# pelletTarget = self.getNearestPellet()
 
-					# get target location
-					testLoc.setDirection(currNode.directionBuf[index])
-					testLoc.advance()
+				# #print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
+				# return GhostColors.NONE, pelletTarget
 
-
-				self.state.queueAction(
-					currNode.delayBuf[0] - (0 == 0),
-					lastDir,
-					dist,
-					testLoc.row,
-					testLoc.col,
-				)
-
-				#print(['RED', 'PINK', 'CYAN', 'ORANGE', 'NONE'][victimColor], pelletTarget)
-				return victimColor, pelletTarget
 
 			# Get Pacman's current direction
 			prevDir = self.state.pacmanLoc.getDirection()
 
 			# Determines if waiting (none) is allowed as a move
 			waitAllowed = (victimColor == GhostColors.NONE)
+
+			# TODO: EVALUATE THIS
 
 			# Loop over the directions
 			for direction in Directions:
@@ -580,7 +570,7 @@ class AStarPolicy:
 				turnPenalty = 0
 				evadePenalty = 0
 				if (prevDir != direction):
-					turnPenalty = 6
+					turnPenalty = 2
 
 					if (victimColor != GhostColors.NONE) and not self.state.ghosts[victimColor].spawning:
 
@@ -618,7 +608,7 @@ class AStarPolicy:
 					nextNode = AStarNode(
 						compressGameState(self.state),
 						fCost = int((self.hCostExtend(currNode.gCost, currNode.bufLength, victimColor) + currNode.gCost + 1) * self.fCostMultiplier()),
-						gCost = currNode.gCost + 2 + 2 * ((not ateNormalPellet) and (victimExists)) + 2 * (turnPenalty and victimExists) + 5 * evadePenalty,
+						gCost = currNode.gCost + 2 + 4 * ((not ateNormalPellet) and (not victimExists)) + 2 * (turnPenalty and victimExists) + 5 * evadePenalty,
 						directionBuf = currNode.directionBuf + [direction],
 						delayBuf = currNode.delayBuf + [predicted_delay + firstItLag * firstIt + turnPenalty * turnLag],
 						bufLength = currNode.bufLength + 1,
@@ -632,4 +622,5 @@ class AStarPolicy:
 			firstIt = False
 
 		#print("Trapped...")
+
 		return victimColor, pelletTarget

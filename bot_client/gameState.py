@@ -468,7 +468,7 @@ class GameState:
 		self.format += (31 * 'I')
 
 		# Client mode
-		self.clientMode: ClientMode = ClientMode.DONE
+		self.clientMode: ClientMode = ClientMode.PLANNED
 
 	def isPaused(self) -> bool:
 		return self.gameMode == GameModes.PAUSED
@@ -488,19 +488,23 @@ class GameState:
 	def setClientMode(self, value: ClientMode) -> None:
 
 		if (value == ClientMode.DONE) and (self.clientMode == ClientMode.SENT):
-			print(f"{CYAN}SENT -> DONE{NORMAL}")
+			print(f"{ORANGE}                            SENT -> DONE{NORMAL}")
 			self.clientMode = value
 
 		elif (value == ClientMode.FOUND) and (self.clientMode == ClientMode.DONE):
-			print(f"{CYAN}DONE -> FOUND{NORMAL}")
+			print(f"{ORANGE}DONE -> FOUND{NORMAL}")
 			self.clientMode = value
 
 		elif (value == ClientMode.PLANNED) and (self.clientMode == ClientMode.FOUND):
-			print(f"{CYAN}FOUND -> PLANNED{NORMAL}")
+			print(f"{ORANGE}        FOUND -> PLANNED{NORMAL}")
+			self.clientMode = value
+
+		elif (value == ClientMode.FOUND) and (self.clientMode == ClientMode.PLANNED):
+			print(f"{RED}        FOUND <- PLANNED{NORMAL}")
 			self.clientMode = value
 
 		elif (value == ClientMode.SENT) and (self.clientMode == ClientMode.PLANNED):
-			print(f"{CYAN}PLANNED -> SENT{NORMAL}")
+			print(f"{ORANGE}                 PLANNED -> SENT{NORMAL}")
 			self.clientMode = value
 
 		else:

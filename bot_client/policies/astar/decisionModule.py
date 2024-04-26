@@ -47,7 +47,7 @@ class DecisionModule:
 		victimColor = GhostColors.NONE
 		pelletTarget = Location(self.state)
 		pelletTarget.row = 23
-		pelletTarget.col = 14
+		pelletTarget.col = 6 # start by moving to the left??
 
 		# Receive values as long as we have access
 		while self.state.isConnected():
@@ -68,9 +68,15 @@ class DecisionModule:
 
 			# Figure out which actions to take, according to the policy
 
-			print("[ astar calculating...", end=' ')
-			victimColor, pelletTarget = await self.policy.act(3, victimColor, pelletTarget)
-			print("]")
+			print("astar calculating...")
+			victimColor, pelletTarget = await self.policy.act(4, victimColor, pelletTarget)
+			print("astar done")
+
+			if not len(self.state.writeServerBuf):
+				print(f"{YELLOW}astar failed, trying again{NORMAL}")
+				await asyncio.sleep(0)
+				self.state.unlock()
+				continue
 
 			# Unlock the game state
 			self.state.unlock()

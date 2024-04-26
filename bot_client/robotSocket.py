@@ -67,12 +67,11 @@ class RobotSocket:
 
 
 
-    def moveNoCoal(self, command: bytes, row: int, col: int, dist: int) -> None:
+    def moveNoCoal(self, command: bytes, row: int, col: int, dist: int) -> bool:
 
-        print(f'{CYAN}sending command{NORMAL}', command, dist, '->', row, col)
 
-        if command == b'.':
-            return
+        if command != b'w' and command != b'a' and command != b's' and command != b'd':
+            return False
 
         # Update the sequence number, if applicable
         self.updateSeq()
@@ -84,6 +83,9 @@ class RobotSocket:
 
         # Dispatch the message
         self.dispatch(row, col)
+
+        print(f'{CYAN}sending command{NORMAL}', command, dist, '->', row, col, " seqno: ", int(self.seq1 << 8 | self.seq0))
+        return True
 
     def flush(self, row: int, col: int) -> None:
 
@@ -156,6 +158,8 @@ class RobotSocket:
         # Send the message only if up to date
         if self.recvSeq == (self.seq1 << 8 | self.seq0):
 
+            print(f'{GREEN}ack #{self.recvSeq}{NORMAL}')
+
             # Increment the sequence number
             self.seq0 += 1
 
@@ -167,6 +171,9 @@ class RobotSocket:
             # Second overflow
             if self.seq1 > 127:
                 self.seq1 = 0
+
+    def isPending(self) -> bool:
+        return self.recvSeq < (self.seq1 << 8 | self.seq0)
 
     def dispatch(self, row: int, col: int) -> None:
 
