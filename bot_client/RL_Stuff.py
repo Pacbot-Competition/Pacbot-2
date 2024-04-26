@@ -1,7 +1,7 @@
 import math
 from gameState import GameState
 from debugServer import DebugServer
-import pathfinding
+import bot_client.pathfinding.pathfinding as pathfinding
 import numpy as np
 
 class RLLearn_SARAS():
