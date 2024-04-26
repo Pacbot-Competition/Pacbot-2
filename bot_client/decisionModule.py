@@ -41,13 +41,18 @@ class DecisionModule:
 			self.state.lock()
 
 			# Write back to the server, as a test (move right)
-			self.state.queueAction(4, Directions.RIGHT)
+			# Your client will not need to do this (in fact it won't be able to
+   			# since it shouldn't connect as a trusted client).	
+			# self.state.queueAction(4, Directions.RIGHT)
+
+			if self.state.gameMode == GameModes.PAUSED:
+				print("paused")
+			else:
+				# Print where the red ghost is
+				print(f'{self.state.ghosts[0].location.row} {self.state.ghosts[0].location.col}')
 
 			# Unlock the game state
 			self.state.unlock()
-
-			# Print that a decision has been made
-			print('decided')
 
 			# Free up the event loop
 			await asyncio.sleep(0)
