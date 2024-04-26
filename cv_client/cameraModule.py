@@ -64,7 +64,7 @@ class CameraModule:
 	for Pacbot, using asyncio.
 	'''
 
-	def __init__(self, state: ConnectionState) -> None:
+	def __init__(self, state: ConnectionState, name: Any) -> None:
 		'''
 		Construct a new decision module object
 		'''
@@ -79,7 +79,7 @@ class CameraModule:
 		self.detector = aruco.ArucoDetector(self.dictionary, aruco.DetectorParameters())
 
 		# Capture object
-		self.cap = VideoCapture(0)
+		self.cap = VideoCapture(name)
 
 	async def decisionLoop(self) -> None:
 		'''

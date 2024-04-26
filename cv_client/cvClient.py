@@ -1,8 +1,14 @@
+# sys (for argv)
+import sys
+
 # JSON (for reading config.json)
 import json
 
 # Asyncio (for concurrency)
 import asyncio
+
+# Typing
+from typing import Any
 
 # Websockets (for communication with the server)
 from websockets.sync.client import connect, ClientConnection # type: ignore
@@ -38,7 +44,7 @@ class CvClient:
 	Pacbot game server, using asyncio.
 	'''
 
-	def __init__(self, connectURL: str) -> None:
+	def __init__(self, connectURL: str, name: Any) -> None:
 		'''
 		Construct a new Pacbot client object
 		'''
@@ -56,7 +62,7 @@ class CvClient:
 		self.state: ConnectionState = ConnectionState()
 
 		# Decision module (policy) to make high-level decisions
-		self.cameraModule: CameraModule = CameraModule(self.state)
+		self.cameraModule: CameraModule = CameraModule(self.state, name)
 
 	async def run(self) -> None:
 		'''
@@ -146,7 +152,8 @@ async def main():
 
 	# Get the URL to connect to
 	connectURL = getConnectURL()
-	client = CvClient(connectURL)
+	cameraID = int(sys.argv[1])
+	client = CvClient(connectURL, cameraID)
 	await client.run()
 
 	# Once the connection is closed, end the event loop
