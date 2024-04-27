@@ -9,6 +9,12 @@ const unsigned int gpio_pin_2 = 3;
 const unsigned int gpio_pin_3 = 4; 
 
 int speed = 100;
+int previous_direction = 0;
+int delay_time = 200; 
+int vertical_time = 2000;
+int horizontal_time = 500;
+int speed_multiplier = 1.1;
+
 #define LED_PIN LED_BUILTIN
 
 
@@ -39,8 +45,8 @@ void forward(int top_left, int top_right, int bottom_left, int bottom_right) {
   analogWrite(MOTOR_FORWARD_PINS[top_right], 0);
   analogWrite(MOTOR_BACKWARD_PINS[top_left], 0);
   analogWrite(MOTOR_BACKWARD_PINS[bottom_left], 0);
-  analogWrite(MOTOR_FORWARD_PINS[top_left], speed);
-  analogWrite(MOTOR_FORWARD_PINS[bottom_left], speed);
+  analogWrite(MOTOR_FORWARD_PINS[top_left], speed*speed_multiplier);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_left], speed*speed_multiplier);
   analogWrite(MOTOR_BACKWARD_PINS[top_right], speed);
   analogWrite(MOTOR_BACKWARD_PINS[bottom_right], speed);
 }
@@ -108,14 +114,29 @@ void loop() {
   Serial.println(bot_direction);
 
   if (bot_direction == 1) { // left
-    left(top_left, top_right, bottom_left, bottom_right);
-  } else if (bot_direction == 2) { // right
-    right(top_left, top_right, bottom_left, bottom_right);
-  } else if (bot_direction == 3) { // forward 
-    forward(top_left, top_right, bottom_left, bottom_right);
-  } else if (bot_direction == 4) { // backward
-    backward(top_left, top_right, bottom_left, bottom_right);    
-  } else {
-    stop(top_left, top_right, bottom_left, bottom_right);
-  }
+      left(top_left, top_right, bottom_left, bottom_right);
+    } else if (bot_direction == 2) { // right
+      right(top_left, top_right, bottom_left, bottom_right);
+    } else if (bot_direction == 3) { // forward 
+      forward(top_left, top_right, bottom_left, bottom_right);
+    } else if (bot_direction == 4) { // backward
+      backward(top_left, top_right, bottom_left, bottom_right);    
+    } else if (bot_direction == 5) { // chaos behavior
+      int random_bot_direction = random(1, 5);
+      if (bot_direction == 1) { // left
+        left(top_left, top_right, bottom_left, bottom_right);
+        delay(horizontal_time);
+      } else if (bot_direction == 2) { // right
+        right(top_left, top_right, bottom_left, bottom_right);
+        delay(horizontal_time);
+      } else if (bot_direction == 3) { // forward 
+        forward(top_left, top_right, bottom_left, bottom_right);
+        delay(vertical_time);
+      } else if (bot_direction == 4) { // backward
+        backward(top_left, top_right, bottom_left, bottom_right);  
+        delay(vertical_time);  
+      }
+    } else {
+      stop(top_left, top_right, bottom_left, bottom_right);
+    }
 }
