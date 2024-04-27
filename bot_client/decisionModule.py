@@ -27,6 +27,43 @@ def direction_from_delta(deltaRow, deltaCol):
 	else:
 		raise ValueError("Invalid delta")
 
+def send_bit(value, GPIO_PIN):
+    # Set up GPIO
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(GPIO_PIN, GPIO.OUT)
+
+    # Send the bit
+    GPIO.output(GPIO_PIN, value)
+    time.sleep(0.1)  # Adjust delay as needed
+
+    # Clean up GPIO
+    GPIO.cleanup()
+
+def send_to_teensey(direction):
+	bit_14 = 0
+	bit_15 = 0
+	bit_18 = 0
+	if (direction == Directions.DOWN):
+		bit_14=1
+		bit_15=0
+		bit_18=0
+	elif (direction == Directions.UP):
+		bit_14=0
+		bit_15=1
+		bit_18=1
+	elif (direction == Directions.LEFT):
+		bit_14=0
+		bit_15=0
+		bit_18=1
+	elif (direction == Directions.RIGHT):
+		bit_14=0
+		bit_15=1
+		bit_18=0
+
+	send_bit(bit_14, 14)
+	send_bit(bit_15, 15)
+	send_bit(bit_18, 18)
+
 class DecisionModule:
 	'''
 	Sample implementation of a decision module for high-level
@@ -185,6 +222,10 @@ class DecisionModule:
 				await asyncio.sleep(0.1)
 				
 
+				# send_to_teensey(direction)
+
+				
+				
 			# Unlock the game state
 			self.state.unlock()
 
