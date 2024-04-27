@@ -209,9 +209,7 @@ void straight(int rel_top_left, int rel_top_right, int rel_bottom_left, int rel_
   
   if(is_tilted(left_sensor, right_sensor) == 1) { /*is tilted*/
     correct_tilt(top_right, bottom_right, top_left, bottom_left, left_sensor, right_sensor);
-  } else {
-    correct_drift(top_right, bottom_right, top_left, bottom_left, left_sensor, right_sensor);
-  }
+  } 
 }
 
 
