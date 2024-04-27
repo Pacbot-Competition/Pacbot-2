@@ -208,10 +208,10 @@ class DecisionModule:
 				# Update our position on the server.
 				# !TODO: In the future, this needs to be replaced by a call to the low level movement code
 				self.state.queueAction(1, direction)
+				send_to_teensey(direction)
 				await asyncio.sleep(0.1)
 				
 
-				# send_to_teensey(direction)
 
 				
 				
