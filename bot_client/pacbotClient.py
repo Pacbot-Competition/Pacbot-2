@@ -30,6 +30,8 @@ from debugServer import DebugServer
 
 from pathfinding import find_path
 
+from RPi.GPIO import GPIO
+
 # Get the connect URL from the config.json file
 def getConnectURL() -> str:
 
@@ -159,9 +161,18 @@ class PacbotClient:
 				self.state.setConnectionStatus(False)
 				break
 
+def gpio_init():
+	print("Setting up GPIO")
+	GPIO.setmode(GPIO.BCM)
+	GPIO.setup(14, GPIO.OUT)
+	GPIO.setup(15, GPIO.OUT)
+	GPIO.setup(18, GPIO.OUT)
+
 last_selected_pos = (1,1)
 # Main function
 async def main():
+	gpio_init()
+    
 	# Start the debug server in the background
 	debug_server = DebugServer()
 	asyncio.create_task(debug_server.run())
@@ -182,3 +193,6 @@ if __name__ == '__main__':
 	loop = asyncio.get_event_loop()
 	loop.create_task(main())
 	loop.run_forever()
+	
+	print("Cleaning up GPIO")
+	GPIO.cleanup()

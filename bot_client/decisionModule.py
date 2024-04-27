@@ -14,6 +14,7 @@ from DistMatrix import createDistTable, createDistTableDict, loadDistTable, load
 from pathfinding import find_path
 from AvoidanceMap import cellAvoidanceMap
 
+from RPi.GPIO import GPIO
 
 def direction_from_delta(deltaRow, deltaCol):
 	if deltaRow == 1:
@@ -26,6 +27,31 @@ def direction_from_delta(deltaRow, deltaCol):
 		return Directions.LEFT
 	else:
 		raise ValueError("Invalid delta")
+
+def send_to_teensey(direction):
+	bit_14 = 0
+	bit_15 = 0
+	bit_18 = 0
+	if (direction == Directions.DOWN):
+		bit_14=1
+		bit_15=0
+		bit_18=0
+	elif (direction == Directions.UP):
+		bit_14=0
+		bit_15=1
+		bit_18=1
+	elif (direction == Directions.LEFT):
+		bit_14=0
+		bit_15=0
+		bit_18=1
+	elif (direction == Directions.RIGHT):
+		bit_14=0
+		bit_15=1
+		bit_18=0
+
+	GPIO.output(14, bit_14)
+	GPIO.output(15, bit_15)
+	GPIO.output(18, bit_18)
 
 class DecisionModule:
 	'''
@@ -182,9 +208,13 @@ class DecisionModule:
 				# Update our position on the server.
 				# !TODO: In the future, this needs to be replaced by a call to the low level movement code
 				self.state.queueAction(1, direction)
+				send_to_teensey(direction)
 				await asyncio.sleep(0.1)
 				
 
+
+				
+				
 			# Unlock the game state
 			self.state.unlock()
 
