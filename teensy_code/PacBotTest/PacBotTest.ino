@@ -5,8 +5,8 @@
 // current order for the motor pins
 // 5, 7, 23, 15 - DIR
 // 6, 8, 22, 14 - PWM
-const unsigned int MOTORDIR_PINS[4] = {5, 23, 7, 15};
-const unsigned int MOTORPWM_PINS[4] = {6, 22, 8, 14};
+const unsigned int MOTORDIR_PINS[4] = {5, 7, 23, 15};
+const unsigned int MOTORPWM_PINS[4] = {6, 8, 22, 14};
 const unsigned int gpio_pin_1 = 2; 
 const unsigned int gpio_pin_2 = 3; 
 const unsigned int gpio_pin_3 = 4; 
@@ -104,7 +104,7 @@ int is_tilted(VL6180X *left_sensor, VL6180X *right_sensor){
 
 void correct_tilt(int top_right, int bottom_right, int top_left, int bottom_left, VL6180X *left_sensor, VL6180X *right_sensor) {
   //if tilted to the right
-  while(right_sensor->readRangeSingleMillimeters() < left_sensor->readRangeSingleMillimeters()) {
+  if (right_sensor->readRangeSingleMillimeters() < left_sensor->readRangeSingleMillimeters()) {
     //move top wheel to the left and bottom wheel to the right
     // digitalWrite(MOTORDIR_PINS[top], HIGH);
     // digitalWrite(MOTORDIR_PINS[bottom], LOW);
@@ -114,7 +114,7 @@ void correct_tilt(int top_right, int bottom_right, int top_left, int bottom_left
     analogWrite(MOTORPWM_PINS[bottom_left], 150);
   }
   //if tilted to the left
-  while(left_sensor->readRangeSingleMillimeters() > right_sensor->readRangeSingleMillimeters()){
+  if (left_sensor->readRangeSingleMillimeters() > right_sensor->readRangeSingleMillimeters()){
     //move top wheel to the right and bottom wheel to the left
       // digitalWrite(MOTORDIR_PINS[top], LOW);
       // digitalWrite(MOTORDIR_PINS[bottom], HIGH);
@@ -130,30 +130,42 @@ void correct_tilt(int top_right, int bottom_right, int top_left, int bottom_left
   analogWrite(MOTORPWM_PINS[bottom_right], 200);
 }
 
-void correct_drift(int top, int bottom, VL6180X *left_sensor, VL6180X *right_sensor) {
+void correct_drift(int top_right, int bottom_right, int top_left, int bottom_left, VL6180X *left_sensor, VL6180X *right_sensor) {
   // Serial.println("correct_drift");
-  if(right_sensor->readRangeSingleMillimeters() == left_sensor->readRangeSingleMillimeters()) {
-    analogWrite(MOTORPWM_PINS[bottom], 0);
-    analogWrite(MOTORPWM_PINS[top], 0);
+  // if(right_sensor->readRangeSingleMillimeters() == left_sensor->readRangeSingleMillimeters()) {
+  //   analogWrite(MOTORPWM_PINS[bottom], 0);
+  //   analogWrite(MOTORPWM_PINS[top], 0);
+  // } 
+  if (right_sensor->readRangeSingleMillimeters() > left_sensor->readRangeSingleMillimeters()) {
+    // digitalWrite(MOTORDIR_PINS[top], HIGH); //moves top motor to the left
+    // analogWrite(MOTORPWM_PINS[top], 200); //moves motors
+    // digitalWrite(MOTORDIR_PINS[bottom], HIGH);
+    // analogWrite(MOTORPWM_PINS[bottom], 200);
+    analogWrite(MOTORPWM_PINS[top_left], 200);
+    analogWrite(MOTORPWM_PINS[bottom_left], 150);
+    analogWrite(MOTORPWM_PINS[top_right], 150);
+    analogWrite(MOTORPWM_PINS[bottom_right], 200);
   }
-  while(right_sensor->readRangeSingleMillimeters() > left_sensor->readRangeSingleMillimeters()) {
-    digitalWrite(MOTORDIR_PINS[top], HIGH); //moves top motor to the left
-    analogWrite(MOTORPWM_PINS[top], 200); //moves motors
-    digitalWrite(MOTORDIR_PINS[bottom], HIGH);
-    analogWrite(MOTORPWM_PINS[bottom], 200);
-  }
-  while(left_sensor->readRangeSingleMillimeters() > right_sensor->readRangeSingleMillimeters()) {
+  if (left_sensor->readRangeSingleMillimeters() > right_sensor->readRangeSingleMillimeters()) {
     //move it to the right
-    digitalWrite(MOTORDIR_PINS[top], LOW);
-    analogWrite(MOTORPWM_PINS[top], 200);
-    digitalWrite(MOTORDIR_PINS[bottom], LOW);
-    analogWrite(MOTORPWM_PINS[bottom], 200);
+    // digitalWrite(MOTORDIR_PINS[top], LOW);
+    // analogWrite(MOTORPWM_PINS[top], 200);
+    // digitalWrite(MOTORDIR_PINS[bottom], LOW);
+    // analogWrite(MOTORPWM_PINS[bottom], 200);
+    analogWrite(MOTORPWM_PINS[top_left], 150);
+    analogWrite(MOTORPWM_PINS[bottom_left], 200);
+    analogWrite(MOTORPWM_PINS[top_right], 200);
+    analogWrite(MOTORPWM_PINS[bottom_right], 150);
   }
+  analogWrite(MOTORPWM_PINS[top_left], 200);
+  analogWrite(MOTORPWM_PINS[bottom_left], 200);
+  analogWrite(MOTORPWM_PINS[top_right], 200);
+  analogWrite(MOTORPWM_PINS[bottom_right], 200);
 }
 
 // current order of sensors: top, bottom, left, right
 // but this is moving two adjacent motors
-void straight(int top, int bottom, int left, int right, VL6180X *left_sensor, VL6180X *right_sensor, int absolute_direction) {
+void straight_old(int top, int bottom, int left, int right, VL6180X *left_sensor, VL6180X *right_sensor, int absolute_direction) {
   //go forward
   //if direction is forward or right
   // Serial.println("straight");
@@ -171,11 +183,7 @@ void straight(int top, int bottom, int left, int right, VL6180X *left_sensor, VL
   }
 
 
-  if(is_tilted(left_sensor, right_sensor) == 1) { /*is tilted*/
-    correct_tilt(top, bottom, left_sensor, right_sensor);
-  } else {
-    correct_drift(left, right, left_sensor, right_sensor);
-  }
+  
 }
 
 void corner_wall(int left, int right, VL6180X *top_sensor, int absolute_direction)
@@ -201,7 +209,7 @@ void corner_wall(int left, int right, VL6180X *top_sensor, int absolute_directio
 }
 
 // this is relative forward
-void forward(top_left, top_right, bottom_left, bottom_right, absolute_direction){
+void straight(int top_left, int top_right, int bottom_left, int bottom_right, VL6180X *left_sensor, VL6180X *right_sensor, int absolute_direction){
   // 
   int top_left_dir = 0;
   int top_right_dir = 0;
@@ -232,12 +240,19 @@ void forward(top_left, top_right, bottom_left, bottom_right, absolute_direction)
   analogWrite(MOTORPWM_PINS[top_right], 200);
   analogWrite(MOTORPWM_PINS[bottom_left], 200);
   analogWrite(MOTORPWM_PINS[bottom_right], 200);
+
+  if(is_tilted(left_sensor, right_sensor) == 1) { /*is tilted*/
+    correct_tilt(top_right, bottom_right, top_left, bottom_left, left_sensor, right_sensor);
+  } else {
+    correct_drift(top_right, bottom_right, top_left, bottom_left, left_sensor, right_sensor);
+  }
+
 }
 
 void loop()
 {
-    digitalWrite(MOTORDIR_PINS[2], HIGH); 
-    analogWrite(MOTORPWM_PINS[2], 100);
+  digitalWrite(MOTORDIR_PINS[0], HIGH); 
+  analogWrite(MOTORPWM_PINS[0], 100);
 
   // const int sensor1Value = sensor1.readRangeSingleMillimeters();
   // const int sensor2Value = sensor2.readRangeSingleMillimeters();
@@ -251,7 +266,6 @@ void loop()
   // 010 right (2)
   // 011 forward (3)
   // 100 back (4)
-  Serial.println("loop");
   int gpio1_val = digitalRead(gpio_pin_1); 
   int gpio2_val = digitalRead(gpio_pin_2);
   int gpio3_val = digitalRead(gpio_pin_3);
@@ -263,10 +277,10 @@ void loop()
   VL6180X right_sensor;
 
   // indices of motors
-  int top_motor;
-  int bottom_motor;
-  int left_motor;
-  int right_motor;
+  int top_left;
+  int top_right;
+  int bottom_left;
+  int bottom_right;
   
   bot_direction = 2;
   if (bot_direction == 0) {  //not moving
@@ -280,10 +294,10 @@ void loop()
       left_sensor = sensor3;
       right_sensor = sensor1;
 
-      top_motor = 0;
-      bottom_motor = 3;
-      left_motor = 2;
-      right_motor = 1;
+      top_left = 0;
+      top_right = 3;
+      bottom_left = 2;
+      bottom_right = 1;
     // sensor 2 is at the top, sensor 1 and 3 are sides, sensor 4 is that back
   } else if (bot_direction == 2) { // going right
       top_sensor = sensor2;
@@ -291,10 +305,10 @@ void loop()
       left_sensor = sensor1;
       right_sensor = sensor3;
 
-      top_motor = 3;
-      bottom_motor = 0;
-      left_motor = 1;
-      right_motor = 2;
+      top_left = 3;
+      top_right = 0;
+      bottom_left = 1;
+      bottom_right = 2;
     //sensor 4 is at the top, sensor 1 and 3 is at the sides, sensor 2 is at the back
   } else if (bot_direction == 3) { //move forward
       top_sensor = sensor1;
@@ -302,10 +316,10 @@ void loop()
       left_sensor = sensor4;
       right_sensor = sensor2;
 
-      top_motor = 1;
-      bottom_motor = 2;
-      left_motor = 0;
-      right_motor = 3;
+      top_left = 1; //top
+      top_right = 2; //bottom
+      bottom_left = 0; //left
+      bottom_right = 3; //right
     // sensor1 is top, sensor 2 and 4 is at the sides, sensor 3 is at the bottom
   } else { // move backward
       top_sensor = sensor3;
@@ -313,10 +327,10 @@ void loop()
       left_sensor = sensor2;
       right_sensor = sensor4;
 
-      top_motor = 2;
-      bottom_motor = 0;
-      left_motor = 1;
-      right_motor = 3;
+      top_left = 2;
+      top_right = 0;
+      bottom_left = 1;
+      bottom_right = 3;
   }
   // IF THE top sensor reading is less than X (value to be determined later), don't go straight
   // OR 
@@ -350,7 +364,7 @@ void loop()
       right_motor = 2;
   } 
   */
-  //straight(top_motor, bottom_motor, left_motor, right_motor, &left_sensor, &right_sensor, bot_direction);
+  straight(top_left, top_right, bottom_left, bottom_right, left_sensor, right_sensor, bot_direction);
   
 
 // for (int i = 0; i<4; i++) {
