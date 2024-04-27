@@ -361,7 +361,7 @@ class PacbotClient:
 						if not self.robotSocket.moveNoCoal(msg, row, col, dist):
 							print(f'{YELLOW}dropping message{NORMAL}')
 							await asyncio.sleep(0)
-							self.state.setClientMode(ClientMode.FOUND)
+							self.state.setClientMode(ClientMode.DONE)
 							#shouldSpam = False # disable spamming when we leave this state
 							continue
 
@@ -380,7 +380,7 @@ class PacbotClient:
 						print(f'{YELLOW}retransmit message{NORMAL}')
 						if not self.robotSocket.moveNoCoal(lastMsg, lastRow, lastCol, lastDist):
 							await asyncio.sleep(0)
-							self.state.setClientMode(ClientMode.FOUND)
+							self.state.setClientMode(ClientMode.DONE)
 							continue
 
 					else:

@@ -1,5 +1,5 @@
 {
-  "ServerIP": "10.48.143.167",
+  "ServerIP": "192.168.0.102",
   "WebSocketPort": 3002,
   "OneClientPerIP": false,
 
@@ -15,6 +15,6 @@
   "CoalesceCommands": false,
   "ReliablityEnabled": true,
 
-  "RobotIP": "10.9.135.32",
+  "RobotIP": "192.168.0.106",
   "RobotPort": 8081
 }

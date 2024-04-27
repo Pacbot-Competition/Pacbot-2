@@ -503,6 +503,14 @@ class GameState:
 			print(f"{RED}        FOUND <- PLANNED{NORMAL}")
 			self.clientMode = value
 
+		elif (value == ClientMode.DONE) and (self.clientMode == ClientMode.PLANNED):
+			print(f"{RED}DONE          <- PLANNED{NORMAL}")
+			self.clientMode = value
+
+		elif (value == ClientMode.DONE) and (self.clientMode == ClientMode.SENT):
+			print(f"{RED}DONE                     <- SENT{NORMAL}")
+			self.clientMode = value
+
 		elif (value == ClientMode.SENT) and (self.clientMode == ClientMode.PLANNED):
 			print(f"{ORANGE}                 PLANNED -> SENT{NORMAL}")
 			self.clientMode = value

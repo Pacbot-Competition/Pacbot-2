@@ -320,7 +320,7 @@ class AStarPolicy:
 	def fCostMultiplier(self) -> float:
 
 		# Constant for the multiplier
-		K: int = 64 # TODO: considering changing to 128
+		K: int = 128 # TODO: considering changing to 128
 
 		# Multiplier addition term
 		multTerm: int = 0
