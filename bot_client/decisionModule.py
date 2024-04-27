@@ -14,6 +14,7 @@ from DistMatrix import createDistTable, createDistTableDict, loadDistTable, load
 from pathfinding import find_path
 from AvoidanceMap import cellAvoidanceMap
 
+from RPi.GPIO import GPIO
 
 def direction_from_delta(deltaRow, deltaCol):
 	if deltaRow == 1:
@@ -26,18 +27,6 @@ def direction_from_delta(deltaRow, deltaCol):
 		return Directions.LEFT
 	else:
 		raise ValueError("Invalid delta")
-
-def send_bit(value, GPIO_PIN):
-    # Set up GPIO
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(GPIO_PIN, GPIO.OUT)
-
-    # Send the bit
-    GPIO.output(GPIO_PIN, value)
-    time.sleep(0.1)  # Adjust delay as needed
-
-    # Clean up GPIO
-    GPIO.cleanup()
 
 def send_to_teensey(direction):
 	bit_14 = 0
@@ -60,9 +49,9 @@ def send_to_teensey(direction):
 		bit_15=1
 		bit_18=0
 
-	send_bit(bit_14, 14)
-	send_bit(bit_15, 15)
-	send_bit(bit_18, 18)
+	GPIO.output(14, bit_14)
+	GPIO.output(15, bit_15)
+	GPIO.output(18, bit_18)
 
 class DecisionModule:
 	'''
