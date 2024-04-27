@@ -1,7 +1,9 @@
 #include <Wire.h>
 
-const unsigned int MOTORDIR_PINS[4] = {5, 7, 23, 15};
-const unsigned int MOTORPWM_PINS[4] = {6, 8, 22, 14};
+const unsigned int MOTOR_FORWARD_PINS[4] = {5, 7, 23, 15};
+const unsigned int MOTOR_BACKWARD_PINS[4] = {6, 8, 22, 14};
+
+
 const unsigned int gpio_pin_1 = 2; 
 const unsigned int gpio_pin_2 = 3; 
 const unsigned int gpio_pin_3 = 4; 
@@ -10,11 +12,11 @@ const unsigned int gpio_pin_3 = 4;
 
 void init_motors() {
   for (int i = 0; i<4; i++) {
-    pinMode(MOTORDIR_PINS[i], OUTPUT);
-    pinMode(MOTORPWM_PINS[i], OUTPUT);
+    pinMode(MOTOR_FORWARD_PINS[i], OUTPUT);
+    pinMode(MOTOR_BACKWARD_PINS[i], OUTPUT);
 
-    digitalWrite(MOTORDIR_PINS[i], LOW);
-    analogWrite(MOTORPWM_PINS[i], 0);
+    analogWrite(MOTOR_FORWARD_PINS[i], 0);
+    analogWrite(MOTOR_BACKWARD_PINS[i], 0);
   }
 }
 
@@ -29,38 +31,53 @@ void setup() {
   digitalWrite(LED_PIN, HIGH);
 }
 
-void straight(int top_left, int top_right, int bottom_left, int bottom_right, int absolute_direction){
+void forward(int top_left, int top_right, int bottom_left, int bottom_right) {
   // 
-  int top_left_dir = 0;
-  int top_right_dir = 0;
-  int bottom_left_dir = 0;
-  int bottom_right_dir = 0;
-  // 0 = not moving, 1 = left, 2 = right, 3 = forward, 4 = backward
-  // logic for CW vs CCW for the motors based on the absolute direction
-  if (absolute_direction == 1) { // left
-    top_left_dir = 1;
-    top_right_dir = 1;
-  } else if (absolute_direction == 2) { // right
-    bottom_left_dir = 1;
-    bottom_right_dir = 1;
-  } else if (absolute_direction == 3) { // forward 
-    top_right_dir = 1;
-    bottom_right_dir = 1;
-  } else if (absolute_direction == 4) { // backward
-    top_left_dir = 1;
-    bottom_left_dir = 1;    
-  }
-  // direction of motors
-  digitalWrite(MOTORDIR_PINS[top_left], top_left_dir);
-  digitalWrite(MOTORDIR_PINS[top_right], top_right_dir);
-  digitalWrite(MOTORDIR_PINS[bottom_left], bottom_left_dir);
-  digitalWrite(MOTORDIR_PINS[bottom_right], bottom_right_dir);
-  // speed of motors
-  analogWrite(MOTORPWM_PINS[top_left], 200);
-  analogWrite(MOTORPWM_PINS[top_right], 200);
-  analogWrite(MOTORPWM_PINS[bottom_left], 200);
-  analogWrite(MOTORPWM_PINS[bottom_right], 200);
+  analogWrite(MOTOR_FORWARD_PINS[top_left], 200);
+  analogWrite(MOTOR_FORWARD_PINS[top_right], 0);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_left], 200);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_right], 0);
 
+  analogWrite(MOTOR_BACKWARD_PINS[top_left], 0);
+  analogWrite(MOTOR_BACKWARD_PINS[top_right], 200);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_left], 0);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_right], 200);
+}
+
+void backward(int top_left, int top_right, int bottom_left, int bottom_right){
+  analogWrite(MOTOR_FORWARD_PINS[top_left], 0);
+  analogWrite(MOTOR_FORWARD_PINS[top_right], 200);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_left], 0);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_right], 200);
+
+  analogWrite(MOTOR_BACKWARD_PINS[top_left], 200);
+  analogWrite(MOTOR_BACKWARD_PINS[top_right], 0);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_left], 200);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_right], 0);
+}
+
+void left(int top_left, int top_right, int bottom_left, int bottom_right) {
+  analogWrite(MOTOR_FORWARD_PINS[top_left], 0);
+  analogWrite(MOTOR_FORWARD_PINS[top_right], 0);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_left], 200);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_right], 200);
+
+  analogWrite(MOTOR_BACKWARD_PINS[top_left], 200);
+  analogWrite(MOTOR_BACKWARD_PINS[top_right], 200);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_left], 0);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_right], 0);
+}
+
+void right(int top_left, int top_right, int bottom_left, int bottom_right) {
+  analogWrite(MOTOR_FORWARD_PINS[top_left], 200);
+  analogWrite(MOTOR_FORWARD_PINS[top_right], 200);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_left], 0);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_right], 0);
+
+  analogWrite(MOTOR_BACKWARD_PINS[top_left], 0);
+  analogWrite(MOTOR_BACKWARD_PINS[top_right], 0);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_left], 200);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_right], 200);
 }
 
 void loop() {
@@ -69,8 +86,28 @@ void loop() {
   int top_right = 1;
   int bottom_left = 2;
   int bottom_right = 3;
-  for (int i = 1; i <= 4; i++) {
-    straight(top_left, top_right, bottom_left, bottom_right, i);
-    delay(1000);
+  
+  int currentTime = millis();
+  while (currentTime < 1000) {
+    forward(top_left, top_right, bottom_left, bottom_right);
   }
+  delay(1000);
+
+  currentTime = millis();
+  while (currentTime < 1000) {
+    backward(top_left, top_right, bottom_left, bottom_right);
+  }
+  delay(1000);
+
+  currentTime = millis();
+  while (currentTime < 1000) {
+    left(top_left, top_right, bottom_left, bottom_right);
+  }
+  delay(1000);
+
+  currentTime = millis();
+  while (currentTime < 1000) {
+    right(top_left, top_right, bottom_left, bottom_right);
+  }
+  delay(1000);
 }
