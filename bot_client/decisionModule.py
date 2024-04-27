@@ -36,24 +36,24 @@ def send_to_teensey(direction):
 	bit_18 = 0
 	if (direction == Directions.DOWN):
 		bit_14=1
-		bit15_=0
+		bit_15=0
 		bit_18=0
 	elif (direction == Directions.UP):
 		bit_14=0
-		bit15_=1
+		bit_15=1
 		bit_18=1
 	elif (direction == Directions.LEFT):
 		bit_14=0
-		bit15_=0
+		bit_15=0
 		bit_18=1
 	elif (direction == Directions.RIGHT):
 		bit_14=0
-		bit15_=1
+		bit_15=1
 		bit_18=0
 
 	send_bit(bit_14, 14)
 	send_bit(bit_15, 15)
-	send_bit(bit_8, 18)
+	send_bit(bit_18, 18)
 
 class DecisionModule:
 	'''
