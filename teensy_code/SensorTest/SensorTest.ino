@@ -5,6 +5,7 @@ VL6180X sensor1;
 VL6180X sensor2;
 VL6180X sensor3;
 VL6180X sensor4;
+int count = 0;
 
 // Sensor pins
 const int sensor1_pin = 9;
@@ -67,8 +68,19 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  Serial.println("Sensor1: " + sensor1.readRangeSingleMillimeters());
-  Serial.println("Sensor2: " + sensor2.readRangeSingleMillimeters());
-  Serial.println("Sensor3: " + sensor3.readRangeSingleMillimeters());
-  Serial.println("Sensor4: " + sensor4.readRangeSingleMillimeters());
+  Serial.print("HELLO");
+  Serial.println(count);
+  const uint16_t sensor1Value = sensor1.readRangeSingleMillimeters();
+  const uint16_t sensor2Value = sensor2.readRangeSingleMillimeters();
+  const uint16_t sensor3Value = sensor3.readRangeSingleMillimeters();
+  const uint16_t sensor4Value = sensor4.readRangeSingleMillimeters();
+  Serial.print("Sensor1: ");
+  Serial.println(sensor1Value);
+  Serial.print("Sensor2: ");
+  Serial.println(sensor2Value);
+  Serial.print("Sensor3: ");
+  Serial.println(sensor3Value);
+  Serial.print("Sensor4: ");
+  Serial.println(sensor4Value);
+  count++;
 }

@@ -1,12 +1,14 @@
 #include <Wire.h>
 
-const unsigned int MOTOR_FORWARD_PINS[4] = {5, 7, 23, 15};
-const unsigned int MOTOR_BACKWARD_PINS[4] = {6, 8, 22, 14};
+const unsigned int MOTOR_FORWARD_PINS[4] = {5, 7, 23, 14};
+const unsigned int MOTOR_BACKWARD_PINS[4] = {6, 8, 22, 15};
 
 
 const unsigned int gpio_pin_1 = 2; 
 const unsigned int gpio_pin_2 = 3; 
 const unsigned int gpio_pin_3 = 4; 
+
+int speed = 100;
 #define LED_PIN LED_BUILTIN
 
 
@@ -33,54 +35,51 @@ void setup() {
 
 void forward(int top_left, int top_right, int bottom_left, int bottom_right) {
   // 
-  analogWrite(MOTOR_FORWARD_PINS[top_left], 200);
-  analogWrite(MOTOR_FORWARD_PINS[top_right], 0);
-  analogWrite(MOTOR_FORWARD_PINS[bottom_left], 200);
   analogWrite(MOTOR_FORWARD_PINS[bottom_right], 0);
-
+  analogWrite(MOTOR_FORWARD_PINS[top_right], 0);
   analogWrite(MOTOR_BACKWARD_PINS[top_left], 0);
-  analogWrite(MOTOR_BACKWARD_PINS[top_right], 200);
   analogWrite(MOTOR_BACKWARD_PINS[bottom_left], 0);
-  analogWrite(MOTOR_BACKWARD_PINS[bottom_right], 200);
+  analogWrite(MOTOR_FORWARD_PINS[top_left], speed);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_left], speed);
+  analogWrite(MOTOR_BACKWARD_PINS[top_right], speed);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_right], speed);
 }
 
 void backward(int top_left, int top_right, int bottom_left, int bottom_right){
   analogWrite(MOTOR_FORWARD_PINS[top_left], 0);
-  analogWrite(MOTOR_FORWARD_PINS[top_right], 200);
   analogWrite(MOTOR_FORWARD_PINS[bottom_left], 0);
-  analogWrite(MOTOR_FORWARD_PINS[bottom_right], 200);
-
-  analogWrite(MOTOR_BACKWARD_PINS[top_left], 200);
   analogWrite(MOTOR_BACKWARD_PINS[top_right], 0);
-  analogWrite(MOTOR_BACKWARD_PINS[bottom_left], 200);
   analogWrite(MOTOR_BACKWARD_PINS[bottom_right], 0);
+  analogWrite(MOTOR_FORWARD_PINS[top_right], speed);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_right], speed);
+  analogWrite(MOTOR_BACKWARD_PINS[top_left], speed);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_left], speed);
+  
 }
 
 void left(int top_left, int top_right, int bottom_left, int bottom_right) {
   analogWrite(MOTOR_FORWARD_PINS[top_left], 0);
   analogWrite(MOTOR_FORWARD_PINS[top_right], 0);
-  analogWrite(MOTOR_FORWARD_PINS[bottom_left], 200);
-  analogWrite(MOTOR_FORWARD_PINS[bottom_right], 200);
-
-  analogWrite(MOTOR_BACKWARD_PINS[top_left], 200);
-  analogWrite(MOTOR_BACKWARD_PINS[top_right], 200);
   analogWrite(MOTOR_BACKWARD_PINS[bottom_left], 0);
   analogWrite(MOTOR_BACKWARD_PINS[bottom_right], 0);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_left], speed);
+  analogWrite(MOTOR_FORWARD_PINS[bottom_right], speed);
+
+  analogWrite(MOTOR_BACKWARD_PINS[top_left], speed);
+  analogWrite(MOTOR_BACKWARD_PINS[top_right], speed);
+  
 }
 
 void right(int top_left, int top_right, int bottom_left, int bottom_right) {
-  analogWrite(MOTOR_FORWARD_PINS[top_left], 200);
-  analogWrite(MOTOR_FORWARD_PINS[top_right], 200);
   analogWrite(MOTOR_FORWARD_PINS[bottom_left], 0);
   analogWrite(MOTOR_FORWARD_PINS[bottom_right], 0);
-
   analogWrite(MOTOR_BACKWARD_PINS[top_left], 0);
   analogWrite(MOTOR_BACKWARD_PINS[top_right], 0);
-  analogWrite(MOTOR_BACKWARD_PINS[bottom_left], 200);
-  analogWrite(MOTOR_BACKWARD_PINS[bottom_right], 200);
+  analogWrite(MOTOR_FORWARD_PINS[top_left], speed);
+  analogWrite(MOTOR_FORWARD_PINS[top_right], speed);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_left], speed);
+  analogWrite(MOTOR_BACKWARD_PINS[bottom_right], speed);
 }
-
-
 
 void stop(int top_left, int top_right, int bottom_left, int bottom_right){
   analogWrite(MOTOR_FORWARD_PINS[top_left], 0);
@@ -94,6 +93,7 @@ void stop(int top_left, int top_right, int bottom_left, int bottom_right){
   analogWrite(MOTOR_BACKWARD_PINS[bottom_right], 0);
 }
 
+
 void loop() {
   // put your main code here, to run repeatedly:
   int top_left = 0;
@@ -105,6 +105,8 @@ void loop() {
   int gpio2_val = digitalRead(gpio_pin_2);
   int gpio3_val = digitalRead(gpio_pin_3);
   int bot_direction = 4*gpio1_val + 2*gpio2_val + 1*gpio3_val;
+  Serial.print("Direction:");
+  Serial.println(bot_direction);
 
   if (bot_direction == 1) { // left
     left(top_left, top_right, bottom_left, bottom_right);
