@@ -113,6 +113,9 @@
     Offline:  10,
   }
 
+  // Keep track of the level steps (from the server)
+  let levelSteps = 960;
+
   // Keep track of the current score (from the server)
   let currScore = 0;
 
@@ -121,6 +124,9 @@
 
   // Keep track of the current lives (from the server)
   let currLives = 1;
+
+  // Keep track of the ghost combo (from the server)
+  let ghostCombo = 0;
 
   // Local object to encode the starting states
   const Directions = {
@@ -142,18 +148,22 @@
   let redRowState = 11;
   let redColState = 13 | Directions.Left; // left
   let redFrightState = 0 | 128;
+  let redTrappedState = 0 | 128;
 
   let pinkRowState = 13 | Directions.Down; // down
   let pinkColState = 13;
   let pinkFrightState = 0 | 128;
+  let pinkTrappedState = 0 | 128;
 
   let cyanRowState = 14 | Directions.Up; // up
   let cyanColState = 11;
   let cyanFrightState = 0 | 128;
+  let cyanTrappedState = 0 | 128;
 
   let orangeRowState = 14 | Directions.Up; // up
   let orangeColState = 15;
   let orangeFrightState = 0 | 128;
+  let orangeTrappedState = 0 | 128;
 
   // Handling a new connection
   socket.addEventListener('open', (_) => {
@@ -197,6 +207,9 @@
         modeSteps         = view.getUint8(byteIdx++, false);
         modeDuration      = view.getUint8(byteIdx++, false);
 
+        // Get the level steps from the server
+        levelSteps        = view.getUint16(byteIdx, false); byteIdx += 2;
+
         // Get the current score from the server
         currScore         = view.getUint16(byteIdx, false); byteIdx += 2;
 
@@ -206,19 +219,26 @@
         // Get the current lives from the server
         currLives         = view.getUint8(byteIdx++, false);
 
+        // Get the ghost combo from the server
+        ghostCombo        = view.getUint8(byteIdx++, false);
+
         // Parse ghost data
-        redRowState       = view.getUint8(byteIdx++, false);
-        redColState       = view.getUint8(byteIdx++, false);
-        redFrightState    = view.getUint8(byteIdx++, false);
-        pinkRowState      = view.getUint8(byteIdx++, false);
-        pinkColState      = view.getUint8(byteIdx++, false);
-        pinkFrightState   = view.getUint8(byteIdx++, false);
-        cyanRowState      = view.getUint8(byteIdx++, false);
-        cyanColState      = view.getUint8(byteIdx++, false);
-        cyanFrightState   = view.getUint8(byteIdx++, false);
-        orangeRowState    = view.getUint8(byteIdx++, false);
-        orangeColState    = view.getUint8(byteIdx++, false);
-        orangeFrightState = view.getUint8(byteIdx++, false);
+        redRowState        = view.getUint8(byteIdx++, false);
+        redColState        = view.getUint8(byteIdx++, false);
+        redFrightState     = view.getUint8(byteIdx++, false);
+        redTrappedState    = view.getUint8(byteIdx++, false);
+        pinkRowState       = view.getUint8(byteIdx++, false);
+        pinkColState       = view.getUint8(byteIdx++, false);
+        pinkFrightState    = view.getUint8(byteIdx++, false);
+        pinkTrappedState   = view.getUint8(byteIdx++, false);
+        cyanRowState       = view.getUint8(byteIdx++, false);
+        cyanColState       = view.getUint8(byteIdx++, false);
+        cyanFrightState    = view.getUint8(byteIdx++, false);
+        cyanTrappedState   = view.getUint8(byteIdx++, false);
+        orangeRowState     = view.getUint8(byteIdx++, false);
+        orangeColState     = view.getUint8(byteIdx++, false);
+        orangeFrightState  = view.getUint8(byteIdx++, false);
+        orangeTrappedState = view.getUint8(byteIdx++, false);
 
         // Parse Pacman data
         pacmanRowState    = view.getUint8(byteIdx++, false);

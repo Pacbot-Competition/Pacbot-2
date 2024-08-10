@@ -113,6 +113,15 @@ func (gs *gameState) serModeSteps(outputBuf []byte, startIdx int) int {
 	return startIdx
 }
 
+/*
+Serialize number of steps (update periods) before a speedup penalty starts (1 byte)
+*/
+func (gs *gameState) serLevelSteps(outputBuf []byte, startIdx int) int {
+
+	// Serialize the level steps and return the starting index of the next field
+	return serUint16(gs.getLevelSteps(), outputBuf, startIdx)
+}
+
 // Serialize the current score (2 bytes)
 func (gs *gameState) serCurrScore(outputBuf []byte, startIdx int) int {
 
@@ -132,6 +141,13 @@ func (gs *gameState) serCurrLives(outputBuf []byte, startIdx int) int {
 
 	// Serialize and return the starting index of the next field
 	return serUint8(gs.getLives(), outputBuf, startIdx)
+}
+
+// Serialize the ghost combo (1 byte)
+func (gs *gameState) serGhostCombo(outputBuf []byte, startIdx int) int {
+
+	// Serialize and return the starting index of the next field
+	return serUint8(gs.ghostCombo, outputBuf, startIdx)
 }
 
 // Serialize the pellets (4 * mazeRows bytes)
@@ -210,6 +226,15 @@ func (gs *gameState) serGhost(color uint8, outputBuf []byte, startIdx int) int {
 	// Serialize the fright steps and spawn flag info next
 	startIdx = serUint8(g.frightSteps|spawnFlag, outputBuf, startIdx)
 
+	// Add a flag at the 7th (highest) bit to indicate eaten
+	var eatenFlag uint8 = 0
+	if g.eaten {
+		eatenFlag = 0b10000000
+	}
+
+	// Serialize the trapped steps and eaten flag info next
+	startIdx = serUint8(g.trappedSteps|eatenFlag, outputBuf, startIdx)
+
 	// Return the starting index of the next field
 	return startIdx
 }
@@ -237,11 +262,13 @@ func (gs *gameState) serFull(outputBuf []byte, startIdx int) int {
 	startIdx = gs.serUpdatePeriod(outputBuf, startIdx)
 	startIdx = gs.serGameMode(outputBuf, startIdx)
 	startIdx = gs.serModeSteps(outputBuf, startIdx)
+	startIdx = gs.serLevelSteps(outputBuf, startIdx)
 
 	// General game state information
 	startIdx = gs.serCurrScore(outputBuf, startIdx)
 	startIdx = gs.serCurrLevel(outputBuf, startIdx)
 	startIdx = gs.serCurrLives(outputBuf, startIdx)
+	startIdx = gs.serGhostCombo(outputBuf, startIdx)
 
 	// Ghosts - serializes the ghost states to the buffer
 	startIdx = gs.serGhosts(outputBuf, startIdx)
