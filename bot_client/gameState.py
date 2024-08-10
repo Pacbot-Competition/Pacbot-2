@@ -198,7 +198,9 @@ class Ghost:
 		self.color: GhostColors = color
 		self.location: Location = Location(state) # type: ignore
 		self.frightSteps: int = 0
+		self.trappedSteps: int = 0
 		self.spawning: bool = bool(True)
+		self.eaten: bool = bool(True)
 
 		# (For simulation) Planned next direction the ghost will take
 		self.plannedDirection: Directions = Directions.NONE
@@ -211,12 +213,27 @@ class Ghost:
 		self.frightSteps = auxInfo & 0x3f
 		self.spawning = bool(auxInfo >> 7)
 
+	def updateAux2(self, auxInfo: int) -> None:
+		'''
+		Update second auxiliary info (trapped steps and eaten flag, 1 byte)
+		'''
+
+		self.trappedSteps = auxInfo & 0x3f
+		self.eaten = bool(auxInfo >> 7)
+
 	def serializeAux(self) -> int:
 		'''
 		Serialize auxiliary info (fright steps and spawning flag, 1 byte)
 		'''
 
 		return (self.spawning << 7) | (self.frightSteps)
+
+	def serializeAux2(self) -> int:
+		'''
+		Serialize second auxiliary info (trapped steps and eaten flag, 1 byte)
+		'''
+
+		return (self.eaten << 7) | (self.trappedSteps)
 
 	def isFrightened(self) -> bool:
 		'''
@@ -412,6 +429,10 @@ class GameState:
 		self.format += 'BB'
 
 		# 2 bytes
+		self.levelSteps: int = 960
+		self.format += 'H'
+
+		# 2 bytes
 		self.currScore: int = 0
 		self.format += 'H'
 
@@ -423,9 +444,13 @@ class GameState:
 		self.currLives: int = 3
 		self.format += 'B'
 
-		# 4 * 3 bytes = 4 * (2 bytes location + 1 byte aux info)
+		# 1 byte
+		self.ghostCombo: int = 0
+		self.format += 'B'
+
+		# 4 * 4 bytes = 4 * (2 bytes location + 1 byte aux info + 1 byte second aux info)
 		self.ghosts: list[Ghost] = [Ghost(color, self) for color in GhostColors]
-		self.format += 'HBHBHBHB'
+		self.format += 'HBBHBBHBBHBB'
 
 		# 2 byte location
 		self.pacmanLoc: Location = Location(self)
@@ -501,25 +526,31 @@ class GameState:
 			self.gameMode,
 			self.modeSteps,
 			self.modeDuration,
+			self.levelSteps,
 			self.currScore,
 			self.currLevel,
 			self.currLives,
+			self.ghostCombo,
 
 			# Red ghost info
 			self.ghosts[GhostColors.RED].location.serialize(),
 			self.ghosts[GhostColors.RED].serializeAux(),
+			self.ghosts[GhostColors.RED].serializeAux2(),
 
 			# Pink ghost info
 			self.ghosts[GhostColors.PINK].location.serialize(),
 			self.ghosts[GhostColors.PINK].serializeAux(),
+			self.ghosts[GhostColors.PINK].serializeAux2(),
 
 			# Cyan ghost info
 			self.ghosts[GhostColors.CYAN].location.serialize(),
 			self.ghosts[GhostColors.CYAN].serializeAux(),
+			self.ghosts[GhostColors.CYAN].serializeAux2(),
 
 			# Orange ghost info
 			self.ghosts[GhostColors.ORANGE].location.serialize(),
 			self.ghosts[GhostColors.ORANGE].serializeAux(),
+			self.ghosts[GhostColors.ORANGE].serializeAux2(),
 
 			# Pacman location info
 			self.pacmanLoc.serialize(),
@@ -558,36 +589,42 @@ class GameState:
 		self.gameMode     = GameModes(unpacked[2])
 		self.modeSteps    = unpacked[3]
 		self.modeDuration = unpacked[4]
-		self.currScore    = unpacked[5]
-		self.currLevel    = unpacked[6]
-		self.currLives    = unpacked[7]
+		self.levelSteps   = unpacked[5]
+		self.currScore    = unpacked[6]
+		self.currLevel    = unpacked[7]
+		self.currLives    = unpacked[8]
+		self.ghostCombo   = unpacked[9]
 
 		# Red ghost info
-		self.ghosts[GhostColors.RED].location.update(unpacked[8])
-		self.ghosts[GhostColors.RED].updateAux(unpacked[9])
+		self.ghosts[GhostColors.RED].location.update(unpacked[10])
+		self.ghosts[GhostColors.RED].updateAux(unpacked[11])
+		self.ghosts[GhostColors.RED].updateAux2(unpacked[12])
 
 		# Pink ghost info
-		self.ghosts[GhostColors.PINK].location.update(unpacked[10])
-		self.ghosts[GhostColors.PINK].updateAux(unpacked[11])
+		self.ghosts[GhostColors.PINK].location.update(unpacked[13])
+		self.ghosts[GhostColors.PINK].updateAux(unpacked[14])
+		self.ghosts[GhostColors.PINK].updateAux2(unpacked[15])
 
 		# Cyan ghost info
-		self.ghosts[GhostColors.CYAN].location.update(unpacked[12])
-		self.ghosts[GhostColors.CYAN].updateAux(unpacked[13])
+		self.ghosts[GhostColors.CYAN].location.update(unpacked[16])
+		self.ghosts[GhostColors.CYAN].updateAux(unpacked[17])
+		self.ghosts[GhostColors.CYAN].updateAux2(unpacked[18])
 
 		# Orange ghost info
-		self.ghosts[GhostColors.ORANGE].location.update(unpacked[14])
-		self.ghosts[GhostColors.ORANGE].updateAux(unpacked[15])
+		self.ghosts[GhostColors.ORANGE].location.update(unpacked[19])
+		self.ghosts[GhostColors.ORANGE].updateAux(unpacked[20])
+		self.ghosts[GhostColors.ORANGE].updateAux2(unpacked[21])
 
 		# Pacman location info
-		self.pacmanLoc.update(unpacked[16])
+		self.pacmanLoc.update(unpacked[22])
 
 		# Fruit location info
-		self.fruitLoc.update(unpacked[17])
-		self.fruitSteps = unpacked[18]
-		self.fruitDuration = unpacked[19]
+		self.fruitLoc.update(unpacked[23])
+		self.fruitSteps = unpacked[24]
+		self.fruitDuration = unpacked[25]
 
 		# Pellet info
-		self.pelletArr = list[int](unpacked)[20:]
+		self.pelletArr = list[int](unpacked)[26:]
 
 		# Reset our guesses of the planned ghost directions
 		for ghost in self.ghosts:
