@@ -30,7 +30,7 @@ from debugServer import DebugServer
 
 from pathfinding import find_path
 
-from RPi.GPIO import GPIO
+#from RPi.GPIO import GPIO
 
 # Get the connect URL from the config.json file
 def getConnectURL() -> str:
@@ -171,7 +171,7 @@ def gpio_init():
 last_selected_pos = (1,1)
 # Main function
 async def main():
-	gpio_init()
+	#gpio_init()
     
 	# Start the debug server in the background
 	debug_server = DebugServer()
@@ -195,4 +195,4 @@ if __name__ == '__main__':
 	loop.run_forever()
 	
 	print("Cleaning up GPIO")
-	GPIO.cleanup()
+	#GPIO.cleanup()
