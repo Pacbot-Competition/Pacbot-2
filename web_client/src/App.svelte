@@ -366,6 +366,8 @@
     } else if (key === 'P' && gameMode === Modes.Paused) {
       mediaControlKeyHeld = true;
       return 'P';
+    } else if (key === 'r') {
+      return 'r';
     } else if (key === ' ' && !mediaControlKeyHeld) {
       mediaControlKeyHeld = true;
       return (gameMode === Modes.Paused ? 'P' : 'p');
