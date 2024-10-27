@@ -54,7 +54,7 @@ var emptyLoc = newLocationState(32, 32, none)
 var ghostSpawnLocs [numColors]*locationState = [...]*locationState{
 	newLocationState(11, 13, left), // red
 	newLocationState(13, 13, down), // pink
-	newLocationState(14, 11, up),   // cyan
+	newLocationState(14,11,up), // cyan
 	newLocationState(14, 15, up),   // orange
 }
 
