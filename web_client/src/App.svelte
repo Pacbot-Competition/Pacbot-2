@@ -47,6 +47,7 @@
   import Mps from './lib/info_boxes/Mps.svelte';
   import Score from './lib/info_boxes/Score.svelte';
   import Ticker from './lib/info_boxes/Ticker.svelte';
+  import Reset from './lib/info_boxes/reset.svelte';
 
   // Creating a websocket client
   var socket = new WebSocket(`ws://${config.ServerIP}:${config.WebSocketPort}`);
@@ -366,6 +367,8 @@
     } else if (key === 'P' && gameMode === Modes.Paused) {
       mediaControlKeyHeld = true;
       return 'P';
+    } else if (key === 'r') {
+      return 'r';
     } else if (key === ' ' && !mediaControlKeyHeld) {
       mediaControlKeyHeld = true;
       return (gameMode === Modes.Paused ? 'P' : 'p');
@@ -417,6 +420,10 @@
 
     // Send the command directly to the socket
     sendToSocket(gameMode === Modes.Paused ? 'P' : 'p');
+  }
+
+  const toggleReset = () => {
+    sendToSocket('R');
   }
 
   // Handle key presses, to send responses back to the server
@@ -547,6 +554,13 @@
     {Modes}
     {togglePause}
   />
+
+  <Reset
+  {gridSize}
+  {toggleReset}
+/>
+
+
 
   <Score
     {gridSize}

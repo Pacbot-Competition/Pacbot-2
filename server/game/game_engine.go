@@ -61,6 +61,11 @@ func (ge *GameEngine) quit() {
 // Quit function exported to other packages
 func (ge *GameEngine) Quit() {
 	close(ge.quitCh)
+	muAGE.Lock()
+	{
+		activeGameEngines--
+	}
+	muAGE.Unlock()
 }
 
 // Start the game engine - should be launched as a go-routine
@@ -139,7 +144,6 @@ func (ge *GameEngine) RunLoop() {
 		// Re-serialize the current state
 		serLen = ge.state.serFull(outputBuf, 0)
 
-
 		/* STEP 4: Write the serialized game state to the output channel */
 
 		// Check if a write will be blocked, and try to write the serialized state
@@ -160,11 +164,17 @@ func (ge *GameEngine) RunLoop() {
 		}
 
 		/* STEP 5: Read the input channel and update the game state accordingly */
-		read_loop: for {
+	read_loop:
+		for {
 			select {
 			// If we get a message from the web broker, handle it
 			case msg := <-ge.webInputCh:
 				ge.state.interpretCommand(msg)
+				if msg[0] == 'r' || msg[0] == 'R' {
+					log.Printf("\033[35mLOG:  Game restarted\033[0m")
+					ge.state = newGameState()
+					ge.state.play()
+				}
 			default:
 				break read_loop
 			}

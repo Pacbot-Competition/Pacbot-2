@@ -61,6 +61,14 @@ func main() {
 			webResponseCh <- []byte("p")
 		} else if input == "P" { // Play signal
 			webResponseCh <- []byte("P")
+		} else if input == "r" { // Restart signal
+			webResponseCh <- []byte("p")
+
+			ge.Quit()
+			ge = game.NewGameEngine(webBroadcastCh, webResponseCh, &wgQuit, conf.GameFPS)
+			go ge.RunLoop()
+
+			webResponseCh <- []byte("P")
 		}
 	}
 
