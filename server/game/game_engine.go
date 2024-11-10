@@ -45,25 +45,6 @@ func NewGameEngine(_webOutputCh chan<- []byte, _webInputCh <-chan []byte,
 	return &ge
 }
 
-func (ge *GameEngine) reset() {
-    // Quit the current game engine
-    ge.Quit()
-	
-	muAGE.Lock()
-	{
-		activeGameEngines--
-	}
-	muAGE.Unlock()
-
-    // Reinitialize the game engine
-    *ge = *NewGameEngine(ge.webOutputCh, ge.webInputCh, ge.wgQuit, int32(1)) // Adjust clockRate as needed
-
-    log.Println("\033[35mLOG: Game engine restarted\033[0m")
-
-    // Run the new instance
-    go ge.RunLoop()
-}
-
 // Quit by closing the game engine, in case the loop ends
 func (ge *GameEngine) quit() {
 
@@ -183,7 +164,7 @@ func (ge *GameEngine) RunLoop() {
 			select {
 			// If we get a message from the web broker, handle it
 			case msg := <-ge.webInputCh:
-				ge.interpretCommand(msg)
+				ge.state.interpretCommand(msg)
 			default:
 				break read_loop
 			}

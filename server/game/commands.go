@@ -7,7 +7,7 @@ import (
 /***************************** Interpret Commands *****************************/
 
 // Convert byte messages from clients into commands to the game state
-func (ge *GameEngine) interpretCommand(msg []byte) {
+func (gs *gameState) interpretCommand(msg []byte) {
 
 	// Log the command if necessary
 	if getCommandLogEnable() {
@@ -23,30 +23,30 @@ func (ge *GameEngine) interpretCommand(msg []byte) {
 
 	// Pause command
 	case 'p':
-		ge.state.pause()
+		gs.pause()
+
 	// Play command
 	case 'P':
-		ge.state.play()
-	case 'R': 
-		ge.reset()
+		gs.play()
+
 	// Move up (decrease row index)
 	case 'w':
-		ge.state.movePacmanDir(up)
+		gs.movePacmanDir(up)
 
 	// Move left (decrease column index)
 	case 'a':
-		ge.state.movePacmanDir(left)
+		gs.movePacmanDir(left)
 
 	// Move down (increase row index)
 	case 's':
-		ge.state.movePacmanDir(down)
+		gs.movePacmanDir(down)
 
 	// Move right (increase column index)
 	case 'd':
-		ge.state.movePacmanDir(right)
+		gs.movePacmanDir(right)
 	
 	// Absolute position (from tracking)
 	case 'x':
-		ge.state.movePacmanAbsolute(int8(msg[1]), int8(msg[2]))
+		gs.movePacmanAbsolute(int8(msg[1]), int8(msg[2]))
 	}
 }
