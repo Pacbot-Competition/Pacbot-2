@@ -170,7 +170,7 @@ func (ge *GameEngine) RunLoop() {
 			// If we get a message from the web broker, handle it
 			case msg := <-ge.webInputCh:
 				ge.state.interpretCommand(msg)
-				if msg[0] == 'r' {
+				if msg[0] == 'r' || msg[0] == 'R' {
 					log.Printf("\033[35mLOG:  Game restarted\033[0m")
 					ge.state = newGameState()
 					ge.state.play()
