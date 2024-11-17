@@ -69,6 +69,7 @@ func main() {
 			go ge.RunLoop()
 
 			webResponseCh <- []byte("P")
+			log.Print("\033[35mLOG:  Game restarted\033[0m")
 		}
 	}
 

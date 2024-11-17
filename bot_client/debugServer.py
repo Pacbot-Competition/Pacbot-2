@@ -65,3 +65,6 @@ class DebugServer:
 
     def set_path(self, path):
         asyncio.create_task(self.broadcast(f"set_path {' '.join(map(lambda pos: f'{pos[0]} {pos[1]}', path))}"))
+        
+    def reset_game(self):
+        asyncio.create_task(self.broadcast("reset_game"))

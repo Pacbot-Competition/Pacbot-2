@@ -320,6 +320,12 @@
             const elem = document.getElementById(`grid-element-${row}-${col}`);
             elem.classList.add('path');
           }
+          break;
+        }
+        case 'reset_game': {
+          toggleReset();
+          console.log('Restarting game');
+          break;
         }
         default: {
           console.log('Unknown command received from robot: ' + command);
