@@ -327,6 +327,11 @@
           console.log('Restarting game');
           break;
         }
+        case 'pause_game': {
+          sendToSocket('p');
+          console.log('Pausing game');
+          break;
+        }
         default: {
           console.log('Unknown command received from robot: ' + command);
           break;

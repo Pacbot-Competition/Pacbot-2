@@ -57,6 +57,8 @@ func main() {
 		fmt.Scanf("%s", &input) // Blocking I/O to keep the program alive
 		if input == "q" {       // Quit signal
 			break
+		} else if input == "k" { // Kill signal
+			webResponseCh <- []byte("k")
 		} else if input == "p" { // Pause signal
 			webResponseCh <- []byte("p")
 		} else if input == "P" { // Play signal

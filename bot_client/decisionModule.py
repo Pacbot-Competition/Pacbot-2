@@ -59,7 +59,7 @@ class DecisionModule:
 	programming for Pacbot, using asyncio.
 	'''
 
-	def __init__(self, state: GameState) -> None:
+	def __init__(self, state: GameState, log: bool) -> None:
 		'''
 		Construct a new decision module object
 		'''
@@ -80,6 +80,7 @@ class DecisionModule:
 		# Load DistTable and DistTableDict
 		self.distTable = loadDistTable()
 		self.dtDict = loadDistTableDict()
+		self.log = log
 
 	def update_target_loc(self):
 		'''
@@ -156,12 +157,13 @@ class DecisionModule:
 				if rand_move in self.walkable_cells:
 					target = rand_move
 
-		path = find_path(pacmanPos, target, self.state, self.avoidance_map)
+		path = find_path(pacmanPos, target, self.state, self.avoidance_map, self.log)
 		DebugServer.instance.set_path(path)
 	
 		if len(path) >= 1:
 			self.targetPos = path[0]
-		print(f"Path: {path}")
+		if self.log:
+			print(f"Path: {path}")
 		
 
 	async def decisionLoop(self) -> None:
@@ -186,8 +188,9 @@ class DecisionModule:
 			# Lock the game state
 			self.state.lock()
 
-			print(f"Current: {self.state.pacmanLoc.row}, {self.state.pacmanLoc.col}")
-			print(f"Target: {self.targetPos[0]}, {self.targetPos[1]}")
+			if self.log:
+				print(f"Current: {self.state.pacmanLoc.row}, {self.state.pacmanLoc.col}")
+				print(f"Target: {self.targetPos[0]}, {self.targetPos[1]}")
 
 			# Calculate the delta between the current position and the target position
 			deltaRow = self.targetPos[0] - self.state.pacmanLoc.row

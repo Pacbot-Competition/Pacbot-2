@@ -48,5 +48,9 @@ func (gs *gameState) interpretCommand(msg []byte) {
 	// Absolute position (from tracking)
 	case 'x':
 		gs.movePacmanAbsolute(int8(msg[1]), int8(msg[2]))
+
+	// Kill a pacman life (for debugging)
+	case 'k':
+		gs.decrementLives()
 	}
 }
