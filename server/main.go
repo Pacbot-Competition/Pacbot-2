@@ -57,6 +57,8 @@ func main() {
 		fmt.Scanf("%s", &input) // Blocking I/O to keep the program alive
 		if input == "q" {       // Quit signal
 			break
+		} else if input == "k" { // Kill signal
+			webResponseCh <- []byte("k")
 		} else if input == "p" { // Pause signal
 			webResponseCh <- []byte("p")
 		} else if input == "P" { // Play signal
@@ -69,6 +71,7 @@ func main() {
 			go ge.RunLoop()
 
 			webResponseCh <- []byte("P")
+			log.Print("\033[35mLOG:  Game restarted\033[0m")
 		}
 	}
 

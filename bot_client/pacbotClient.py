@@ -32,6 +32,11 @@ from pathfinding import find_path
 
 #from RPi.GPIO import GPIO
 
+# Argument parser for command-line arguments
+import argparse
+
+import sys
+
 # Get the connect URL from the config.json file
 def getConnectURL() -> str:
 
@@ -66,7 +71,10 @@ class PacbotClient:
 		self.state: GameState = GameState()
 
 		# Decision module (policy) to make high-level decisions
-		self.decisionModule: DecisionModule = DecisionModule(self.state)
+		self.decisionModule: DecisionModule = DecisionModule(self.state, args.debug)
+  
+		# list of scores for each game
+		self.scores = []
 
 	async def run(self) -> None:
 		'''
@@ -147,6 +155,26 @@ class PacbotClient:
 				# Update the state, given this message from the server
 				self.state.update(messageBytes)
 
+				if self.state.isGameOver():
+					self.scores.append(self.state.currScore)
+					if args.games > 0:
+						args.games -= 1
+					if args.games == 0:
+						print(f'{RED}Game over!{NORMAL}')
+						print(f'{GREEN}Scores: {self.scores}{NORMAL}' if len(self.scores) > 1 else f'{GREEN}Score: {self.scores[0]}{NORMAL}')
+						if args.output:
+							with open(args.output, 'w') as f:
+								f.write(str(self.scores))
+						await debug_server.reset_game()
+						await debug_server.pause_game()
+						await self.disconnect()
+						sys.exit(0)
+					else:
+						if args.delay > 0:
+							await asyncio.sleep(args.delay / 1000)
+						self.state.currLives = 3
+						await debug_server.reset_game()
+
 				# Write a response back to the server if necessary
 				if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
 					response: bytes = self.state.writeServerBuf.popleft().getBytes()
@@ -157,7 +185,7 @@ class PacbotClient:
 
 			# Break once the connection is closed
 			except ConnectionClosedError as e:
-				print('Connection lost...', e)
+				print(f'{RED}Connection lost...{NORMAL}', e)
 				self.state.setConnectionStatus(False)
 				break
 
@@ -174,6 +202,7 @@ async def main():
 	#gpio_init()
     
 	# Start the debug server in the background
+	global debug_server
 	debug_server = DebugServer()
 	asyncio.create_task(debug_server.run())
 	DebugServer.instance = debug_server
@@ -186,6 +215,14 @@ async def main():
 	# Once the connection is closed, end the event loop
 	loop = asyncio.get_event_loop()
 	loop.stop()
+
+parser = argparse.ArgumentParser(description='Pacbot client that is the brains of the operation')
+parser.add_argument('--debug', action='store_true', help='Enable debug mode, where the pathfinding is displayed')
+parser.add_argument('--games', type=int, default=-1, help='Number of games to run, -1 for infinite')
+parser.add_argument('--delay', type=int, default=0, help='Delay between games in milliseconds')
+parser.add_argument('--output', type=str, default='', help='Output file for scores')
+
+args = parser.parse_args()
 
 if __name__ == '__main__':
 

@@ -885,6 +885,13 @@ class GameState:
 		# Return that Pacman was safe during this transition
 		return True
 
+	def isGameOver(self) -> bool:
+		'''
+		Function to check if the game is over (i.e., no lives left)
+		'''
+		return self.currLives == 0
+
+
 def compressGameState(state: GameState) -> GameStateCompressed:
 	'''
 	Function to compress the game state into a smaller object, for easier storage

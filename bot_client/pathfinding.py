@@ -17,7 +17,7 @@ def estimate_heuristic(node_pos, target_pos, cell_avoidance_map):
     return get_distance(node_pos, target_pos) + (cell_avoidance_map[node_pos] if cell_avoidance_map is not None else 0)
 
 
-def find_path(start, target, g: GameState, avoidance_map):
+def find_path(start, target, g: GameState, avoidance_map, log: bool):
     """
     Current Pac-Man policy: A* search to find path from start to target using cell avoidance map.
     @param:
@@ -35,7 +35,8 @@ def find_path(start, target, g: GameState, avoidance_map):
     cell_avoidance_map = avoidance_class.avoidance_map
 
 
-    print(f'start: {start}, target: {target}')
+    if log:
+        print(f'start: {start}, target: {target}')
 
     frontier = PriorityQueue()
     frontier.push(start, 0)
