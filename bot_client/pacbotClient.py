@@ -162,6 +162,9 @@ class PacbotClient:
 					if args.games == 0:
 						print(f'{RED}Game over!{NORMAL}')
 						print(f'{GREEN}Scores: {self.scores}{NORMAL}' if len(self.scores) > 1 else f'{GREEN}Score: {self.scores[0]}{NORMAL}')
+						if args.output:
+							with open(args.output, 'w') as f:
+								f.write(str(self.scores))
 						await debug_server.reset_game()
 						await debug_server.pause_game()
 						await self.disconnect()
@@ -217,6 +220,7 @@ parser = argparse.ArgumentParser(description='Pacbot client that is the brains o
 parser.add_argument('--debug', action='store_true', help='Enable debug mode, where the pathfinding is displayed')
 parser.add_argument('--games', type=int, default=-1, help='Number of games to run, -1 for infinite')
 parser.add_argument('--delay', type=int, default=0, help='Delay between games in milliseconds')
+parser.add_argument('--output', type=str, default='', help='Output file for scores')
 
 args = parser.parse_args()
 

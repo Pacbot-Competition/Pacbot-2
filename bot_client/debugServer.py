@@ -68,10 +68,12 @@ class DebugServer:
         asyncio.create_task(self.broadcast(f"set_path {' '.join(map(lambda pos: f'{pos[0]} {pos[1]}', path))}"))
         
     async def pause_game(self):
-        await asyncio.create_task(self.broadcast("pause_game"))
+        await asyncio.create_task(self.broadcast("pause_game")) # web client will understand this
+        #await asyncio.create_task(self.broadcast("p")) # tell server directly
         
     async def reset_game(self):
         if not self.is_resetting:
             self.is_resetting = True
-            await asyncio.create_task(self.broadcast("reset_game"))
+            await asyncio.create_task(self.broadcast("reset_game")) # web client will understand this
+            #await asyncio.create_task(self.broadcast("r")) # server will understand this
             self.is_resetting = False

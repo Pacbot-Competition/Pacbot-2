@@ -324,12 +324,12 @@
         }
         case 'reset_game': {
           toggleReset();
-          console.log('Restarting game');
+          console.log('Bot client requested game reset');
           break;
         }
         case 'pause_game': {
           sendToSocket('p');
-          console.log('Pausing game');
+          console.log('Bot client requested game pause');
           break;
         }
         default: {
