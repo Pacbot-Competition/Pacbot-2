@@ -37,6 +37,8 @@ import argparse
 
 import sys
 
+import numpy as np
+
 # Get the connect URL from the config.json file
 def getConnectURL() -> str:
 
@@ -68,7 +70,7 @@ class PacbotClient:
 		self.connection: ClientConnection
 
 		# Game state object to store the game information
-		self.state: GameState = GameState()
+		self.state: GameState = GameState(False if args.games == 1 else True)
 
 		# Decision module (policy) to make high-level decisions
 		self.decisionModule: DecisionModule = DecisionModule(self.state, args.debug)
@@ -153,15 +155,17 @@ class PacbotClient:
 					messageBytes = message.encode('ascii') # type: ignore
 
 				# Update the state, given this message from the server
-				self.state.update(messageBytes)
+				should_resume = self.state.update(messageBytes)
 
 				if self.state.isGameOver():
 					self.scores.append(self.state.currScore)
-					if args.games > 0:
-						args.games -= 1
-					if args.games == 0:
-						print(f'{RED}Game over!{NORMAL}')
+					curr_num_games = len(self.scores)
+					if args.games == curr_num_games:
+						print(f'{RED}Simulation finished!{NORMAL}')
 						print(f'{GREEN}Scores: {self.scores}{NORMAL}' if len(self.scores) > 1 else f'{GREEN}Score: {self.scores[0]}{NORMAL}')
+						if len(self.scores) > 1:
+							print(f'{GREEN}Average score: {int(np.mean(self.scores))}{NORMAL}')
+							print(f'{GREEN}Standard deviation: {int(np.std(self.scores))}{NORMAL}')
 						if args.output:
 							with open(args.output, 'w') as f:
 								f.write(str(self.scores))
@@ -170,10 +174,15 @@ class PacbotClient:
 						await self.disconnect()
 						sys.exit(0)
 					else:
+						if curr_num_games % (args.games // 10) == 0 and args.games >= 10:
+							print(f'{PINK}Simulation {int(curr_num_games/args.games*100)}% complete, avg score: {int(np.mean(self.scores))}, std dev: {int(np.std(self.scores))}{NORMAL}')
 						if args.delay > 0:
 							await asyncio.sleep(args.delay / 1000)
 						self.state.currLives = 3
+						self.state.currLevel = 1
 						await debug_server.reset_game()
+				elif should_resume:
+					await debug_server.resume_game()
 
 				# Write a response back to the server if necessary
 				if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():

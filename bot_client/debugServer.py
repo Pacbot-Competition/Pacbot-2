@@ -67,6 +67,10 @@ class DebugServer:
     def set_path(self, path):
         asyncio.create_task(self.broadcast(f"set_path {' '.join(map(lambda pos: f'{pos[0]} {pos[1]}', path))}"))
         
+    async def resume_game(self):
+        await asyncio.create_task(self.broadcast("resume_game")) # web client will understand this
+        #await asyncio.create_task(self.broadcast("P")) # tell server directly
+        
     async def pause_game(self):
         await asyncio.create_task(self.broadcast("pause_game")) # web client will understand this
         #await asyncio.create_task(self.broadcast("p")) # tell server directly
