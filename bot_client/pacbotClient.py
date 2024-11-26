@@ -39,6 +39,8 @@ import sys
 
 import numpy as np
 
+from time import time
+
 # Get the connect URL from the config.json file
 def getConnectURL() -> str:
 
@@ -77,6 +79,9 @@ class PacbotClient:
   
 		# list of scores for each game
 		self.scores = []
+  
+		# timestamp of last game over
+		self.last_game_over_time = time()
 
 	async def run(self) -> None:
 		'''
@@ -157,8 +162,9 @@ class PacbotClient:
 				# Update the state, given this message from the server
 				should_resume = self.state.update(messageBytes)
 
-				if self.state.isGameOver():
+				if self.state.isGameOver() and (time() - self.last_game_over_time > 10):
 					self.scores.append(self.state.currScore)
+					self.last_game_over_time = time()
 					curr_num_games = len(self.scores)
 					if args.games == curr_num_games:
 						print(f'{RED}Simulation finished!{NORMAL}')
