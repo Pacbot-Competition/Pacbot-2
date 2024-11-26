@@ -377,7 +377,7 @@ class GameState:
 	from the server to make querying the game state simple.
 	'''
 
-	def __init__(self) -> None:
+	def __init__(self, resume=False) -> None:
 		'''
 		Construct a new game state object
 		'''
@@ -449,6 +449,8 @@ class GameState:
 		# 31 * 4 bytes = 31 * (32-bit integer bitset)
 		self.pelletArr: list[int] = [0 for _ in range(31)]
 		self.format += (31 * 'I')
+  
+		self.resume = resume # do we resume the game whenever pacman loses a life or progresses to the next level
 
 	def lock(self) -> None:
 		'''
@@ -546,14 +548,17 @@ class GameState:
 
 		return {ghost.color: ghost.plannedDirection for ghost in self.ghosts}
 
-	def update(self, serializedState: bytes, lockOverride: bool = False) -> None:
+	def update(self, serializedState: bytes, lockOverride: bool = False) -> bool:
 		'''
 		Update this game state, given a bytes object from the client
+  
+		Returns whether the game should be resumed (in the case of multiple simulations)
 		'''
+		should_resume = False
 
 		# If the state is locked, don't update it
 		if self._locked and not lockOverride:
-			return
+			return should_resume
 
 		# Unpack the values based on the format string
 		unpacked: tuple[int, ...] = unpack_from(self.format, serializedState, 0)
@@ -565,6 +570,9 @@ class GameState:
 		self.modeSteps    = unpacked[3]
 		self.modeDuration = unpacked[4]
 		self.currScore    = unpacked[5]
+		if (self.currLevel != unpacked[6] or self.currLives != unpacked[7]) and self.currLives != 0 and self.resume:
+			should_resume = True # we have either lost a life or progressed to the next level, but we want to keep on playing because we are doing multiple simulations 
+			
 		self.currLevel    = unpacked[6]
 		self.currLives    = unpacked[7]
 
@@ -598,6 +606,8 @@ class GameState:
 		# Reset our guesses of the planned ghost directions
 		for ghost in self.ghosts:
 			ghost.plannedDirection = Directions.NONE
+		
+		return should_resume
 
 	def updateGhostPlans(self, ghostPlans: dict[GhostColors, Directions]):
 		'''

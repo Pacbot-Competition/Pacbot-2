@@ -332,6 +332,11 @@
           console.log('Bot client requested game pause');
           break;
         }
+        case 'resume_game': {
+          sendToSocket('P');
+          console.log('Bot client requested game resume');
+          break;
+        }
         default: {
           console.log('Unknown command received from robot: ' + command);
           break;
