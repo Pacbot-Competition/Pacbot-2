@@ -174,7 +174,7 @@ class PacbotClient:
 						await self.disconnect()
 						sys.exit(0)
 					else:
-						if curr_num_games % (args.games // 10) == 0 and args.games >= 10:
+						if args.games >= 10 and (curr_num_games % (args.games // 10) == 0):
 							print(f'{PINK}Simulation {int(curr_num_games/args.games*100)}% complete, avg score: {int(np.mean(self.scores))}, std dev: {int(np.std(self.scores))}{NORMAL}')
 						if args.delay > 0:
 							await asyncio.sleep(args.delay / 1000)
