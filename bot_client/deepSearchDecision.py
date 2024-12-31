@@ -3,6 +3,8 @@ import asyncio
 
 import socket
 
+import random
+
 # Game state
 from gameState import *
 
@@ -25,7 +27,7 @@ import time
 D_MESSAGES: list[bytes] = [b'w', b'a', b's', b'd', b'.']
 TICK_ESTIMATE_BY_LEVEL = [12,int(12*1.5),12*2,int(12*2.5),12*3]
 
-class OldDecisionModule:
+class DeepDecisionModule:
     def __init__(self, state: GameState) -> None:
         # Game state object to store the game information
         self.state = state
@@ -57,16 +59,8 @@ class OldDecisionModule:
     def _target_is_invalid(self, target_loc):
         return self.grid[target_loc[0]][target_loc[1]] in [I, n]
 
-    def _simulate_surrounded_action(self,state:GameState,pacmanDir:Directions) -> tuple[GameState,bool,bool]:
-        '''takes in the planned direction of the pacbot and the current state. Simulates the action and returns a tuple containing three results:The updated simulated state, first boolean is whether the action is valid (is the pacbot alive). Second boolean is whether the action brings pacbot out of surrounded state'''
-        simulated_state = copy.deepcopy(state)
-        alive = simulated_state.simulateAction(TICK_ESTIMATE_BY_LEVEL[self.state.currLevel - 1],pacmanDir) #simulated_state.updatePeriod - simulated_state.currTicks%simulated_state.updatePeriod
-
-        return (simulated_state,alive,surrounded)
-
     def _state_to_loc(self,state:GameState) -> tuple[int,int]:
         return (state.pacmanLoc.col,30-state.pacmanLoc.row)
-    
 
     def _update_game_state(self):
         p_loc = (self.state.pacmanLoc.col, 30-self.state.pacmanLoc.row)
@@ -134,9 +128,11 @@ class OldDecisionModule:
             if min_ghost_distance <= 1 and nearestGhostScaredTime > 0:
                 return 999999
 
-        return state.currScore() * 5 - min_food_distance
+        return state.currScore * 5 - min_food_distance
 
     def deepSearch(self, depth, state: GameState):
+        if state.currLives == 0 or depth == self.depth or state.numPellets() == 0:
+            return self.evaluationFunction(state) - depth * 100
         p_loc = self._state_to_loc(state)
         targets = [p_loc, (p_loc[0] - 1, p_loc[1]), (p_loc[0] + 1, p_loc[1]), (p_loc[0], p_loc[1] - 1), (p_loc[0], p_loc[1] + 1)]
         directions =  [Directions.NONE, Directions.LEFT, Directions.RIGHT, Directions.DOWN, Directions.UP]
@@ -149,7 +145,7 @@ class OldDecisionModule:
             alive = simulated_state.simulateAction(TICK_ESTIMATE_BY_LEVEL[self.state.currLevel - 1],directions[i])
             heuristics.append(self.deepSearch(depth+1,simulated_state))
 
-        if len(heuristics) == 0 or state.currLives == 0 or depth == self.depth or state.numPellets() == 0:
+        if len(heuristics) == 0:
             return self.evaluationFunction(state) - depth * 100
 
         max_val = max(heuristics)
@@ -170,13 +166,27 @@ class OldDecisionModule:
                 return
             self._update_game_state()
             p_loc = (self.state.pacmanLoc.col, 30-self.state.pacmanLoc.row)
-            next_loc = self._find_best_target(p_loc)
+
+            if self.state.numPellets() <= self.depth:
+                self.depth = self.state.numPellets() - 1
+            targets = [(p_loc[0] - 1, p_loc[1]), (p_loc[0] + 1, p_loc[1]), (p_loc[0], p_loc[1] - 1), (p_loc[0], p_loc[1] + 1)]
+            directions =  [Directions.LEFT, Directions.RIGHT, Directions.DOWN, Directions.UP]
+            action_scores = []
+            for i in range(len(targets)):
+                simulated_state = copy.deepcopy(self.state)
+                alive = simulated_state.simulateAction(TICK_ESTIMATE_BY_LEVEL[self.state.currLevel - 1],directions[i])
+                action_scores.append(self.deepSearch(0, simulated_state))
+            max_action = max(action_scores)
+            max_indices = [index for index in range(len(action_scores)) if action_scores[index] == max_action]
+            chosenIndex = random.choice(max_indices)
+
+            next_loc = targets[chosenIndex]
             if next_loc != p_loc:
                 self._send_command_message_to_target(p_loc, next_loc)
                 #self._send_socket_command_to_target(p_loc, next_loc)
                 if self.grid[next_loc[0]][next_loc[1]] == O:
                     self.num_powerup -= 1
-                print(self._get_direction(p_loc,next_loc))
+                #print(self._get_direction(p_loc,next_loc))
                 return
         #self._send_socket_stop_command()
         self._send_stop_command()

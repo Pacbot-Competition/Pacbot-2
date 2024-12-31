@@ -15,6 +15,8 @@ from gameState import GameState
 # Decision module
 from decisionModule import DecisionModule
 
+from deepSearchDecision import DeepDecisionModule
+
 # Server messages
 from serverMessage import *
 
@@ -59,7 +61,7 @@ class PacbotClient:
 		self.state: GameState = GameState()
 
 		# Decision module (policy) to make high-level decisions
-		self.decisionModule: DecisionModule = DecisionModule(self.state)
+		self.decisionModule: DeepDecisionModule = DeepDecisionModule(self.state)
 
 	async def run(self) -> None:
 		'''
@@ -88,6 +90,7 @@ class PacbotClient:
 			self.connection = connect(self.connectURL)
 			self._socketOpen = True
 			self.state.setConnectionStatus(True)
+			self.decisionModule.set_connection(self.connection)
 
 		# If the connection is refused, log and return
 		except ConnectionRefusedError:
