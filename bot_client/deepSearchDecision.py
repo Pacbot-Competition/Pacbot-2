@@ -38,46 +38,40 @@ class DeepDecisionModule:
     def __init__(self, state: GameState) -> None:
         # Game state object to store the game information
         self.state = state
-        self.previous_loc = None
-        self.direction = Directions.RIGHT
-        self.grid = copy.deepcopy(grid)
         #self.sock = socket.socket()
         #self.sock.connect(("192.168.0.100",1337))
-        print("connected")
-        self.num_powerup = 4
-        self.last_life = 3
         self.depth = 6
 
     def set_connection(self, connection: ClientConnection):
         self.connection = connection
+        print("connected")
 
-    def _get_direction(self, p_loc, next_loc):
-        if p_loc[0] == next_loc[0]:
-            if p_loc[1] < next_loc[1]:
-                return Directions.UP
-            else:
+    def _get_direction(self, p_loc:Location, next_loc:tuple):
+        if p_loc.col == next_loc[0]:
+            if p_loc.row < next_loc[1]:
                 return Directions.DOWN
+            else:
+                return Directions.UP
         else:
-            if p_loc[0] < next_loc[0]:
+            if p_loc.col < next_loc[0]:
                 return Directions.RIGHT
             else:
                 return Directions.LEFT
 
-    def _target_is_invalid(self, target_loc):
-        return self.grid[target_loc[0]][target_loc[1]] in [I, n]
-
-    def _state_to_loc(self,state:GameState) -> tuple[int,int]:
-        return (state.pacmanLoc.col,30-state.pacmanLoc.row)
-
     def _update_game_state(self):
-        p_loc = (self.state.pacmanLoc.col, 30-self.state.pacmanLoc.row)
-        if p_loc[0] < 0 or p_loc[1] < 0 or p_loc[0] >= len(self.grid) or p_loc[1] >= len(self.grid[0]):
-            return
-        if self.grid[p_loc[0]][p_loc[1]] in [o, O]:
-            self.grid[p_loc[0]][p_loc[1]] = e
+        message = self.connection.recv()
 
-    def _send_command_message_to_target(self, p_loc, target):
-        direction = self._get_direction(p_loc, target)
+        # Convert the message to bytes, if necessary
+        messageBytes: bytes
+        if isinstance(message, bytes):
+            messageBytes = message # type: ignore
+        else:
+            messageBytes = message.encode('ascii') # type: ignore
+
+        # Update the state, given this message from the server
+        self.state.update(messageBytes,True)
+
+    def _send_command_message_to_target(self, direction):
         # self.state.queueAction(4,direction)
         self.connection.send(ServerMessage(D_MESSAGES[direction], 4).getBytes())
 
@@ -102,13 +96,6 @@ class DeepDecisionModule:
     def _send_socket_stop_command(self):
         self.sock.send(b'x')
         print("stay in place")
-
-    def update_state(self):
-        #TODO check if prev_loc has correct x and y order and whether y value need to be re calculated
-        if not self.state.pacmanLoc.at(col=self.previous_loc.col,row=self.previous_loc.row):
-            if self.previous_loc is not None:
-                self.direction = self._get_direction((self.previous_loc.col, 30 - self.previous_loc.row), (self.state.pacmanLoc.col,30 - self.state.pacmanLoc.row))
-            self.previous_loc = self.state.pacmanLoc if self.state else None
 
     # New stuff here
     def evaluationFunction(self,state:GameState):
@@ -145,13 +132,13 @@ class DeepDecisionModule:
         
         if state.currLives == 0 or depth == self.depth or state.numPellets() == 0:
             return self.evaluationFunction(state) - depth * 100
-        p_loc = self._state_to_loc(state)
-        targets = [p_loc, (p_loc[0] - 1, p_loc[1]), (p_loc[0] + 1, p_loc[1]), (p_loc[0], p_loc[1] - 1), (p_loc[0], p_loc[1] + 1)]
+        p_loc = state.pacmanLoc
+        targets = [(p_loc.col,p_loc.row), (p_loc.col-1, p_loc.row), (p_loc.col+1, p_loc.row), (p_loc.col, p_loc.row+1), (p_loc.col, p_loc.row - 1)]
         directions =  [Directions.NONE, Directions.LEFT, Directions.RIGHT, Directions.DOWN, Directions.UP]
         heuristics = []
         for i in range(len(targets)):
             target_loc = targets[i]
-            if self._target_is_invalid(target_loc):
+            if state.wallAt(target_loc[1],target_loc[0]):
                 continue
             sim_state = GameState()
             sim_state.update(state.serialize(),True)
@@ -181,18 +168,20 @@ class DeepDecisionModule:
         if self.state:
             if self.state.pacmanLoc.row == 32 :
                 return
-            self._update_game_state()
-            p_loc = (self.state.pacmanLoc.col, 30-self.state.pacmanLoc.row)
+            p_loc = self.state.pacmanLoc
 
             if self.state.numPellets() <= self.depth:
                 self.depth = self.state.numPellets() - 1
-            targets = [(p_loc[0] - 1, p_loc[1]), (p_loc[0] + 1, p_loc[1]), (p_loc[0], p_loc[1] - 1), (p_loc[0], p_loc[1] + 1)]
-            directions =  [Directions.LEFT, Directions.RIGHT, Directions.DOWN, Directions.UP]
+            targets = [(p_loc.col,p_loc.row), (p_loc.col-1, p_loc.row), (p_loc.col+1, p_loc.row), (p_loc.col, p_loc.row+1), (p_loc.col, p_loc.row - 1)]
+            directions =  [Directions.NONE, Directions.LEFT, Directions.RIGHT, Directions.DOWN, Directions.UP]
             action_scores = []
 
             curr_time = time.time()
 
             for i in range(len(targets)):
+                target_loc = targets[i]
+                if self.state.wallAt(target_loc[1],target_loc[0]):
+                    continue
                 sim_state = GameState()
                 sim_state.update(self.state.serialize(),True)
                 #simulated_state = copy.deepcopy(self.state)
@@ -202,17 +191,15 @@ class DeepDecisionModule:
 
             max_action = max(action_scores)
             max_indices = [index for index in range(len(action_scores)) if action_scores[index] == max_action]
-            chosenIndex = random.choice(max_indices)
+            chosenIndex = max_indices[-1]
 
             print(time.time() - curr_time)
 
             next_loc = targets[chosenIndex]
+            print(directions[chosenIndex])
             if next_loc != p_loc:
-                self._send_command_message_to_target(p_loc, next_loc)
+                self._send_command_message_to_target(directions[chosenIndex])
                 #self._send_socket_command_to_target(p_loc, next_loc)
-                if self.grid[next_loc[0]][next_loc[1]] == O:
-                    self.num_powerup -= 1
-                #print(self._get_direction(p_loc,next_loc))
                 return
         #self._send_socket_stop_command()
         self._send_stop_command()
@@ -220,8 +207,8 @@ class DeepDecisionModule:
     async def decisionLoop(self) -> None:
 		# Receive values as long as we have access
         resetted = False
-        last_time = time.time()
         while self.state.isConnected():
+            self._update_game_state()
 			# If the current messages haven't been sent out yet, skip this iteration
             # if len(self.state.writeServerBuf):
             #     await asyncio.sleep(0)
@@ -232,16 +219,16 @@ class DeepDecisionModule:
                 resetted = True
 
 			# Lock the game state
-            self.state.lock()
+            #self.state.lock()
 
 			# Write back to the server, as a test (move right)
             self.tick()
 
 			# Unlock the game state
-            self.state.unlock()
+            # self.state.unlock()
 
 			# Print that a decision has been made
 
 			#Free up the event loop
             
-            await asyncio.sleep(0.001)
+            await asyncio.sleep(0.01)

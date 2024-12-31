@@ -74,7 +74,7 @@ class PacbotClient:
 		try: # Try receiving messages indefinitely
 			if self._socketOpen:
 				await asyncio.gather(
-					self.receiveLoop(),
+					#self.receiveLoop(),
 					self.decisionModule.decisionLoop()
 				)
 		finally: # Disconnect once the connection is over
@@ -149,7 +149,7 @@ class PacbotClient:
 					self.connection.send(response)
 
 				# Free the event loop to allow another decision
-				await asyncio.sleep(0)
+				await asyncio.sleep(0.001)
 
 			# Break once the connection is closed
 			except ConnectionClosedError:
