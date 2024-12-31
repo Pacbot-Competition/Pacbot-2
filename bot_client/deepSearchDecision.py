@@ -27,6 +27,13 @@ import time
 D_MESSAGES: list[bytes] = [b'w', b'a', b's', b'd', b'.']
 TICK_ESTIMATE_BY_LEVEL = [12,int(12*1.5),12*2,int(12*2.5),12*3]
 
+FOOD_POSITIONS = []
+gs = GameState()
+for col in range(28):
+    for row in range(31):
+        if gs.pelletAt(row,col):
+            FOOD_POSITIONS.append((col,row))
+
 class DeepDecisionModule:
     def __init__(self, state: GameState) -> None:
         # Game state object to store the game information
@@ -105,14 +112,14 @@ class DeepDecisionModule:
 
     # New stuff here
     def evaluationFunction(self,state:GameState):
+        #curr_time = time.time_ns()
         """Calculate distance to the nearest food"""
         min_food_distance = 10000 # larger than 31^2 + 28^2, largest squared distance
-        for x in range(31):
-            for y in range(28):
-                if state.fruitAt(y,x):
-                    dist = (y - state.pacmanLoc.row)**2 + (x - state.pacmanLoc.col)**2
-                    if dist < min_food_distance:
-                        min_food_distance = dist
+        for col,row in FOOD_POSITIONS:
+            if state.pelletAt(row,col):
+                dist = (row - state.pacmanLoc.row)**2 + (col - state.pacmanLoc.col)**2
+                if dist < min_food_distance:
+                    min_food_distance = dist
 
         """Calculate the distance to nearest ghost"""
         ghostPositions = [ghost.location for ghost in state.ghosts]
@@ -128,9 +135,14 @@ class DeepDecisionModule:
             if min_ghost_distance <= 1 and nearestGhostScaredTime > 0:
                 return 999999
 
+        #print(f"eval:{time.time_ns()-curr_time}")
+
         return state.currScore * 5 - min_food_distance
 
     def deepSearch(self, depth, state: GameState):
+
+        #curr_time = time.time_ns()
+        
         if state.currLives == 0 or depth == self.depth or state.numPellets() == 0:
             return self.evaluationFunction(state) - depth * 100
         p_loc = self._state_to_loc(state)
@@ -141,14 +153,19 @@ class DeepDecisionModule:
             target_loc = targets[i]
             if self._target_is_invalid(target_loc):
                 continue
-            simulated_state = copy.deepcopy(state)
-            alive = simulated_state.simulateAction(TICK_ESTIMATE_BY_LEVEL[self.state.currLevel - 1],directions[i])
-            heuristics.append(self.deepSearch(depth+1,simulated_state))
+            sim_state = GameState()
+            sim_state.update(state.serialize(),True)
+            #simulated_state = copy.deepcopy(state)
+            alive = sim_state.simulateAction(TICK_ESTIMATE_BY_LEVEL[state.currLevel - 1],directions[i])
+            heuristics.append(self.deepSearch(depth+1,sim_state))
 
         if len(heuristics) == 0:
             return self.evaluationFunction(state) - depth * 100
 
         max_val = max(heuristics)
+
+        #print(f"deep:{time.time_ns()-curr_time}")
+        
         return max_val + self.evaluationFunction(state) - depth * 100
 
     def tick(self):
@@ -172,13 +189,22 @@ class DeepDecisionModule:
             targets = [(p_loc[0] - 1, p_loc[1]), (p_loc[0] + 1, p_loc[1]), (p_loc[0], p_loc[1] - 1), (p_loc[0], p_loc[1] + 1)]
             directions =  [Directions.LEFT, Directions.RIGHT, Directions.DOWN, Directions.UP]
             action_scores = []
+
+            curr_time = time.time()
+
             for i in range(len(targets)):
-                simulated_state = copy.deepcopy(self.state)
-                alive = simulated_state.simulateAction(TICK_ESTIMATE_BY_LEVEL[self.state.currLevel - 1],directions[i])
-                action_scores.append(self.deepSearch(0, simulated_state))
+                sim_state = GameState()
+                sim_state.update(self.state.serialize(),True)
+                #simulated_state = copy.deepcopy(self.state)
+                alive = sim_state.simulateAction(TICK_ESTIMATE_BY_LEVEL[self.state.currLevel - 1],directions[i])
+                action_scores.append(self.deepSearch(0, sim_state))
+                
+
             max_action = max(action_scores)
             max_indices = [index for index in range(len(action_scores)) if action_scores[index] == max_action]
             chosenIndex = random.choice(max_indices)
+
+            print(time.time() - curr_time)
 
             next_loc = targets[chosenIndex]
             if next_loc != p_loc:
@@ -216,8 +242,6 @@ class DeepDecisionModule:
 
 			# Print that a decision has been made
 
-			# Free up the event loop
-            # curr_time = time.time()
-            # print(curr_time - last_time)
-            # last_time = curr_time
+			#Free up the event loop
+            
             await asyncio.sleep(0.001)
