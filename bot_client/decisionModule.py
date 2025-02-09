@@ -4,6 +4,9 @@ import asyncio
 # Game state
 from gameState import *
 
+# Pacbot agent
+from pacbotAgent import *
+
 class DecisionModule:
 	'''
 	Sample implementation of a decision module for high-level
@@ -17,6 +20,11 @@ class DecisionModule:
 
 		# Game state object to store the game information
 		self.state = state
+
+		# Create agent
+		self.agent = PacbotAgent(
+			self.state
+		)
 
 	async def decisionLoop(self) -> None:
 		'''
@@ -40,14 +48,11 @@ class DecisionModule:
 			# Lock the game state
 			self.state.lock()
 
-			# Write back to the server, as a test (move right)
-			self.state.queueAction(4, Directions.RIGHT)
+			# Act with the given agent
+			self.agent.act()
 
 			# Unlock the game state
 			self.state.unlock()
-
-			# Print that a decision has been made
-			print('decided')
 
 			# Free up the event loop
 			await asyncio.sleep(0)

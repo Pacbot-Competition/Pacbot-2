@@ -181,6 +181,13 @@ class Location:
 		# Return none if no direction matches
 		return Directions.NONE
 
+	def __str__(self) -> str:
+		'''
+		Print out the coordinates of the current location
+		'''
+
+		return f'({self.row}, {self.col})'
+
 class Ghost:
 	'''
 	Location and auxiliary info of a ghost in the game engine

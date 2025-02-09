@@ -69,6 +69,88 @@
   }
 
   /*
+    This generates an array of intersection labels
+  */
+  const intersections = [
+    0b0000_0000000000000000000000000000, // row 0
+    0b0000_0100001000001001000001000010, // row 1
+    0b0000_0000000000000000000000000000, // row 2
+    0b0000_0000000000000000000000000000, // row 3
+    0b0000_0000000000000000000000000000, // row 4
+    0b0000_0100001001001001001001000010, // row 5
+    0b0000_0000000000000000000000000000, // row 6
+    0b0000_0000000000000000000000000000, // row 7
+    0b0000_0100001001001001001001000010, // row 8
+    0b0000_0000000000000000000000000000, // row 9
+    0b0000_0000000000000000000000000000, // row 10
+    0b0000_0000000001001001001000000000, // row 11
+    0b0000_0000000000000000000000000000, // row 12
+    0b0000_0000000000000000000000000000, // row 13
+    0b0000_0000001001000000001001000000, // row 14
+    0b0000_0000000000000000000000000000, // row 15
+    0b0000_0000000000000000000000000000, // row 16
+    0b0000_0000000001000010001000000000, // row 17
+    0b0000_0000000000000000000000000000, // row 18
+    0b0000_0000000000000000000000000000, // row 19
+    0b0000_0100001001001001001001000010, // row 20
+    0b0000_0000000000000000000000000000, // row 21
+    0b0000_0000000000000000000000000000, // row 22
+    0b0000_0101001001001001001001001010, // row 23
+    0b0000_0000000000000000000000000000, // row 24
+    0b0000_0000000000000000000000000000, // row 25
+    0b0000_0101001001001001001001001010, // row 26
+    0b0000_0000000000000000000000000000, // row 27
+    0b0000_0000000000000000000000000000, // row 28
+    0b0000_0100000000001001000000000010, // row 29
+    0b0000_0000000000000000000000000000  // row 30
+  ];
+
+  let intersectionGrid = [];
+  for (let row = 0; row < 31; row++) {
+    intersectionGrid[row] = [];
+    for (let col = 0; col < 28; col++) {
+      intersectionGrid[row][col] = ((intersections[row] >> col) & 1) ? 1 : 0;
+    }
+  }
+
+  /*
+    This generates an array of wall labels
+  */
+  const walls = [
+    0b0000_1111111111111111111111111111, // row 0
+    0b0000_1000000000000110000000000001, // row 1
+    0b0000_1011110111110110111110111101, // row 2
+    0b0000_1011110111110110111110111101, // row 3
+    0b0000_1011110111110110111110111101, // row 4
+    0b0000_1000000000000000000000000001, // row 5
+    0b0000_1011110110111111110110111101, // row 6
+    0b0000_1011110110111111110110111101, // row 7
+    0b0000_1000000110000110000110000001, // row 8
+    0b0000_1111110111110110111110111111, // row 9
+    0b0000_1111110111110110111110111111, // row 10
+    0b0000_1111110110000000000110111111, // row 11
+    0b0000_1111110110111111110110111111, // row 12
+    0b0000_1111110110111111110110111111, // row 13
+    0b0000_1111110000111111110000111111, // row 14
+    0b0000_1111110110111111110110111111, // row 15
+    0b0000_1111110110111111110110111111, // row 16
+    0b0000_1111110110000000000110111111, // row 17
+    0b0000_1111110110111111110110111111, // row 18
+    0b0000_1111110110111111110110111111, // row 19
+    0b0000_1000000000000110000000000001, // row 20
+    0b0000_1011110111110110111110111101, // row 21
+    0b0000_1011110111110110111110111101, // row 22
+    0b0000_1000110000000000000000110001, // row 23
+    0b0000_1110110110111111110110110111, // row 24
+    0b0000_1110110110111111110110110111, // row 25
+    0b0000_1000000110000110000110000001, // row 26
+    0b0000_1011111111110110111111111101, // row 27
+    0b0000_1011111111110110111111111101, // row 28
+    0b0000_1000000000000000000000000001, // row 29
+    0b0000_1111111111111111111111111111  // row 30
+  ];
+
+  /*
     We use a circular queue (with a fixed max capacity to keep track of the
     times of the most recent messages. For every message we receive, we should
     add this time to the queue and remove all times longer than 1ms ago. The
@@ -307,7 +389,6 @@
       mediaControlKeyHeld = true;
       return (gameMode === Modes.Paused ? 'P' : 'p');
     } else if (key === 'Escape') {
-      mediaControlKeyHeld = false;
       return 'r';
     }
     return null;
@@ -322,27 +403,89 @@
       have elapsed since the last motion key, ignore this key
     */
     if ((4 * (currTicks - lastMotionTicks) < updatePeriod)) {
-      if (currTicks == 0) {
+      if (currTicks === 0) {
         lastMotionTicks = currTicks;
       }
       return null;
     }
 
+    const checkViolation = (rowDir, colDir, steps) => {
+      let newRow = (pacmanRowState & 31) + rowDir * steps;
+      let newCol = (pacmanColState & 31) + colDir * steps;
+      if ((walls[newRow] >> (newCol)) & 1) {
+        // console.log('wall violation', (pacmanRowState & 0b11111) - 1, (pacmanColState & 0b11111))
+        return true;
+      }
+      return false;
+    };
+
+    const checkIntersection = (rowDir, colDir, steps) => {
+      let newRow = (pacmanRowState & 31) + rowDir * steps;
+      let newCol = (pacmanColState & 31) + colDir * steps;
+      if ((intersections[newRow] >> (newCol)) & 1) {
+        // console.log('valid intersection found', (pacmanRowState & 0b11111) - 1, (pacmanColState & 0b11111))
+        return [newRow, newCol];
+      }
+      return [32, 32];
+    };
+
     /*
       If motion-related keys are pressed, reset the cooldown and
       send the command back to the keydown handler
     */
+    let rowDir = 0;
+    let colDir = 0;
     if (key === 'w' || key === 'ArrowUp') {
       lastMotionTicks = currTicks;
+      rowDir = -1;
+      colDir = 0;
+      if (shiftKeyHeld) {
+        for (let steps = 1; !checkViolation(rowDir, colDir, steps); steps++) {
+          var [newRow, newCol] = checkIntersection(rowDir, colDir, steps);
+          if (newRow < 32 && newCol < 32) {
+            return 'x' + String.fromCharCode(newRow) + String.fromCharCode(newCol);
+          }
+        }
+      }
       return 'w';
     } else if (key === 'a' || key === 'ArrowLeft') {
       lastMotionTicks = currTicks;
+      rowDir = 0;
+      colDir = -1;
+      if (shiftKeyHeld) {
+        for (let steps = 1; !checkViolation(rowDir, colDir, steps); steps++) {
+          var [newRow, newCol] = checkIntersection(rowDir, colDir, steps);
+          if (newRow < 32 && newCol < 32) {
+            return 'x' + String.fromCharCode(newRow) + String.fromCharCode(newCol);
+          }
+        }
+      }
       return 'a';
     } else if (key === 's' || key === 'ArrowDown') {
       lastMotionTicks = currTicks;
+      rowDir = 1;
+      colDir = 0;
+      if (shiftKeyHeld) {
+        for (let steps = 1; !checkViolation(rowDir, colDir, steps); steps++) {
+          var [newRow, newCol] = checkIntersection(rowDir, colDir, steps);
+          if (newRow < 32 && newCol < 32) {
+            return 'x' + String.fromCharCode(newRow) + String.fromCharCode(newCol);
+          }
+        }
+      }
       return 's';
     } else if (key === 'd' || key === 'ArrowRight') {
       lastMotionTicks = currTicks;
+      rowDir = 0;
+      colDir = 1;
+      if (shiftKeyHeld) {
+        for (let steps = 1; !checkViolation(rowDir, colDir, steps); steps++) {
+          var [newRow, newCol] = checkIntersection(rowDir, colDir, steps);
+          if (newRow < 32 && newCol < 32) {
+            return 'x' + String.fromCharCode(newRow) + String.fromCharCode(newCol);
+          }
+        }
+      }
       return 'd';
     }
     return null;
@@ -362,6 +505,12 @@
     sendToSocket(gameMode === Modes.Paused ? 'P' : 'p');
   }
 
+  // Showing intersections
+  let showIntersections = false;
+
+  // Shift key held
+  let shiftKeyHeld = false;
+
   // Handle key presses, to send responses back to the server
   const handleKeyDown = (event) => {
 
@@ -379,6 +528,14 @@
     if (motion) {
       sendToSocket(motion);
     }
+
+    else if (key === 'i') {
+      console.log('toggling intersections')
+      showIntersections = !showIntersections;
+    } else if (key == 'Shift') {
+      // console.log('holding shift');
+      shiftKeyHeld = true;
+    }
   }
 
   // Handle key releases, for allowing toggle commands to be sent again
@@ -389,6 +546,9 @@
 
     if (key === 'p' || key === 'P' || key === ' ') {
       mediaControlKeyHeld = false;
+    } else if (key == 'Shift') {
+      // console.log('releasing shift');
+      shiftKeyHeld = false;
     }
   }
 
@@ -410,6 +570,8 @@
   <Pellets
     {pelletGrid}
     {gridSize}
+    {intersectionGrid}
+    {showIntersections}
   />
 
   <Fruit

@@ -331,7 +331,7 @@ func (gs *gameState) movePacmanAbsolute(newRow, newCol int8) {
 	}
 
 	// The new position is far from the old one, let's not traverse the path
-	if len(path) > 5 {
+	if len(path) > 11 {
 		log.Println("\033[35mWARN: Interpolated path too long! " +
 			"Tracking performance is likely degraded\033[0m")
 

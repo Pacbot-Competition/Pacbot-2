@@ -27,13 +27,21 @@ func main() {
 	// Make channels for communication between web broker and game engine
 	webBroadcastCh := make(chan []byte, 100)
 	webResponseCh := make(chan []byte, 100)
+	tcpSendCh := make(chan []byte, 2)
+
+	// Set up the TCP server
+	tcp := webserver.NewTcpServer(fmt.Sprintf(":%d", conf.TcpPort), tcpSendCh)
+	go tcp.TcpStart()
+	go tcp.Printer()
+	log.Printf("\033[35mLOG:  Tcp server running on %s:%d\033[0m\n", conf.ServerIP, conf.TcpPort)
 
 	// A wait group for quitting synchronously (allowing go-routines to complete)
 	var wgQuit sync.WaitGroup
 
 	// Websocket setup (package webserver)
 	server := http.Server{Addr: fmt.Sprintf(":%d", conf.WebSocketPort)}
-	wb := webserver.NewWebBroker(webBroadcastCh, webResponseCh, &wgQuit)
+	log.Printf("\033[35mLOG:  Web server running on %s:%d\033[0m\n", conf.ServerIP, conf.WebSocketPort)
+	wb := webserver.NewWebBroker(webBroadcastCh, tcpSendCh, webResponseCh, &wgQuit)
 	go wb.RunLoop() // Run the web broker loop asynchronously
 	http.HandleFunc("/", webserver.WebSocketHandler)
 	go func() {

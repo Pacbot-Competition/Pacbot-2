@@ -16,14 +16,16 @@ messages from the game engine to the clients and vice versa
 type WebBroker struct {
 	quitCh      chan struct{}
 	broadcastCh <-chan []byte
+	tcpSendCh   chan<- []byte
 	responseCh  chan<- []byte
 }
 
 // Create a new web broker, casting input and output channels to be uni-directional
-func NewWebBroker(_broadcastCh <-chan []byte, _responseCh chan<- []byte, _wgQuit *sync.WaitGroup) *WebBroker {
+func NewWebBroker(_broadcastCh <-chan []byte, _tcpSendCh chan<- []byte, _responseCh chan<- []byte, _wgQuit *sync.WaitGroup) *WebBroker {
 	wb := WebBroker{
 		quitCh:      make(chan struct{}, 0),
 		broadcastCh: _broadcastCh,
+		tcpSendCh:   _tcpSendCh,
 		responseCh:  _responseCh,
 	}
 	wgQuit = _wgQuit
@@ -91,6 +93,14 @@ func (wb *WebBroker) RunLoop() {
 				}
 			}
 			muOWS.RUnlock()
+
+			if NumOpenTCPClients > 0 {
+				select {
+				case wb.tcpSendCh <- msg:
+				default:
+					log.Println("\033[35mWARN: TCP send channel full!\033[0m")
+				}
+			}
 
 		// If we get a quit signal, quit this broker
 		case <-wb.quitCh:
