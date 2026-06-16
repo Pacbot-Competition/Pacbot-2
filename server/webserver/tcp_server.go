@@ -21,6 +21,13 @@ Protect important TCP variables from race conditions with a mutex
 */
 var muTcp sync.Mutex
 
+// Read the open TCP client count under muTcp, safe for concurrent access
+func getNumOpenTCPClients() int {
+	muTcp.Lock()
+	defer muTcp.Unlock()
+	return NumOpenTCPClients
+}
+
 // Keep track of who sent the message, and the content
 type Message struct {
 	from    string
@@ -116,13 +123,9 @@ func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 		n, err := conn.Read(buf)
 		if err != nil {
 
-			// Handle EOF (connection closure)
+			// Handle EOF (connection closure) - the deferred cleanup handles
+			// closing the connection and decrementing the client count
 			if err == io.EOF {
-				muTcp.Lock()
-				NumOpenTCPClients--
-				delete(s.conns, conn)
-				log.Printf("\033[31m[%d -> %d] robot disconnected at %s\033[0m\n", NumOpenTCPClients+1, NumOpenTCPClients, conn.RemoteAddr().String())
-				muTcp.Unlock()
 				return
 			}
 
@@ -131,7 +134,7 @@ func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 				// If it's a timeout, retry a few times (backoff strategy or a simple retry)
 				if opErr.Op == "read" && opErr.Err.Error() == "i/o timeout" {
 					// Timeout error - retry reading a few more times
-					log.Printf("\033[33m[%d] Timeout error with robot at %s. Retrying...\033[0m\n", NumOpenTCPClients, conn.RemoteAddr().String())
+					log.Printf("\033[33m[%d] Timeout error with robot at %s. Retrying...\033[0m\n", getNumOpenTCPClients(), conn.RemoteAddr().String())
 					continue // Retry the read operation
 				}
 
@@ -142,7 +145,7 @@ func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 				}
 
 				// For other types of net.OpErrors (like connection reset), log the error and keep the connection open
-				log.Printf("\033[31m[%d] Network operation error with robot at %s: %v. Continuing...\033[0m\n", NumOpenTCPClients, conn.RemoteAddr().String(), opErr)
+				log.Printf("\033[31m[%d] Network operation error with robot at %s: %v. Continuing...\033[0m\n", getNumOpenTCPClients(), conn.RemoteAddr().String(), opErr)
 				continue // Keep trying to read
 			}
 
@@ -168,7 +171,18 @@ func (s *TcpServer) tcpReadLoop(conn net.Conn) {
 func (s *TcpServer) tcpSendLoop() {
 	// For testing purposes (if a message is received, send '[ACK]' to the client)
 	for msg := range s.tcpSendCh {
+
+		// Snapshot the current connections under the mutex to avoid a data race
+		// with the accept/read loops mutating the map concurrently
+		muTcp.Lock()
+		conns := make([]net.Conn, 0, len(s.conns))
 		for conn := range s.conns {
+			conns = append(conns, conn)
+		}
+		muTcp.Unlock()
+
+		// Write outside the lock so a slow/blocking write can't stall accepts
+		for _, conn := range conns {
 			conn.Write(msg)
 		}
 	}

@@ -4,7 +4,7 @@ class PacbotAgent:
 
     def __init__(self, state):
         self.state: GameState = state
-        self.tmp_state: GameState = state
+        self.tmp_state: GameState = GameState()
 
     def safetyCost(self) -> int:
         pass

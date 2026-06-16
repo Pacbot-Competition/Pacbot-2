@@ -37,14 +37,16 @@ class VideoCapture:
 
 	def __init__(self, name: Any):
 		self.cap = cv2.VideoCapture(name)
+		if not self.cap.isOpened():
+			print(f"ERR: Could not open camera source '{name}'")
 		self.q: queue.Queue[MatLike] = queue.Queue()
-		t = threading.Thread(target=self._reader)
-		t.daemon = True
-		t.start()
+		self._running = True
+		self.t = threading.Thread(target=self._reader, daemon=True)
+		self.t.start()
 
 	# read frames as soon as they are available, keeping only most recent one
 	def _reader(self):
-		while True:
+		while self._running:
 			ret, frame = self.cap.read()
 			if not ret:
 				break
@@ -55,8 +57,21 @@ class VideoCapture:
 					pass
 			self.q.put(frame)
 
-	def read(self):
-		return self.q.get()
+	def read(self, timeout: float = 1.0) -> MatLike | None:
+		# Block up to `timeout` seconds for the next frame; return None if none
+		# arrives (e.g. the camera failed to open or the reader thread stopped),
+		# so callers never hang indefinitely
+		try:
+			return self.q.get(timeout=timeout)
+		except queue.Empty:
+			return None
+
+	def release(self):
+		# Stop the reader thread and release the underlying capture device
+		self._running = False
+		if self.t.is_alive():
+			self.t.join(timeout=1.0)
+		self.cap.release()
 
 class CameraModule:
 	'''
@@ -89,26 +104,47 @@ class CameraModule:
 		# Receive values as long as we have access
 		while self.state.isConnected():
 
-			# Get a frame
-			img = self.capture()
+			# Capturing a frame and running the CV pipeline are blocking,
+			# CPU-bound operations; run them in a worker thread so the
+			# websocket send/receive loops keep running concurrently
+			result = await asyncio.to_thread(self._captureAndLocalize)
 
-			# If the image is none, continue
-			if img is None:
+			# If no frame or position was produced, yield and try again
+			if result is None:
+				await asyncio.sleep(0)
 				continue
 
-			# Process the frame
-			pacman_row, pacman_col = self.localize(img)
+			# Unpack the localized Pacman position
+			pacman_row, pacman_col = result
 
-			# If there's a wall where the Pacbot is, quit
+			# If there's a wall where the Pacbot is, skip this position
 			if self.wallAt(pacman_row, pacman_col):
 				await asyncio.sleep(0)
 				continue
 
-			# Write back to the server, as a test (move right)
+			# Queue the position to be written back to the server
 			self.state.send(pacman_row, pacman_col)
 
 			# Free up the event loop
 			await asyncio.sleep(0)
+
+	def _captureAndLocalize(self) -> tuple[int, int] | None:
+		'''
+		Capture a frame and localize Pacman within it. Blocking; intended to
+		run in a worker thread via asyncio.to_thread.
+		'''
+
+		img = self.capture()
+		if img is None:
+			return None
+		return self.localize(img)
+
+	def release(self) -> None:
+		'''
+		Release the camera capture and its reader thread
+		'''
+
+		self.cap.release()
 
 	def capture(self) -> MatLike | None:
 		'''

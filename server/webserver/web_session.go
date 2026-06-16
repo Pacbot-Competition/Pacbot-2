@@ -52,6 +52,7 @@ type webSession struct {
 	sendCh chan []byte
 	readEn bool // read enabled (allowed by IP whitelist)
 	conn   *websocket.Conn
+	closed bool // whether sendCh has been closed (guarded by the embedded mutex)
 	sync.Mutex
 }
 
@@ -139,15 +140,29 @@ func (ws *webSession) unregister() {
 	}
 	muISM.Unlock()
 
-	// Wait until deregister to prevent write to closed channel
-	close(ws.sendCh)
+	// Wait until deregister to prevent write to closed channel. Guard with the
+	// session mutex and a flag so a concurrent quit() (from a kicked session or
+	// broker shutdown) can never send on an already-closed channel.
+	ws.Lock()
+	if !ws.closed {
+		ws.closed = true
+		close(ws.sendCh)
+	}
+	ws.Unlock()
 }
 
 // Close the websocket client (causes loop to unblock)
 func (ws *webSession) quit() {
 	ws.conn.Close()
-	// Wake the send loop, if it needs to be reminded to exit
-	// Any message will cause readLoop to exit as the socket is closed
+
+	// Wake the send loop, if it needs to be reminded to exit. Any message will
+	// cause readLoop to exit as the socket is closed. Guard against sendCh
+	// already being closed by unregister() (sending on a closed channel panics).
+	ws.Lock()
+	defer ws.Unlock()
+	if ws.closed {
+		return
+	}
 	select {
 	case ws.sendCh <- nil:
 	default:

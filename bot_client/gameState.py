@@ -178,7 +178,7 @@ class Location:
 
 		# Return the matching direction, if applicable
 		for direction in Directions:
-			if self.row == D_ROW[direction] and self.col == D_COL[direction]:
+			if self.rowDir == D_ROW[direction] and self.colDir == D_COL[direction]:
 				return direction
 
 		# Return none if no direction matches
@@ -319,7 +319,7 @@ class Ghost:
 			# Pink targets the space 4 ahead of Pacman
 			elif self.color == GhostColors.PINK:
 				targetRow = pacmanRow + 4 * pacmanRowDir
-				targetRow = pacmanCol + 4 * pacmanColDir
+				targetCol = pacmanCol + 4 * pacmanColDir
 
 			# Cyan targets the position of red, reflected about the position 2 spaces
 			# ahead of Pacman
@@ -365,7 +365,7 @@ class Ghost:
 						if distSqToTarget < minDist:
 							minDir  = direction
 							minDist = distSqToTarget
-						elif distSqToTarget >= maxDist:
+						if distSqToTarget >= maxDist:
 							maxDir  = direction
 							maxDist = distSqToTarget
 

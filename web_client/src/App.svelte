@@ -56,14 +56,18 @@
   socket.binaryType = 'arraybuffer';
   let socketOpen = false;
 
+  // Maze dimensions (rows 0..MAZE_ROWS-1, columns 0..MAZE_COLS-1)
+  const MAZE_ROWS = 31;
+  const MAZE_COLS = 28;
+
   /*
     This generates an empty array of pellet states
     (0 = none, 1 = pellet, 2 = super)
   */
   let pelletGrid = [];
-  for (let row = 0; row < 31; row++) {
+  for (let row = 0; row < MAZE_ROWS; row++) {
     pelletGrid[row] = [];
-    for (let col = 0; col < 28; col++) {
+    for (let col = 0; col < MAZE_COLS; col++) {
       pelletGrid[row][col] = 0;
     }
   }
@@ -106,9 +110,9 @@
   ];
 
   let intersectionGrid = [];
-  for (let row = 0; row < 31; row++) {
+  for (let row = 0; row < MAZE_ROWS; row++) {
     intersectionGrid[row] = [];
-    for (let col = 0; col < 28; col++) {
+    for (let col = 0; col < MAZE_COLS; col++) {
       intersectionGrid[row][col] = ((intersections[row] >> col) & 1) ? 1 : 0;
     }
   }
@@ -262,6 +266,13 @@
       mpsBuffer[mpsIdxRight] = ts;
       mpsAvg++;
       mpsIdxRight = (mpsIdxRight + 1) % MPS_BUFFER_SIZE;
+      // If the write head caught up to the tail (more than MPS_BUFFER_SIZE
+      // messages in the window), drop the oldest entry so the indices and
+      // count stay consistent instead of overwriting unevicted timestamps
+      if (mpsIdxRight === mpsIdxLeft) {
+        mpsIdxLeft = (mpsIdxLeft + 1) % MPS_BUFFER_SIZE;
+        mpsAvg--;
+      }
       // With a 2% leeway, calculate the number of messages in the window
       while (ts - mpsBuffer[mpsIdxLeft] > 1020 && mpsIdxLeft != mpsIdxRight) {
         mpsIdxLeft = (mpsIdxLeft + 1) % MPS_BUFFER_SIZE;
@@ -335,9 +346,9 @@
         fruitDuration     = view.getUint8(byteIdx++, false);
 
         // Parse pellet data
-        for (let row = 0; row < 31; row++) {
+        for (let row = 0; row < MAZE_ROWS; row++) {
           const binRow = view.getUint32(byteIdx, false);
-          for (let col = 0; col < 28; col++) {
+          for (let col = 0; col < MAZE_COLS; col++) {
 
             // Super pellet condition
             let superPellet = ((row === 3) || (row === 23))
@@ -366,7 +377,7 @@
   // Track the size of the window, to determine the grid size
   let innerWidth = 0;
   let innerHeight = 0;
-  $: gridSize = Math.min(innerHeight / 31, innerWidth / 28)
+  $: gridSize = Math.min(innerHeight / MAZE_ROWS, innerWidth / MAZE_COLS)
 
   // Calculate the remainder when currTicks is divided by updatePeriod
   $: modTicks = currTicks % updatePeriod
@@ -394,6 +405,10 @@
     return null;
   }
 
+  // Whether a (row, col) coordinate is on the grid
+  const inBounds = (row, col) =>
+    row >= 0 && row < MAZE_ROWS && col >= 0 && col < MAZE_COLS;
+
   // Deal with motion-related keys
   let lastMotionTicks = 0;
   const motionCommand = (key) => {
@@ -403,7 +418,10 @@
       have elapsed since the last motion key, ignore this key
     */
     if ((4 * (currTicks - lastMotionTicks) < updatePeriod)) {
-      if (currTicks === 0) {
+      // If the server tick counter wrapped (uint16) or reset (new game), the
+      // delta goes negative and would otherwise wedge motion input until
+      // lastMotionTicks is reached again; re-sync whenever that happens
+      if (currTicks < lastMotionTicks) {
         lastMotionTicks = currTicks;
       }
       return null;
@@ -412,6 +430,11 @@
     const checkViolation = (rowDir, colDir, steps) => {
       let newRow = (pacmanRowState & 31) + rowDir * steps;
       let newCol = (pacmanColState & 31) + colDir * steps;
+      // Off-grid counts as a violation so the step search always terminates,
+      // even if the maze border were ever incomplete
+      if (!inBounds(newRow, newCol)) {
+        return true;
+      }
       if ((walls[newRow] >> (newCol)) & 1) {
         // console.log('wall violation', (pacmanRowState & 0b11111) - 1, (pacmanColState & 0b11111))
         return true;
@@ -422,6 +445,10 @@
     const checkIntersection = (rowDir, colDir, steps) => {
       let newRow = (pacmanRowState & 31) + rowDir * steps;
       let newCol = (pacmanColState & 31) + colDir * steps;
+      // Reject off-grid coordinates (no intersection there)
+      if (!inBounds(newRow, newCol)) {
+        return [32, 32];
+      }
       if ((intersections[newRow] >> (newCol)) & 1) {
         // console.log('valid intersection found', (pacmanRowState & 0b11111) - 1, (pacmanColState & 0b11111))
         return [newRow, newCol];

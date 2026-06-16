@@ -6,7 +6,7 @@ import asyncio
 
 # Websockets (for communication with the server)
 from websockets.sync.client import connect, ClientConnection # type: ignore
-from websockets.exceptions import ConnectionClosedError # type: ignore
+from websockets.exceptions import ConnectionClosed # type: ignore
 from websockets.typing import Data # type: ignore
 
 # Decision module
@@ -70,6 +70,7 @@ class CvClient:
 			if self._socketOpen:
 				await asyncio.gather(
 					self.receiveLoop(),
+					self.sendLoop(),
 					self.cameraModule.decisionLoop()
 				)
 		finally: # Disconnect once the connection is over
@@ -106,6 +107,9 @@ class CvClient:
 		self._socketOpen = False
 		self.state.setConnectionStatus(False)
 
+		# Release the camera and its reader thread
+		self.cameraModule.release()
+
 	# Return whether the connection is open
 	def isOpen(self) -> bool:
 		'''
@@ -124,21 +128,54 @@ class CvClient:
 			# Try to receive messages (and skip to except in case of an error)
 			try:
 
-				# Receive a message from the connection (unused)
-				_: Data = self.connection.recv()
-
-				# Write a response back to the server if necessary
-				if self.state.writeServerBuf:
-					response: bytes = self.state.writeServerBuf.popleft()
-					self.connection.send(response)
+				# Receive a message from the connection (unused). The blocking
+				# recv() runs in a worker thread so it does not stall the event
+				# loop (and starve the send and decision loops)
+				_: Data = await asyncio.to_thread(self.connection.recv)
 
 				# Free the event loop to allow another decision
 				await asyncio.sleep(0)
 
-			# Break once the connection is closed
-			except ConnectionClosedError:
+			# Break once the connection is closed (clean or abnormal closures
+			# both subclass ConnectionClosed)
+			except ConnectionClosed:
 				print('Connection lost...')
 				self.state.setConnectionStatus(False)
+				self._socketOpen = False
+
+				# Wake the send loop so it can observe the closed connection
+				# and exit, instead of blocking on the queue forever
+				self.state.signalClose()
+				break
+
+	async def sendLoop(self) -> None:
+		'''
+		Send loop for flushing queued messages to the server as they are
+		produced, independent of inbound traffic
+		'''
+
+		# Send values as long as the connection is open
+		while self.isOpen():
+
+			# Try to send queued messages (and skip to except on error)
+			try:
+
+				# Block until the next message is queued. A None sentinel (from
+				# signalClose) or a closed socket means it is time to exit.
+				response = await self.state.writeServerBuf.get()
+				if response is None or not self.isOpen():
+					break
+
+				# The blocking send() runs in a worker thread so it does not
+				# stall the event loop
+				await asyncio.to_thread(self.connection.send, response)
+
+			# Break once the connection is closed (clean or abnormal closures
+			# both subclass ConnectionClosed)
+			except ConnectionClosed:
+				print('Connection lost...')
+				self.state.setConnectionStatus(False)
+				self._socketOpen = False
 				break
 
 # Main function

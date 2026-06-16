@@ -6,7 +6,7 @@ import asyncio
 
 # Websockets (for communication with the server)
 from websockets.sync.client import connect, ClientConnection # type: ignore
-from websockets.exceptions import ConnectionClosedError # type: ignore
+from websockets.exceptions import ConnectionClosed # type: ignore
 from websockets.typing import Data # type: ignore
 
 # Game state
@@ -127,8 +127,10 @@ class PacbotClient:
 			# Try to receive messages (and skip to except in case of an error)
 			try:
 
-				# Receive a message from the connection
-				message: Data = self.connection.recv()
+				# Receive a message from the connection. The blocking recv()
+				# runs in a worker thread so it does not stall the event loop
+				# (and starve the decision loop)
+				message: Data = await asyncio.to_thread(self.connection.recv)
 
 				# Convert the message to bytes, if necessary
 				messageBytes: bytes
@@ -140,18 +142,23 @@ class PacbotClient:
 				# Update the state, given this message from the server
 				self.state.update(messageBytes)
 
-				# Write a response back to the server if necessary
+				# Write a response back to the server if necessary. Sending is
+				# paced by the per-message tick countdown, so it stays in this
+				# loop (tied to inbound ticks); the blocking send() is offloaded
+				# to a worker thread to keep the event loop responsive
 				if self.state.writeServerBuf and self.state.writeServerBuf[0].tick():
 					response: bytes = self.state.writeServerBuf.popleft().getBytes()
-					self.connection.send(response)
+					await asyncio.to_thread(self.connection.send, response)
 
 				# Free the event loop to allow another decision
 				await asyncio.sleep(0)
 
-			# Break once the connection is closed
-			except ConnectionClosedError:
+			# Break once the connection is closed (clean or abnormal closures
+			# both subclass ConnectionClosed)
+			except ConnectionClosed:
 				print('Connection lost...')
 				self.state.setConnectionStatus(False)
+				self._socketOpen = False
 				break
 
 # Main function

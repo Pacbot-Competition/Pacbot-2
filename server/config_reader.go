@@ -20,15 +20,23 @@ type Configuration struct {
 func GetConfig() Configuration {
 
 	// Look in the file "config.json" in the top directory
-	file, _ := os.Open("../config.json")
+	file, err := os.Open("../config.json")
+	if err != nil {
+		log.Fatalln("FATAL: could not open config.json:", err)
+	}
 	defer file.Close()
 
 	// Decode the JSON arguments
 	decoder := json.NewDecoder(file)
 	config := Configuration{}
-	err := decoder.Decode(&config)
-	if err != nil {
-		log.Println("JSON read error:", err)
+	if err := decoder.Decode(&config); err != nil {
+		log.Fatalln("FATAL: could not parse config.json:", err)
+	}
+
+	// Validate fields that would otherwise cause runtime panics downstream
+	// (e.g. a zero GameFPS divides by zero when computing the tick interval)
+	if config.GameFPS <= 0 {
+		log.Fatalln("FATAL: config.json GameFPS must be a positive value")
 	}
 
 	// Return the configuration when done

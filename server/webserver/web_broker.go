@@ -94,7 +94,7 @@ func (wb *WebBroker) RunLoop() {
 			}
 			muOWS.RUnlock()
 
-			if NumOpenTCPClients > 0 {
+			if getNumOpenTCPClients() > 0 {
 				select {
 				case wb.tcpSendCh <- msg:
 				default:

@@ -93,6 +93,9 @@ type gameState struct {
 
 	// A random number generator for making frightened ghost decisions
 	rng *rand.Rand
+
+	// Mutex protecting rng, which is shared across concurrent ghost planning
+	muRng sync.Mutex
 }
 
 // Create a new game state with default values

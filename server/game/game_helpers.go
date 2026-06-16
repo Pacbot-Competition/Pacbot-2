@@ -435,15 +435,19 @@ search_loop:
 		}
 	}
 
-	// Backtrack the path
+	// If the target was never reached, there is no valid path. This guards
+	// against both an unreachable target (which would otherwise loop forever
+	// backtracking through the zero-value pos) and target == start (which would
+	// otherwise index into an empty path).
+	if _, ok := parent[target]; !ok {
+		return nil
+	}
+
+	// Backtrack the path; every node in `parent` chains back to start, so this
+	// terminates once `last` reaches start.
 	path := []pos{}
 	for last := target; last != start; last = parent[last] {
 		path = append(path, last)
-	}
-
-	// Something has gone horribly wrong, last node doesnt backtrack to start
-	if parent[path[len(path)-1]] != start {
-		return nil
 	}
 	slices.Reverse(path)
 	return path

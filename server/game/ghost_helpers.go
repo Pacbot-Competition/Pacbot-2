@@ -205,8 +205,11 @@ func (g *ghostState) plan() {
 	*/
 	if frightSteps > 1 {
 
-		// Generate a random index out of the valid moves
+		// Generate a random index out of the valid moves (rng is shared across
+		// concurrent ghost planning goroutines, so guard it with a mutex)
+		g.game.muRng.Lock()
 		randomNum := g.game.rng.Intn(numValidMoves)
+		g.game.muRng.Unlock()
 
 		// Loop over all directions
 		for dir, count := uint8(0), 0; dir < numDirs; dir++ {
